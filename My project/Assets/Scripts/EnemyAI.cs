@@ -162,6 +162,11 @@ public class EnemyAI : MonoBehaviour
 
     private bool CanSeePlayer()
     {
+        if (playerTransform == null) return false;
+        
+        PlayerController pc = playerTransform.GetComponent<PlayerController>();
+        if (pc != null && pc.isHidden) return false; // Enemy cannot see hidden player
+
         float distanceToPlayer = Vector3.Distance(transform.position, playerTransform.position);
         if (distanceToPlayer > detectionRange) return false;
 

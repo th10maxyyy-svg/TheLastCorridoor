@@ -32,6 +32,9 @@ public class PlayerController : MonoBehaviour
     private float currentSpeed;
     private bool isCrouching;
     private bool isSprinting;
+    
+    public bool isHidden { get; private set; }
+    private Transform currentExitPos;
 
     void Start()
     {
@@ -47,10 +50,37 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        if (isHidden)
+        {
+            if (Input.GetKeyDown(KeyCode.E))
+            {
+                ExitHiding();
+            }
+            HandleMouseLook(); // Allows looking around while hiding
+            return;
+        }
+
         HandleMovementInput();
         HandleMouseLook();
         HandleCrouch();
         ApplyMovement();
+    }
+
+    public void EnterHiding(Transform hidePos, Transform exitPos)
+    {
+        isHidden = true;
+        currentExitPos = exitPos;
+        characterController.enabled = false;
+        transform.position = hidePos.position;
+        // Keep camera rotation intact so player isn't disoriented
+    }
+
+    public void ExitHiding()
+    {
+        transform.position = currentExitPos.position;
+        characterController.enabled = true;
+        isHidden = false;
+        currentExitPos = null;
     }
 
     private void HandleMovementInput()
