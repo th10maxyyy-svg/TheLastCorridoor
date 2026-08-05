@@ -13,13 +13,24 @@ public class CorridorGenerator : MonoBehaviour
     private List<GameObject> activeSegments = new List<GameObject>();
     private Vector3 nextSpawnPosition = new Vector3(0, 0, 20f);
     private Quaternion nextSpawnRotation = Quaternion.identity;
+    private Unity.AI.Navigation.NavMeshSurface globalSurface;
 
     void Start()
     {
+        globalSurface = FindAnyObjectByType<Unity.AI.Navigation.NavMeshSurface>();
+
         if (corridorPrefabs == null || corridorPrefabs.Length == 0)
         {
             Debug.LogError("Corridor Prefabs list khali hai! Inspector me prefabs assign karein.");
             return;
+        }
+
+        // Scene mein majood aakhri kamre (jaise room2) ka ExitPoint dhoondein taake naya kamra theek wahan se shuru ho
+        Transform lastExit = FindExitPointInScene();
+        if (lastExit != null)
+        {
+            nextSpawnPosition = lastExit.position;
+            nextSpawnRotation = lastExit.rotation;
         }
 
         if (playerTransform == null)
@@ -30,7 +41,7 @@ public class CorridorGenerator : MonoBehaviour
 
         for (int i = 0; i < initialSegments; i++)
         {
-            SpawnNextSegment();
+            SpawnNextSegment(); // Game start hotay waqt
         }
     }
 
@@ -58,6 +69,9 @@ public class CorridorGenerator : MonoBehaviour
         GameObject newSegment = Instantiate(selectedPrefab, nextSpawnPosition, nextSpawnRotation);
         newSegment.transform.SetParent(this.transform);
         activeSegments.Add(newSegment);
+
+        // NOTE: Runtime NavMesh baking has been removed to fix lag.
+        // NavMesh should be baked on the prefabs themselves.
 
         Transform exitPoint = FindExitPoint(newSegment.transform);
         if (exitPoint != null)
@@ -90,5 +104,42 @@ public class CorridorGenerator : MonoBehaviour
             if (found != null) return found;
         }
         return null;
+    }
+
+    private void FindAllExitPoints(Transform parent, List<Transform> results)
+    {
+        foreach (Transform child in parent)
+        {
+            if (child.name.Equals("ExitPoint", System.StringComparison.OrdinalIgnoreCase))
+            {
+                results.Add(child);
+            }
+            FindAllExitPoints(child, results);
+        }
+    }
+
+    private Transform FindExitPointInScene()
+    {
+        // Sab se aakhri ExitPoint dhoondne ke liye scene ke tamaam root objects check karein
+        List<Transform> allExitPoints = new List<Transform>();
+        foreach (GameObject rootObj in UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects())
+        {
+            FindAllExitPoints(rootObj.transform, allExitPoints);
+        }
+
+        Transform bestExit = null;
+        float maxZ = float.MinValue;
+
+        foreach (Transform exit in allExitPoints)
+        {
+            // Jo sab se aagay (Z axis me) ho wo current end hoga
+            if (exit.position.z > maxZ)
+            {
+                maxZ = exit.position.z;
+                bestExit = exit;
+            }
+        }
+        
+        return bestExit;
     }
 }

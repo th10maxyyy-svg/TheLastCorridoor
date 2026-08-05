@@ -48,11 +48,13 @@ public class PlayerController : MonoBehaviour
         currentSpeed = walkSpeed;
     }
 
+    private float hideTime;
+
     void Update()
     {
         if (isHidden)
         {
-            if (Input.GetKeyDown(KeyCode.E))
+            if (Time.time > hideTime + 0.2f && Input.GetKeyDown(KeyCode.E))
             {
                 ExitHiding();
             }
@@ -69,6 +71,7 @@ public class PlayerController : MonoBehaviour
     public void EnterHiding(Transform hidePos, Transform exitPos)
     {
         isHidden = true;
+        hideTime = Time.time;
         currentExitPos = exitPos;
         characterController.enabled = false;
         transform.position = hidePos.position;

@@ -61,29 +61,29 @@ public class PlayerBehaviorTracker : MonoBehaviour
         sprintTime = 0f;
         crouchTime = 0f;
 
-        float targetChaseSpeed = 5.0f;
-        float targetDetectionRange = 12f;
+        float targetChaseSpeed = 3.5f; // Kam kar diya taake easy ho
+        float targetDetectionRange = 15f; 
 
         if (sprintRatio > 0.4f)
         {
-            targetChaseSpeed += 1.5f;
-            targetDetectionRange += 3.0f;
+            targetChaseSpeed += 1.0f; // Pehle 1.5 tha, ab thoda kam badhega
+            targetDetectionRange += 5.0f;
         }
         
         if (crouchRatio > 0.5f)
         {
             targetChaseSpeed -= 0.5f;
-            targetDetectionRange -= 2.0f;
+            targetDetectionRange -= 3.0f;
         }
 
         if (playerStats != null && playerStats.GetHealth() < 30f)
         {
             targetChaseSpeed -= 1.0f;
-            targetDetectionRange -= 3.0f;
+            targetDetectionRange -= 5.0f;
         }
 
-        targetChaseSpeed = Mathf.Clamp(targetChaseSpeed, 3.0f, 7.5f);
-        targetDetectionRange = Mathf.Clamp(targetDetectionRange, 6f, 20f);
+        targetChaseSpeed = Mathf.Clamp(targetChaseSpeed, 2.5f, 5.5f); // Max speed ab sirf 5.5 hogi (pehle 7.5 thi)
+        targetDetectionRange = Mathf.Clamp(targetDetectionRange, 10f, 25f); 
 
         enemyAI.SetChaseSpeed(targetChaseSpeed);
         enemyAI.SetDetectionRange(targetDetectionRange);

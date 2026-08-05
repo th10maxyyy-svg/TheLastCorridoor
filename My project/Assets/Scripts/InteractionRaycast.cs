@@ -21,6 +21,16 @@ public class InteractionRaycast : MonoBehaviour
 
     private void CheckForInteractable()
     {
+        if (playerStats != null)
+        {
+            PlayerController pc = playerStats.GetComponent<PlayerController>();
+            if (pc != null && pc.isHidden)
+            {
+                currentPrompt = "Press E to Exit";
+                return;
+            }
+        }
+
         Ray ray = new Ray(transform.position, transform.forward);
         RaycastHit hit;
 
