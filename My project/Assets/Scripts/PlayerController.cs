@@ -22,6 +22,19 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float upperLookLimit = -80.0f;
     [SerializeField] private float lowerLookLimit = 80.0f;
 
+    [Header("Headbob & Footsteps")]
+    [SerializeField] private float walkBobSpeed = 14f;
+    [SerializeField] private float walkBobAmount = 0.05f;
+    [SerializeField] private float sprintBobSpeed = 18f;
+    [SerializeField] private float sprintBobAmount = 0.1f;
+    [SerializeField] private float crouchBobSpeed = 8f;
+    [SerializeField] private float crouchBobAmount = 0.02f;
+    [SerializeField] private AudioSource footstepAudioSource;
+    [SerializeField] private AudioClip[] footstepSounds;
+    [SerializeField] private float baseStepSpeed = 0.5f;
+    [SerializeField] private float crouchStepMultiplier = 1.5f;
+    [SerializeField] private float sprintStepMultiplier = 0.6f;
+
     private CharacterController characterController;
     private Camera playerCamera;
     private PlayerStats playerStats;
@@ -32,6 +45,11 @@ public class PlayerController : MonoBehaviour
     private float currentSpeed;
     private bool isCrouching;
     private bool isSprinting;
+    
+    // Headbob & Footstep variables
+    private float defaultYPos = 0;
+    private float timer = 0;
+    private float footstepTimer = 0;
     
     public bool isHidden { get; private set; }
     private Transform currentExitPos;
@@ -46,6 +64,10 @@ public class PlayerController : MonoBehaviour
         Cursor.visible = false;
 
         currentSpeed = walkSpeed;
+        if (playerCamera != null)
+        {
+            defaultYPos = playerCamera.transform.localPosition.y;
+        }
     }
 
     private float hideTime;
@@ -66,6 +88,8 @@ public class PlayerController : MonoBehaviour
         HandleMouseLook();
         HandleCrouch();
         ApplyMovement();
+        HandleHeadBob();
+        HandleFootsteps();
     }
 
     public void EnterHiding(Transform hidePos, Transform exitPos)
@@ -154,6 +178,9 @@ public class PlayerController : MonoBehaviour
 
         characterController.height = targetHeight;
         playerCamera.transform.localPosition = targetCamPosition;
+        
+        // Update defaultYPos for headbob base calculation
+        defaultYPos = targetCamPosition.y;
     }
 
     private void ApplyMovement()
@@ -174,6 +201,45 @@ public class PlayerController : MonoBehaviour
         }
 
         characterController.Move(moveDirection * Time.deltaTime);
+    }
+
+    private void HandleHeadBob()
+    {
+        if (!characterController.isGrounded) return;
+
+        if (Mathf.Abs(moveDirection.x) > 0.1f || Mathf.Abs(moveDirection.z) > 0.1f)
+        {
+            timer += Time.deltaTime * (isCrouching ? crouchBobSpeed : isSprinting ? sprintBobSpeed : walkBobSpeed);
+            playerCamera.transform.localPosition = new Vector3(
+                playerCamera.transform.localPosition.x,
+                defaultYPos + Mathf.Sin(timer) * (isCrouching ? crouchBobAmount : isSprinting ? sprintBobAmount : walkBobAmount),
+                playerCamera.transform.localPosition.z);
+        }
+        else
+        {
+            timer = 0;
+            playerCamera.transform.localPosition = new Vector3(
+                playerCamera.transform.localPosition.x,
+                Mathf.Lerp(playerCamera.transform.localPosition.y, defaultYPos, Time.deltaTime * 5f),
+                playerCamera.transform.localPosition.z);
+        }
+    }
+
+    private void HandleFootsteps()
+    {
+        if (!characterController.isGrounded || moveDirection.magnitude < 0.1f) return;
+
+        footstepTimer -= Time.deltaTime;
+
+        if (footstepTimer <= 0)
+        {
+            if (footstepAudioSource != null && footstepSounds != null && footstepSounds.Length > 0)
+            {
+                footstepAudioSource.PlayOneShot(footstepSounds[Random.Range(0, footstepSounds.Length)]);
+            }
+
+            footstepTimer = baseStepSpeed * (isCrouching ? crouchStepMultiplier : isSprinting ? sprintStepMultiplier : 1f);
+        }
     }
 
     public bool IsSprinting => isSprinting && currentInput.magnitude > 0;

@@ -27,6 +27,14 @@ public class EnemyAI : MonoBehaviour
     [SerializeField] private float damageAmount = 25f;
     [SerializeField] private float attackRate = 1.5f;
 
+    [Header("Audio Settings")]
+    [SerializeField] private AudioSource enemyAudioSource;
+    [SerializeField] private AudioClip[] footstepSounds;
+    [SerializeField] private AudioClip chaseMusic;
+    [SerializeField] private AudioClip ambientSound;
+    [SerializeField] private float stepInterval = 0.6f;
+
+    private float stepTimer = 0f;
     private NavMeshAgent agent;
     private Transform playerTransform;
     private PlayerStats playerStats;
@@ -161,6 +169,13 @@ public class EnemyAI : MonoBehaviour
     private void PatrolBehavior()
     {
         agent.speed = patrolSpeed;
+        HandleFootsteps();
+
+        if (enemyAudioSource != null && ambientSound != null && !enemyAudioSource.isPlaying)
+        {
+            enemyAudioSource.clip = ambientSound;
+            enemyAudioSource.Play();
+        }
 
         if (CanSeePlayer())
         {
@@ -169,16 +184,27 @@ public class EnemyAI : MonoBehaviour
             return;
         }
 
-        // --- RELENTLESS STALKER FIX ---
-        // Agar player door bhag gaya hai aur nazar nahi aa raha, toh enemy phir bhi player ki taraf dheere dheere chalega
-        if (Vector3.Distance(transform.position, playerTransform.position) > detectionRange)
-        {
-            agent.SetDestination(playerTransform.position);
-            return;
-        }
+        // --- GRANNY-LIKE WANDER ---
+        // Enemy ab har waqt player ke peeche nahi bhagega. Ye randomly patrol karega.
 
-        // Check if stuck against a wall
-        if (Vector3.Distance(transform.position, lastStuckPosition) < 0.1f)
+        // --- NAVMESH GAP FIX (FOR PATROL) ---
+        if (agent.hasPath && agent.pathStatus == NavMeshPathStatus.PathPartial)
+        {
+            stuckTimer += Time.deltaTime;
+            if (stuckTimer > 1.0f)
+            {
+                // Raaste ki taraf jump kare (steeringTarget)
+                Vector3 jumpDir = (agent.steeringTarget - transform.position).normalized;
+                NavMeshHit hit;
+                if (NavMesh.SamplePosition(transform.position + jumpDir * 3.5f, out hit, 5f, NavMesh.AllAreas))
+                {
+                    agent.Warp(hit.position);
+                    Debug.Log("Enemy ne NavMesh ka gap jump kiya (Patrol)!");
+                }
+                stuckTimer = 0f;
+            }
+        }
+        else if (Vector3.Distance(transform.position, lastStuckPosition) < 0.1f)
         {
             stuckTimer += Time.deltaTime;
             if (stuckTimer > 2f)
@@ -205,6 +231,13 @@ public class EnemyAI : MonoBehaviour
     {
         agent.speed = chaseSpeed;
         agent.SetDestination(playerTransform.position);
+        HandleFootsteps(0.3f); // Faster footsteps during chase
+
+        if (enemyAudioSource != null && chaseMusic != null && enemyAudioSource.clip != chaseMusic)
+        {
+            enemyAudioSource.clip = chaseMusic;
+            enemyAudioSource.Play();
+        }
 
         lastKnownPosition = playerTransform.position;
 
@@ -220,21 +253,19 @@ public class EnemyAI : MonoBehaviour
             AttackPlayer();
         }
 
-        // --- NAVMESH GAP FIX ---
-        // Agar rooms ke beech me gap hai, to agent ka path "Partial" ho jata hai.
-        // Lekin agar wo player ke bohat qareeb hai (attack range me), to gap jump nahi karni warna uske oopar chad jayega!
+        // --- NAVMESH GAP FIX (FOR CHASE) ---
         if (agent.hasPath && agent.pathStatus == NavMeshPathStatus.PathPartial && Vector3.Distance(transform.position, playerTransform.position) > 5f)
         {
             stuckTimer += Time.deltaTime;
-            if (stuckTimer > 1.5f)
+            if (stuckTimer > 1.0f)
             {
-                // Player ki taraf thoda aagay teleport kar dein taake gap cross kar le
-                Vector3 jumpDir = (playerTransform.position - transform.position).normalized;
+                // Player ki taraf teleport karne ke bajaye, raaste (steeringTarget) ki taraf jump karega
+                Vector3 jumpDir = (agent.steeringTarget - transform.position).normalized;
                 NavMeshHit hit;
                 if (NavMesh.SamplePosition(transform.position + jumpDir * 3.5f, out hit, 5f, NavMesh.AllAreas))
                 {
                     agent.Warp(hit.position);
-                    Debug.Log("Enemy ne NavMesh ka gap jump kiya!");
+                    Debug.Log("Enemy ne NavMesh ka gap jump kiya (Chase)!");
                 }
                 stuckTimer = 0f;
             }
@@ -248,6 +279,7 @@ public class EnemyAI : MonoBehaviour
     private void SearchBehavior()
     {
         agent.speed = patrolSpeed;
+        HandleFootsteps();
 
         if (CanSeePlayer())
         {
@@ -327,10 +359,19 @@ public class EnemyAI : MonoBehaviour
     {
         if (!agent.isOnNavMesh) return;
 
+        Vector3 searchCenter = transform.position;
+
+        // Granny Sense: 40% chance hai ke enemy randomly wander karte hue player ki aam disha (general area) ki taraf aaye
+        if (playerTransform != null && Random.value < 0.4f)
+        {
+            searchCenter = Vector3.Lerp(transform.position, playerTransform.position, Random.Range(0.2f, 0.7f));
+        }
+
         // Use insideUnitCircle for X and Z to avoid picking a point high up in the air
         Vector2 randomCircle = Random.insideUnitCircle * 15f;
         Vector3 randomDirection = new Vector3(randomCircle.x, 0, randomCircle.y);
-        randomDirection += transform.position;
+        randomDirection += searchCenter;
+
         
         NavMeshHit hit;
         // Search distance barha diya (30f) taake fail na ho
@@ -342,6 +383,23 @@ public class EnemyAI : MonoBehaviour
         else
         {
             Debug.LogWarning("EnemyAI: NavMesh.SamplePosition fail ho gaya! Koi rasta nahi mila.");
+        }
+    }
+
+    private void HandleFootsteps(float customInterval = -1f)
+    {
+        if (agent.velocity.magnitude < 0.1f) return;
+
+        stepTimer -= Time.deltaTime;
+        float currentInterval = customInterval > 0 ? customInterval : stepInterval;
+
+        if (stepTimer <= 0)
+        {
+            if (enemyAudioSource != null && footstepSounds != null && footstepSounds.Length > 0)
+            {
+                enemyAudioSource.PlayOneShot(footstepSounds[Random.Range(0, footstepSounds.Length)]);
+            }
+            stepTimer = currentInterval;
         }
     }
 
