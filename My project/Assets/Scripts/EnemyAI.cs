@@ -4,7 +4,7 @@ using UnityEngine.AI;
 [RequireComponent(typeof(NavMeshAgent))]
 public class EnemyAI : MonoBehaviour
 {
-    public enum AIState { Patrol, Chase, Search }
+    public enum AIState { Patrol, Chase, Search, InvestigateSound }
 
     [Header("State")]
     [SerializeField] private AIState currentState = AIState.Patrol;
@@ -163,6 +163,58 @@ public class EnemyAI : MonoBehaviour
             case AIState.Search:
                 SearchBehavior();
                 break;
+            case AIState.InvestigateSound:
+                InvestigateSoundBehavior();
+                break;
+        }
+    }
+
+    // --- NEW: HEARING SYSTEM (GRANNY STYLE) ---
+    private Vector3 soundInvestigationPoint;
+    private float soundInvestigateTimer;
+
+    public void HearNoise(Vector3 noiseLocation)
+    {
+        // Don't get distracted by a sound if already chasing the player
+        if (currentState == AIState.Chase) return;
+        
+        // Don't hear it if it's too far away
+        if (Vector3.Distance(transform.position, noiseLocation) > detectionRange * 2f) return;
+
+        Debug.Log("EnemyAI: Heard a noise! Investigating...");
+        soundInvestigationPoint = noiseLocation;
+        currentState = AIState.InvestigateSound;
+        
+        NavMeshHit hit;
+        if (NavMesh.SamplePosition(noiseLocation, out hit, 5f, NavMesh.AllAreas))
+        {
+            agent.SetDestination(hit.position);
+            agent.speed = chaseSpeed * 0.8f; // Walk fast to the sound, but not full sprint
+        }
+    }
+
+    private void InvestigateSoundBehavior()
+    {
+        HandleFootsteps();
+        
+        if (CanSeePlayer())
+        {
+            currentState = AIState.Chase;
+            return;
+        }
+
+        // Reached the sound location
+        if (!agent.pathPending && (agent.remainingDistance < 1f || agent.pathStatus == NavMeshPathStatus.PathInvalid || !agent.hasPath))
+        {
+            soundInvestigateTimer += Time.deltaTime;
+            
+            // Look around for 3 seconds
+            if (soundInvestigateTimer > 3f)
+            {
+                soundInvestigateTimer = 0f;
+                currentState = AIState.Patrol;
+                GetNewPatrolTarget();
+            }
         }
     }
 

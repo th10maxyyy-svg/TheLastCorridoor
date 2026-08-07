@@ -6,6 +6,11 @@ public class KeyItem : MonoBehaviour, IInteractable
     [SerializeField] private string keyName = "RedKey";
     [SerializeField] private string promptMessage = "Press E to pick up Key";
 
+    public string GetKeyName()
+    {
+        return keyName;
+    }
+
     public string GetInteractPrompt()
     {
         return promptMessage;
@@ -16,8 +21,8 @@ public class KeyItem : MonoBehaviour, IInteractable
         Inventory inventory = playerStats.GetComponent<Inventory>();
         if (inventory != null)
         {
-            inventory.AddItem(keyName);
-            Destroy(gameObject); 
+            // Instead of destroying, pick up the physical object
+            inventory.PickUpItem(this.gameObject);
         }
     }
 }

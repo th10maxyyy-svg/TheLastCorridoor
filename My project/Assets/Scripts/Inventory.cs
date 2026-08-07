@@ -3,39 +3,113 @@ using UnityEngine;
 
 public class Inventory : MonoBehaviour
 {
-    [Header("Inventory Items")]
-    [SerializeField] private List<string> items = new List<string>();
+    [Header("Inventory Settings")]
+    [SerializeField] private Transform holdPosition; // Assign a 'Hand' empty object under Main Camera in Unity
+    [SerializeField] private float throwForce = 5f;
 
-    public void AddItem(string itemName)
+    private GameObject currentItem;
+
+    void Update()
     {
-        if (!items.Contains(itemName))
+        // Drop item on pressing G
+        if (Input.GetKeyDown(KeyCode.G) && currentItem != null)
         {
-            items.Add(itemName);
-            Debug.Log("Added " + itemName + " to inventory.");
+            DropCurrentItem();
         }
+    }
+
+    public void PickUpItem(GameObject item)
+    {
+        // If already holding an item, drop it first
+        if (currentItem != null)
+        {
+            DropCurrentItem();
+        }
+
+        currentItem = item;
+        
+        // Disable physics while holding
+        Rigidbody rb = currentItem.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+            rb.useGravity = false;
+        }
+
+        // Parent to hand and reset position
+        currentItem.transform.SetParent(holdPosition);
+        currentItem.transform.localPosition = Vector3.zero;
+        currentItem.transform.localRotation = Quaternion.identity;
+
+        Debug.Log("Picked up " + item.name);
+    }
+
+    public void DropCurrentItem()
+    {
+        if (currentItem == null) return;
+
+        currentItem.transform.SetParent(null);
+        
+        Rigidbody rb = currentItem.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = false;
+            rb.useGravity = true;
+            // Throw it slightly forward
+            rb.AddForce(transform.forward * throwForce, ForceMode.Impulse);
+        }
+
+        ThrowableItem throwable = currentItem.GetComponent<ThrowableItem>();
+        if (throwable != null)
+        {
+            throwable.MarkAsDropped();
+        }
+
+        Debug.Log("Dropped " + currentItem.name);
+        currentItem = null;
+    }
+
+    public bool HasItem()
+    {
+        return currentItem != null;
     }
 
     public bool HasItem(string itemName)
     {
-        return items.Contains(itemName);
-    }
-
-    public void RemoveItem(string itemName)
-    {
-        if (items.Contains(itemName))
+        if (currentItem != null)
         {
-            items.Remove(itemName);
-            Debug.Log("Removed " + itemName + " from inventory.");
+            KeyItem key = currentItem.GetComponent<KeyItem>();
+            if (key != null && key.GetKeyName() == itemName)
+            {
+                return true;
+            }
+            return currentItem.name.Contains(itemName);
         }
+        return false;
     }
 
-    public List<string> GetAllItems()
+    public GameObject GetCurrentItem()
     {
-        return items;
+        return currentItem;
     }
 
-    public void LoadInventory(List<string> savedItems)
+    public System.Collections.Generic.List<string> GetAllItems()
     {
-        items = new List<string>(savedItems);
+        System.Collections.Generic.List<string> list = new System.Collections.Generic.List<string>();
+        if (currentItem != null)
+        {
+            KeyItem key = currentItem.GetComponent<KeyItem>();
+            list.Add(key != null ? key.GetKeyName() : currentItem.name);
+        }
+        return list;
+    }
+
+    public void LoadInventory(System.Collections.Generic.List<string> savedItems)
+    {
+        // TODO: Implement physical item spawning from a prefab manager based on saved string names
+        if (savedItems != null && savedItems.Count > 0)
+        {
+            Debug.LogWarning("Inventory Load requested for: " + savedItems[0] + ". Physical spawning system needs prefab references to restore the item.");
+        }
     }
 }
