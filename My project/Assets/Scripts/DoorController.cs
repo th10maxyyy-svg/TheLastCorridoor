@@ -1,5 +1,5 @@
 using UnityEngine;
-
+using UnityEngine.Events;
 public class DoorController : MonoBehaviour, IInteractable
 {
     [Header("Lock Settings")]
@@ -15,6 +15,9 @@ public class DoorController : MonoBehaviour, IInteractable
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip openSound;
     [SerializeField] private AudioClip closeSound;
+
+    [Header("Events")]
+    public UnityEvent onDoorOpen;
 
     private bool isOpen = false;
     private Quaternion closedRotation;
@@ -80,12 +83,19 @@ public class DoorController : MonoBehaviour, IInteractable
     {
         isOpen = !isOpen;
 
-        // Play sound
-        if (audioSource != null)
+        // Play sound and trigger events
+        if (isOpen)
         {
-            if (isOpen && openSound != null)
+            if (audioSource != null && openSound != null)
                 audioSource.PlayOneShot(openSound);
-            else if (!isOpen && closeSound != null)
+                
+            // Naya code: Jab darwaza khulega to ye event trigger hoga
+            if (onDoorOpen != null)
+                onDoorOpen.Invoke();
+        }
+        else
+        {
+            if (audioSource != null && closeSound != null)
                 audioSource.PlayOneShot(closeSound);
         }
     }

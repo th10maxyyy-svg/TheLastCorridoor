@@ -4,10 +4,10 @@ using UnityEngine.AI;
 [RequireComponent(typeof(NavMeshAgent))]
 public class EnemyAI : MonoBehaviour
 {
-    public enum AIState { Patrol, Chase, Search, InvestigateSound }
+    public enum AIState { Dormant, Patrol, Chase, Search, InvestigateSound }
 
     [Header("State")]
-    [SerializeField] private AIState currentState = AIState.Patrol;
+    [SerializeField] private AIState currentState = AIState.Dormant; // Starts asleep!
 
     [Header("Detection Settings")]
     [SerializeField] private float detectionRange = 15f;
@@ -122,8 +122,8 @@ public class EnemyAI : MonoBehaviour
             }
         }
 
-        // Ensure agent is not stopped
-        if (agent.isStopped && (playerStats == null || !playerStats.IsDead()))
+        // Ensure agent is not stopped (unless dormant)
+        if (agent.isStopped && currentState != AIState.Dormant && (playerStats == null || !playerStats.IsDead()))
         {
             agent.isStopped = false;
         }
@@ -154,6 +154,10 @@ public class EnemyAI : MonoBehaviour
 
         switch (currentState)
         {
+            case AIState.Dormant:
+                // Do absolutely nothing until awakened
+                if (agent.isActiveAndEnabled && agent.isOnNavMesh) agent.isStopped = true;
+                break;
             case AIState.Patrol:
                 PatrolBehavior();
                 break;
@@ -463,5 +467,42 @@ public class EnemyAI : MonoBehaviour
     public void SetDetectionRange(float range)
     {
         detectionRange = range;
+    }
+
+    public void ForceAwaken(Vector3 targetLocation)
+    {
+        if (agent == null) agent = GetComponent<NavMeshAgent>();
+        if (agent == null) 
+        {
+            Debug.LogError("EnemyAI: NavMeshAgent is missing! Cannot awaken.");
+            return;
+        }
+
+        Debug.Log("EnemyAI: FORCED AWAKEN! Hunting player directly!");
+        currentState = AIState.Chase;
+        
+        if (agent.isActiveAndEnabled && agent.isOnNavMesh) 
+        {
+            agent.isStopped = false;
+            agent.speed = chaseSpeed * 1.2f; // Sprints even faster when awakened!
+            
+            // Agar dushman bohat door hai, to usay thora qareeb teleport kar do taake chase mazedar ho
+            if (playerTransform != null && Vector3.Distance(transform.position, playerTransform.position) > 25f)
+            {
+                NavMeshHit hit;
+                if (NavMesh.SamplePosition(playerTransform.position - (playerTransform.forward * 15f), out hit, 10f, NavMesh.AllAreas))
+                {
+                    agent.Warp(hit.position);
+                    Debug.Log("Enemy teleported closer for the awakening chase!");
+                }
+            }
+        }
+        
+        // Ensure scary music plays
+        if (enemyAudioSource != null && chaseMusic != null)
+        {
+            enemyAudioSource.clip = chaseMusic;
+            enemyAudioSource.Play();
+        }
     }
 }

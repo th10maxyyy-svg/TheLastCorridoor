@@ -17,20 +17,8 @@ public class ProgressionManager : MonoBehaviour
 
     void Start()
     {
-        // Shuru mein Enemy ko disable rakhein
-        if (enemyAI != null)
-        {
-            enemyAI.gameObject.SetActive(false);
-        }
-        else
-        {
-            EnemyAI foundEnemy = FindAnyObjectByType<EnemyAI>();
-            if (foundEnemy != null)
-            {
-                enemyAI = foundEnemy;
-                enemyAI.gameObject.SetActive(false);
-            }
-        }
+        // OLD CODE: Shuru mein Enemy ko disable rakhein
+        // NAYA CODE: Ab hum enemy ko disable nahi karte, balkay EnemyAI script usay khud "Dormant" rakhta hai.
     }
 
     // Yeh function tab call hoga jab player Start Room se bahar aayega
