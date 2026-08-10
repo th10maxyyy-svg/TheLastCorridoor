@@ -7,8 +7,14 @@ public class DoorController : MonoBehaviour, IInteractable
     [SerializeField] private string requiredKey = "RedKey";
 
     [Header("Movement Settings")]
+    [SerializeField] private Vector3 rotationAxis = Vector3.up; // (0,1,0) by default
     [SerializeField] private float openAngle = 90.0f;
-    [SerializeField] private float smoothSpeed = 3.0f;
+    [SerializeField] private float smoothSpeed = 5.0f;
+
+    [Header("Audio Settings")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip openSound;
+    [SerializeField] private AudioClip closeSound;
 
     private bool isOpen = false;
     private Quaternion closedRotation;
@@ -17,7 +23,19 @@ public class DoorController : MonoBehaviour, IInteractable
     void Start()
     {
         closedRotation = transform.localRotation;
-        openRotation = closedRotation * Quaternion.Euler(0f, openAngle, 0f);
+        
+        // Calculate target rotation based on the chosen axis
+        openRotation = closedRotation * Quaternion.AngleAxis(openAngle, rotationAxis);
+
+        if (audioSource == null)
+        {
+            audioSource = GetComponent<AudioSource>();
+            if (audioSource == null)
+            {
+                audioSource = gameObject.AddComponent<AudioSource>();
+                audioSource.spatialBlend = 1f; // Make it 3D sound
+            }
+        }
     }
 
     void Update()
@@ -44,7 +62,7 @@ public class DoorController : MonoBehaviour, IInteractable
             if (inventory != null && inventory.HasItem(requiredKey))
             {
                 isLocked = false;
-                isOpen = true;
+                ToggleDoor();
                 Debug.Log("Door unlocked and opened!");
             }
             else
@@ -54,7 +72,21 @@ public class DoorController : MonoBehaviour, IInteractable
         }
         else
         {
-            isOpen = !isOpen;
+            ToggleDoor();
+        }
+    }
+
+    private void ToggleDoor()
+    {
+        isOpen = !isOpen;
+
+        // Play sound
+        if (audioSource != null)
+        {
+            if (isOpen && openSound != null)
+                audioSource.PlayOneShot(openSound);
+            else if (!isOpen && closeSound != null)
+                audioSource.PlayOneShot(closeSound);
         }
     }
 }
