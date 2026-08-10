@@ -50,6 +50,8 @@ public class EnemyAI : MonoBehaviour
     // Breadcrumb system for safe teleports
     private System.Collections.Generic.List<Vector3> playerBreadcrumbs = new System.Collections.Generic.List<Vector3>();
     private float breadcrumbTimer = 0f;
+    
+    private float navMeshCheckCooldown = 0f;
 
     void Start()
     {
@@ -87,39 +89,46 @@ public class EnemyAI : MonoBehaviour
         // Safe Check: Agar agent NavMesh par nahi hai to AI run na karein
         if (!agent.isOnNavMesh)
         {
-            // Try to snap/warp the enemy to the nearest NavMesh point
-            NavMeshHit hit;
-            if (NavMesh.SamplePosition(transform.position, out hit, 10.0f, NavMesh.AllAreas))
+            navMeshCheckCooldown -= Time.deltaTime;
+            
+            if (navMeshCheckCooldown <= 0f)
             {
-                agent.Warp(hit.position);
-                Debug.Log("Enemy ko NavMesh par wapas snap kar diya gaya hai.");
-            }
-            else
-            {
-                // Agar floor delete ho chuka hai aur enemy bohat pichay reh gaya hai to usay aagay teleport kar dein
-                if (playerTransform != null && Vector3.Distance(transform.position, playerTransform.position) > 30f)
+                navMeshCheckCooldown = 1f; // Check once per second, NOT every frame!
+                
+                // Try to snap/warp the enemy to the nearest NavMesh point
+                NavMeshHit hit;
+                if (NavMesh.SamplePosition(transform.position, out hit, 10.0f, NavMesh.AllAreas))
                 {
-                    Debug.Log("Enemy bohat pichay reh gaya tha, teleporting safely using Breadcrumbs.");
-                    
-                    // Safe Teleport: Player jahan 5-10 second pehle tha, wahan teleport karo!
-                    if (playerBreadcrumbs.Count > 5)
-                    {
-                        Vector3 safePos = playerBreadcrumbs[0]; // Oldest position
-                        NavMeshHit tp_hit;
-                        if (NavMesh.SamplePosition(safePos, out tp_hit, 5f, NavMesh.AllAreas))
-                        {
-                            agent.Warp(tp_hit.position);
-                            currentState = AIState.Search;
-                            Debug.Log("Enemy safely teleported behind the player.");
-                        }
-                    }
+                    agent.Warp(hit.position);
+                    Debug.Log("Enemy ko NavMesh par wapas snap kar diya gaya hai.");
                 }
                 else
                 {
-                    Debug.LogWarning("Enemy is NOT on the NavMesh and can't find a close point!");
+                    // Agar floor delete ho chuka hai aur enemy bohat pichay reh gaya hai to usay aagay teleport kar dein
+                    if (playerTransform != null && Vector3.Distance(transform.position, playerTransform.position) > 30f)
+                    {
+                        Debug.Log("Enemy bohat pichay reh gaya tha, teleporting safely using Breadcrumbs.");
+                        
+                        // Safe Teleport: Player jahan 5-10 second pehle tha, wahan teleport karo!
+                        if (playerBreadcrumbs.Count > 5)
+                        {
+                            Vector3 safePos = playerBreadcrumbs[0]; // Oldest position
+                            NavMeshHit tp_hit;
+                            if (NavMesh.SamplePosition(safePos, out tp_hit, 5f, NavMesh.AllAreas))
+                            {
+                                agent.Warp(tp_hit.position);
+                                currentState = AIState.Search;
+                                Debug.Log("Enemy safely teleported behind the player.");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogWarning("Enemy is NOT on the NavMesh and can't find a close point!");
+                    }
                 }
-                return; // Jab tak NavMesh na mile, aagay ka code na chalaye
             }
+            return; // Jab tak NavMesh na mile, aagay ka code na chalaye
         }
 
         // Ensure agent is not stopped (unless dormant)
