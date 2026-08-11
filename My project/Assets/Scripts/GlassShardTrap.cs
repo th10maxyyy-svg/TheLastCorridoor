@@ -11,7 +11,8 @@ public class GlassShardTrap : MonoBehaviour
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip glassBreakSound;
 
-    private bool hasBeenTriggered = false;
+    private float lastTriggerTime = 0f;
+    private float cooldownTime = 1f; // 1 second cooldown
 
     void Start()
     {
@@ -27,7 +28,7 @@ public class GlassShardTrap : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        if (hasBeenTriggered) return;
+        if (Time.time < lastTriggerTime + cooldownTime) return; // Cooldown check
 
         if (other.CompareTag("Player") || other.GetComponent<PlayerController>() != null)
         {
@@ -37,7 +38,7 @@ public class GlassShardTrap : MonoBehaviour
 
     private void TriggerTrap(GameObject player)
     {
-        hasBeenTriggered = true;
+        lastTriggerTime = Time.time;
         Debug.Log("Player stepped on glass shards!");
 
         // 1. Play Sound
@@ -59,8 +60,7 @@ public class GlassShardTrap : MonoBehaviour
         {
             enemyAI.HearNoise(transform.position);
         }
-
-        // Optional: We can destroy it after the sound finishes, but for now we just disable the trigger.
-        GetComponent<BoxCollider>().enabled = false;
+        
+        // Removed the line that disabled the collider, so it can be triggered again!
     }
 }
