@@ -59,6 +59,8 @@ public class PlayerController : MonoBehaviour
     public bool isHidden { get; private set; }
     private Transform currentExitPos;
 
+
+
     void Start()
     {
         characterController = GetComponent<CharacterController>();

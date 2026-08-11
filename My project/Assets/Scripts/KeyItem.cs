@@ -23,6 +23,17 @@ public class KeyItem : MonoBehaviour, IInteractable
         {
             // Instead of destroying, pick up the physical object
             inventory.PickUpItem(this.gameObject);
+
+            // Special logic for progression
+            if (keyName == "Staff Key")
+            {
+                ProgressionManager pm = FindAnyObjectByType<ProgressionManager>();
+                if (pm != null)
+                {
+                    // Starts the Nightmare phase (wakens enemy)
+                    pm.StartNightmarePhase();
+                }
+            }
         }
     }
 }

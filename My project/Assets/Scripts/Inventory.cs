@@ -37,9 +37,23 @@ public class Inventory : MonoBehaviour
         }
 
         // Parent to hand and reset position
-        currentItem.transform.SetParent(holdPosition);
-        currentItem.transform.localPosition = Vector3.zero;
-        currentItem.transform.localRotation = Quaternion.identity;
+        if (holdPosition != null)
+        {
+            currentItem.transform.SetParent(holdPosition);
+            currentItem.transform.localPosition = Vector3.zero;
+            currentItem.transform.localRotation = Quaternion.identity;
+        }
+        else
+        {
+            Debug.LogWarning("HOLD POSITION GAYAB HAI! Player ke andar Hold Position assign nahi kiya gaya. Item camera ke agay set kar raha hoon.");
+            Camera cam = GetComponentInChildren<Camera>();
+            if (cam != null)
+            {
+                currentItem.transform.SetParent(cam.transform);
+                currentItem.transform.localPosition = new Vector3(0.3f, -0.3f, 0.6f); // Default hand position
+                currentItem.transform.localRotation = Quaternion.identity;
+            }
+        }
 
         Debug.Log("Picked up " + item.name);
     }

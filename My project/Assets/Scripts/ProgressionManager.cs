@@ -21,7 +21,6 @@ public class ProgressionManager : MonoBehaviour
         // NAYA CODE: Ab hum enemy ko disable nahi karte, balkay EnemyAI script usay khud "Dormant" rakhta hai.
     }
 
-    // Yeh function tab call hoga jab player Start Room se bahar aayega
     public void StartNightmarePhase()
     {
         if (currentPhase == GamePhase.Awakening)
@@ -29,11 +28,15 @@ public class ProgressionManager : MonoBehaviour
             currentPhase = GamePhase.Nightmare;
             Debug.Log("[Progression] Phase Changed: The Nightmare Begins!");
 
-            // Enemy ko active karein
+            // Enemy ko awake karein (dormant se nikalein)
             if (enemyAI != null)
             {
-                // Enemy ko player se thora door spawn karne ka logic pehle se CorridorGenerator me hai
                 enemyAI.gameObject.SetActive(true);
+                
+                // Naya logic: EnemyAI ko force awaken karo!
+                PlayerController player = FindAnyObjectByType<PlayerController>();
+                Vector3 targetPos = player != null ? player.transform.position : transform.position;
+                enemyAI.ForceAwaken(targetPos);
             }
 
             OnNightmarePhaseStarted?.Invoke();
