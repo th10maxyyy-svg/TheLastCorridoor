@@ -3,7 +3,17 @@ guid: e3c95b89345eed64bacea2b05584843d
 ModelImporter:
   serializedVersion: 24501
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: highpolyshirt4_lambert1
+    second: {fileID: 2100000, guid: 5dc18cf89bafc9a42afb06484432c9a8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lambert1
+    second: {fileID: 2100000, guid: d113c9eae25afe74aa071d37a6b81f56, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
