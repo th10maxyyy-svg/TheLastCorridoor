@@ -10,6 +10,7 @@ public class ElectricTrap : MonoBehaviour
     [SerializeField] private AudioSource electricSound;
     [SerializeField] private ParticleSystem sparksParticle;
     [SerializeField] private GameObject electricVisuals; // The bars or lightning objects
+    [SerializeField] private Light trapLight; // The flickering point light
 
     private void Start()
     {
@@ -60,6 +61,17 @@ public class ElectricTrap : MonoBehaviour
         if (electricVisuals != null)
         {
             electricVisuals.SetActive(false);
+        }
+
+        if (trapLight != null)
+        {
+            trapLight.enabled = false;
+        }
+
+        ProceduralSparkSound procSound = GetComponent<ProceduralSparkSound>();
+        if (procSound != null)
+        {
+            procSound.isEnabled = false;
         }
 
         Debug.Log("Electric Trap Disabled!");
