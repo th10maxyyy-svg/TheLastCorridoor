@@ -8,6 +8,14 @@ public class InteractionRaycast : MonoBehaviour
 
     private PlayerStats playerStats;
     private string currentPrompt = "";
+    private string notificationMessage = "";
+    private float notificationTimer = 0f;
+
+    public void ShowNotification(string message, float duration = 3f)
+    {
+        notificationMessage = message;
+        notificationTimer = duration;
+    }
 
     void Start()
     {
@@ -17,6 +25,15 @@ public class InteractionRaycast : MonoBehaviour
     void Update()
     {
         CheckForInteractable();
+
+        if (notificationTimer > 0)
+        {
+            notificationTimer -= Time.deltaTime;
+            if (notificationTimer <= 0)
+            {
+                notificationMessage = "";
+            }
+        }
     }
 
     private void CheckForInteractable()
@@ -60,6 +77,21 @@ public class InteractionRaycast : MonoBehaviour
 
     void OnGUI()
     {
+        // Notification Text
+        if (!string.IsNullOrEmpty(notificationMessage))
+        {
+            GUIStyle notifStyle = new GUIStyle();
+            notifStyle.alignment = TextAnchor.MiddleCenter;
+            notifStyle.fontSize = 24;
+            notifStyle.fontStyle = FontStyle.Bold;
+
+            notifStyle.normal.textColor = Color.black;
+            GUI.Label(new Rect(Screen.width / 2 - 199, Screen.height / 2 - 149, 400, 40), notificationMessage, notifStyle);
+
+            notifStyle.normal.textColor = Color.yellow;
+            GUI.Label(new Rect(Screen.width / 2 - 200, Screen.height / 2 - 150, 400, 40), notificationMessage, notifStyle);
+        }
+
         // Interaction Prompt text
         if (!string.IsNullOrEmpty(currentPrompt))
         {

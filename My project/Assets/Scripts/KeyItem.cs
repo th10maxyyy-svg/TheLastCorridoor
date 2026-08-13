@@ -24,6 +24,13 @@ public class KeyItem : MonoBehaviour, IInteractable
             // Instead of destroying, pick up the physical object
             inventory.PickUpItem(this.gameObject);
 
+            // Show notification on screen
+            InteractionRaycast ir = Camera.main.GetComponent<InteractionRaycast>();
+            if (ir != null)
+            {
+                ir.ShowNotification("Picked up: " + keyName);
+            }
+
             // Special logic for progression
             if (keyName == "Staff Key")
             {
