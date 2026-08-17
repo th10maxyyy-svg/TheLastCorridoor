@@ -99,4 +99,11 @@ public class DoorController : MonoBehaviour, IInteractable
                 audioSource.PlayOneShot(closeSound);
         }
     }
+    
+    // External method to unlock the door from puzzles (like a Generator)
+    public void ForceUnlock()
+    {
+        isLocked = false;
+        Debug.Log("Door " + gameObject.name + " unlocked externally!");
+    }
 }
