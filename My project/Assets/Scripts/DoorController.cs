@@ -18,6 +18,8 @@ public class DoorController : MonoBehaviour, IInteractable
 
     [Header("Events")]
     public UnityEvent onDoorOpen;
+    [Tooltip("Fires when player tries to open but it's locked")]
+    public UnityEvent onLockedInteract;
 
     private bool isOpen = false;
     private Quaternion closedRotation;
@@ -71,6 +73,10 @@ public class DoorController : MonoBehaviour, IInteractable
             else
             {
                 Debug.Log("Door is locked!");
+                if (onLockedInteract != null)
+                {
+                    onLockedInteract.Invoke();
+                }
             }
         }
         else

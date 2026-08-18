@@ -4,7 +4,7 @@ using UnityEngine.AI;
 [RequireComponent(typeof(NavMeshAgent))]
 public class EnemyAI : MonoBehaviour
 {
-    public enum AIState { Dormant, Patrol, Chase, Search, InvestigateSound }
+    public enum AIState { Dormant, Patrol, Chase, Search, InvestigateSound, Tease, LeaveTease }
 
     [Header("State")]
     [SerializeField] private AIState currentState = AIState.Dormant; // Starts asleep!
@@ -32,9 +32,13 @@ public class EnemyAI : MonoBehaviour
     [SerializeField] private AudioClip[] footstepSounds;
     [SerializeField] private AudioClip chaseMusic;
     [SerializeField] private AudioClip ambientSound;
+    [SerializeField] private AudioClip[] teaseVoiceLines; // Voice lines for teasing the player
     [SerializeField] private float stepInterval = 0.6f;
 
     private float stepTimer = 0f;
+    private float teaseTimer = 0f; // Timer for how long the enemy teases
+    private Transform teaseTarget; // Who to look at while teasing
+    private Transform teaseLeaveTarget; // Where to go after teasing
     private NavMeshAgent agent;
     private Transform playerTransform;
     private PlayerStats playerStats;
@@ -46,6 +50,9 @@ public class EnemyAI : MonoBehaviour
     private bool hasInitializedPatrol = false;
     private float stuckTimer = 0f;
     private Vector3 lastStuckPosition;
+    private float ignorePlayerTimer = 0f;
+    private float leaveStuckTimer = 0f;
+    private bool hasSetLeaveDestination = false;
 
     // Breadcrumb system for safe teleports
     private System.Collections.Generic.List<Vector3> playerBreadcrumbs = new System.Collections.Generic.List<Vector3>();
@@ -70,6 +77,11 @@ public class EnemyAI : MonoBehaviour
     void Update()
     {
         if (agent == null) return;
+
+        if (ignorePlayerTimer > 0)
+        {
+            ignorePlayerTimer -= Time.deltaTime;
+        }
 
         // Record breadcrumbs every 0.5 seconds
         if (playerTransform != null)
@@ -131,8 +143,8 @@ public class EnemyAI : MonoBehaviour
             return; // Jab tak NavMesh na mile, aagay ka code na chalaye
         }
 
-        // Ensure agent is not stopped (unless dormant)
-        if (agent.isStopped && currentState != AIState.Dormant && (playerStats == null || !playerStats.IsDead()))
+        // Ensure agent is not stopped (unless dormant or teasing)
+        if (agent.isStopped && currentState != AIState.Dormant && currentState != AIState.Tease && currentState != AIState.LeaveTease && (playerStats == null || !playerStats.IsDead()))
         {
             agent.isStopped = false;
         }
@@ -178,6 +190,12 @@ public class EnemyAI : MonoBehaviour
                 break;
             case AIState.InvestigateSound:
                 InvestigateSoundBehavior();
+                break;
+            case AIState.Tease:
+                TeaseBehavior();
+                break;
+            case AIState.LeaveTease:
+                LeaveTeaseBehavior();
                 break;
         }
     }
@@ -252,24 +270,7 @@ public class EnemyAI : MonoBehaviour
         // --- GRANNY-LIKE WANDER ---
         // Enemy ab har waqt player ke peeche nahi bhagega. Ye randomly patrol karega.
 
-        // --- NAVMESH GAP FIX (FOR PATROL) ---
-        if (agent.hasPath && agent.pathStatus == NavMeshPathStatus.PathPartial)
-        {
-            stuckTimer += Time.deltaTime;
-            if (stuckTimer > 1.0f)
-            {
-                // Raaste ki taraf jump kare (steeringTarget)
-                Vector3 jumpDir = (agent.steeringTarget - transform.position).normalized;
-                NavMeshHit hit;
-                if (NavMesh.SamplePosition(transform.position + jumpDir * 3.5f, out hit, 5f, NavMesh.AllAreas))
-                {
-                    agent.Warp(hit.position);
-                    Debug.Log("Enemy ne NavMesh ka gap jump kiya (Patrol)!");
-                }
-                stuckTimer = 0f;
-            }
-        }
-        else if (Vector3.Distance(transform.position, lastStuckPosition) < 0.1f)
+        if (Vector3.Distance(transform.position, lastStuckPosition) < 0.1f)
         {
             stuckTimer += Time.deltaTime;
             if (stuckTimer > 2f)
@@ -318,21 +319,18 @@ public class EnemyAI : MonoBehaviour
             AttackPlayer();
         }
 
-        // --- NAVMESH GAP FIX (FOR CHASE) ---
-        if (agent.hasPath && agent.pathStatus == NavMeshPathStatus.PathPartial && Vector3.Distance(transform.position, playerTransform.position) > 5f)
+        // Failsafe: Agar rasta toota hua hai (NavMesh partial) aur player tak nahi pahunch pa raha
+        if (agent.hasPath && agent.pathStatus == NavMeshPathStatus.PathPartial && Vector3.Distance(transform.position, playerTransform.position) > 3f)
         {
             stuckTimer += Time.deltaTime;
-            if (stuckTimer > 1.0f)
+            if (stuckTimer > 5f) // 5 second tak koshish kare, phir give up!
             {
-                // Player ki taraf teleport karne ke bajaye, raaste (steeringTarget) ki taraf jump karega
-                Vector3 jumpDir = (agent.steeringTarget - transform.position).normalized;
-                NavMeshHit hit;
-                if (NavMesh.SamplePosition(transform.position + jumpDir * 3.5f, out hit, 5f, NavMesh.AllAreas))
-                {
-                    agent.Warp(hit.position);
-                    Debug.Log("Enemy ne NavMesh ka gap jump kiya (Chase)!");
-                }
+                Debug.LogWarning("Player is unreachable (PathPartial). Enemy is giving up chase and returning to Patrol.");
+                currentState = AIState.Patrol;
+                GetNewPatrolTarget();
                 stuckTimer = 0f;
+                ignorePlayerTimer = 10f; // Ignore player so he actually walks away
+                return;
             }
         }
         else if (agent.velocity.sqrMagnitude > 0.1f)
@@ -382,6 +380,7 @@ public class EnemyAI : MonoBehaviour
     private bool CanSeePlayer()
     {
         if (playerTransform == null) return false;
+        if (ignorePlayerTimer > 0) return false; // Ignore player temporally!
         
         PlayerController pc = playerTransform.GetComponent<PlayerController>();
         if (pc != null && pc.isHidden) return false; // Enemy cannot see hidden player
@@ -480,6 +479,12 @@ public class EnemyAI : MonoBehaviour
 
     public void ForceAwaken(Vector3 targetLocation)
     {
+        if (currentState == AIState.Tease || currentState == AIState.LeaveTease) 
+        {
+            Debug.Log("Enemy is teasing, ignoring ForceAwaken!");
+            return; // Don't interrupt the cinematic tease!
+        }
+
         if (agent == null) agent = GetComponent<NavMeshAgent>();
         if (agent == null) 
         {
@@ -512,6 +517,129 @@ public class EnemyAI : MonoBehaviour
         {
             enemyAudioSource.clip = chaseMusic;
             enemyAudioSource.Play();
+        }
+    }
+
+    // --- NEW: STAIRCASE TEASING (CINEMATIC) ---
+    public void StartTeasing(Transform targetToLookAt, float teaseDuration, Transform leaveTarget = null)
+    {
+        if (agent == null) return;
+        
+        currentState = AIState.Tease;
+        teaseTarget = targetToLookAt;
+        teaseTimer = teaseDuration;
+        teaseLeaveTarget = leaveTarget;
+        
+        if (agent.isActiveAndEnabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = true; // Stop moving!
+        }
+        
+        // Play a random creepy voice line
+        if (enemyAudioSource != null && teaseVoiceLines != null && teaseVoiceLines.Length > 0)
+        {
+            AudioClip taunt = teaseVoiceLines[Random.Range(0, teaseVoiceLines.Length)];
+            enemyAudioSource.PlayOneShot(taunt);
+            Debug.Log("Enemy is teasing the player!");
+        }
+    }
+
+    private void TeaseBehavior()
+    {
+        // Keep looking at the player while standing still
+        if (teaseTarget != null)
+        {
+            Vector3 direction = (teaseTarget.position - transform.position).normalized;
+            direction.y = 0;
+            if (direction.sqrMagnitude > 0.01f)
+            {
+                Quaternion lookRot = Quaternion.LookRotation(direction);
+                transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, Time.deltaTime * 5f);
+            }
+        }
+
+        // Count down the tease timer
+        teaseTimer -= Time.deltaTime;
+        if (teaseTimer <= 0)
+        {
+            // Done teasing, go back to normal patrol and ignore player for 10 seconds so he walks away
+            Debug.Log("Enemy finished teasing, ignoring player and leaving area.");
+            ignorePlayerTimer = 10f; // Blind for 10 seconds!
+            
+            if (agent.isActiveAndEnabled && agent.isOnNavMesh)
+            {
+                agent.isStopped = false;
+                if (teaseLeaveTarget != null)
+                {
+                    NavMeshPath path = new NavMeshPath();
+                    agent.CalculatePath(teaseLeaveTarget.position, path);
+                    
+                    if (path.status == NavMeshPathStatus.PathComplete)
+                    {
+                        agent.SetDestination(teaseLeaveTarget.position);
+                        hasSetLeaveDestination = true;
+                        leaveStuckTimer = 0f;
+                        currentState = AIState.LeaveTease; // Walk away normally
+                    }
+                    else
+                    {
+                        // NavMesh is broken at stairs! Warp him immediately so he doesn't freeze.
+                        Debug.LogWarning("NavMesh path is broken to LeaveTarget! Warping immediately.");
+                        agent.Warp(teaseLeaveTarget.position);
+                        currentState = AIState.Patrol;
+                        GetNewPatrolTarget();
+                    }
+                }
+                else
+                {
+                    currentState = AIState.Patrol;
+                    GetNewPatrolTarget();
+                }
+            }
+        }
+    }
+
+    private void LeaveTeaseBehavior()
+    {
+        if (teaseLeaveTarget == null)
+        {
+            currentState = AIState.Patrol;
+            return;
+        }
+
+        agent.speed = patrolSpeed;
+        if (!hasSetLeaveDestination)
+        {
+            agent.SetDestination(teaseLeaveTarget.position);
+            hasSetLeaveDestination = true;
+        }
+        
+        HandleFootsteps();
+
+        // Safely ignore player during this state
+        ignorePlayerTimer = 1f;
+
+        // Agar pahunch gaya
+        if (!agent.pathPending && agent.remainingDistance < 1f)
+        {
+            Debug.Log("Enemy reached LeaveTarget. Returning to Patrol.");
+            currentState = AIState.Patrol;
+            GetNewPatrolTarget();
+            return;
+        }
+
+        // Failsafe: Agar phir bhi phans gaya to 4 seconds baad teleport kar do
+        leaveStuckTimer += Time.deltaTime;
+        if (leaveStuckTimer > 4f)
+        {
+            Debug.LogWarning("Enemy stuck while trying to leave Tease. Warping to LeaveTarget!");
+            if (agent.isActiveAndEnabled && agent.isOnNavMesh)
+            {
+                agent.Warp(teaseLeaveTarget.position);
+            }
+            currentState = AIState.Patrol;
+            GetNewPatrolTarget();
+            leaveStuckTimer = 0f;
         }
     }
 }
