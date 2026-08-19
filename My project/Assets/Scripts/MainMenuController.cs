@@ -54,11 +54,24 @@ public class MainMenuController : MonoBehaviour
         SceneManager.LoadScene(gameSceneName);
     }
 
-    public void OpenOptions()
+    public void ResumeGame()
+    {
+        PlayClickSound();
+        Debug.Log("Resuming Game... (Loading last save point)");
+        // TODO: Jab hum save system banayenge to yahan last save load hoga. Abhi ke liye ye normal play ki tarah scene load karega.
+        StartCoroutine(LoadGameSequence());
+    }
+
+    public void OpenSettings()
     {
         PlayClickSound();
         if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
         if (optionsPanel != null) optionsPanel.SetActive(true);
+    }
+
+    public void OpenOptions()
+    {
+        OpenSettings(); // Just in case you still use this name
     }
 
     public void CloseOptions()

@@ -4,7 +4,7 @@ using UnityEngine.AI;
 [RequireComponent(typeof(NavMeshAgent))]
 public class EnemyAI : MonoBehaviour
 {
-    public enum AIState { Dormant, Patrol, Chase, Search, InvestigateSound, Tease, LeaveTease }
+    public enum AIState { Dormant, Patrol, Chase, Search, InvestigateSound, Tease, LeaveTease, VanishAfterKill }
 
     [Header("State")]
     [SerializeField] private AIState currentState = AIState.Dormant; // Starts asleep!
@@ -34,6 +34,10 @@ public class EnemyAI : MonoBehaviour
     [SerializeField] private AudioClip ambientSound;
     [SerializeField] private AudioClip[] teaseVoiceLines; // Voice lines for teasing the player
     [SerializeField] private float stepInterval = 0.6f;
+
+    [Header("Animation Settings")]
+    [Tooltip("Isme churail (witch) ka 3D model drag karein jis par Animator laga ho")]
+    public Animator enemyAnimator;
 
     private float stepTimer = 0f;
     private float teaseTimer = 0f; // Timer for how long the enemy teases
@@ -149,6 +153,12 @@ public class EnemyAI : MonoBehaviour
             agent.isStopped = false;
         }
 
+        // Animator ki speed update karein (taake walk/run automatically ho)
+        if (enemyAnimator != null)
+        {
+            enemyAnimator.SetFloat("Speed", agent.velocity.magnitude);
+        }
+
         // Start patrolling once the agent is on the NavMesh
         if (!hasInitializedPatrol)
         {
@@ -196,6 +206,9 @@ public class EnemyAI : MonoBehaviour
                 break;
             case AIState.LeaveTease:
                 LeaveTeaseBehavior();
+                break;
+            case AIState.VanishAfterKill:
+                // Do nothing, just stand still
                 break;
         }
     }
@@ -411,12 +424,37 @@ public class EnemyAI : MonoBehaviour
     {
         if (Time.time >= nextAttackTime)
         {
+            // Animation chalayen
+            if (enemyAnimator != null)
+            {
+                enemyAnimator.SetTrigger("Attack");
+            }
+
             if (playerStats != null)
             {
                 playerStats.TakeDamage(damageAmount);
+                if (playerStats.IsDead() && currentState != AIState.VanishAfterKill)
+                {
+                    StartCoroutine(VanishRoutine());
+                }
             }
             nextAttackTime = Time.time + attackRate;
         }
+    }
+
+    private System.Collections.IEnumerator VanishRoutine()
+    {
+        currentState = AIState.VanishAfterKill;
+        if (agent.isActiveAndEnabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = true;
+        }
+        
+        // Stare down at player for 1.5 seconds
+        yield return new WaitForSeconds(1.5f);
+        
+        // Vanish!
+        gameObject.SetActive(false);
     }
 
     private void GetNewPatrolTarget()
@@ -533,6 +571,12 @@ public class EnemyAI : MonoBehaviour
         if (agent.isActiveAndEnabled && agent.isOnNavMesh)
         {
             agent.isStopped = true; // Stop moving!
+        }
+
+        // Tease animation chalayen (Jumpscare/Roar)
+        if (enemyAnimator != null)
+        {
+            enemyAnimator.SetTrigger("Tease");
         }
         
         // Play a random creepy voice line

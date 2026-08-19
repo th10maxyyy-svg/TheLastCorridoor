@@ -58,6 +58,7 @@ public class PlayerController : MonoBehaviour
     
     public bool isHidden { get; private set; }
     private Transform currentExitPos;
+    public bool isDead { get; private set; }
 
 
 
@@ -86,6 +87,12 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        if (isDead)
+        {
+            HandleDeathSway();
+            return;
+        }
+
         if (isWakingUp) return; // Paralyze player during cinematic
 
         if (isHidden)
@@ -361,5 +368,66 @@ public class PlayerController : MonoBehaviour
         
         color.a = targetAlpha;
         fadeImage.color = color;
+    }
+
+    // --- NEW: DEATH CINEMATIC ---
+    public void TriggerDeathCinematic()
+    {
+        if (!isDead)
+        {
+            isDead = true;
+            StartCoroutine(DeathSequence());
+        }
+    }
+
+    private Quaternion deathCamTargetRot;
+
+    private void HandleDeathSway()
+    {
+        if (playerCamera == null) return;
+        // Subtle mouse sway while lying on the floor
+        float swayX = Input.GetAxis("Mouse X") * 0.2f; // Low sensitivity
+        float swayY = Input.GetAxis("Mouse Y") * 0.2f;
+        
+        // Temporarily apply input
+        playerCamera.transform.Rotate(Vector3.up * swayX, Space.World);
+        playerCamera.transform.Rotate(Vector3.right * -swayY, Space.Self);
+        
+        // Gently pull camera back to the resting position so it doesn't drift away infinitely
+        playerCamera.transform.rotation = Quaternion.Slerp(playerCamera.transform.rotation, deathCamTargetRot, Time.deltaTime * 2f);
+    }
+
+    private System.Collections.IEnumerator DeathSequence()
+    {
+        if (characterController != null) characterController.enabled = false;
+        
+        float duration = 0.6f; // Quick drop to the floor
+        float elapsed = 0f;
+        
+        Vector3 startPos = playerCamera.transform.localPosition;
+        Quaternion startRot = playerCamera.transform.localRotation;
+        
+        // Target: Fall to the floor, tilt head by 75 degrees, slightly look up
+        Vector3 targetPos = new Vector3(0, 0.2f, 0); 
+        Quaternion targetLocalRot = Quaternion.Euler(-10f, startRot.eulerAngles.y, 75f);
+        
+        while (elapsed < duration)
+        {
+            float t = elapsed / duration;
+            // Ease out bounce or fast drop
+            t = t * t * (3f - 2f * t); 
+            
+            playerCamera.transform.localPosition = Vector3.Lerp(startPos, targetPos, t);
+            playerCamera.transform.localRotation = Quaternion.Lerp(startRot, targetLocalRot, t);
+            
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        
+        playerCamera.transform.localPosition = targetPos;
+        playerCamera.transform.localRotation = targetLocalRot;
+        
+        // Save the world rotation for sway return
+        deathCamTargetRot = playerCamera.transform.rotation;
     }
 }

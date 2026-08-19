@@ -21,16 +21,55 @@ public class PlayerStats : MonoBehaviour
 
     private bool isDead = false;
 
+    [Header("Damage UI")]
+    [Tooltip("Screen par blood dikhane wala image")]
+    public UnityEngine.UI.Image bloodOverlay;
+    [Tooltip("Kitne seconds tak khoon screen par rahay ga")]
+    public float bloodDisplayTime = 6f;
+    [Tooltip("Khoon kitni tezi se fade out hoga")]
+    public float bloodFadeSpeed = 0.5f;
+
+    private float currentBloodAlpha = 0f;
+    private float bloodTimer = 0f;
+
     void Start()
     {
         currentHealth = maxHealth;
         currentStamina = maxStamina;
         UpdateUI();
+        
+        if (bloodOverlay != null)
+        {
+            Color c = bloodOverlay.color;
+            c.a = 0f;
+            bloodOverlay.color = c;
+        }
     }
 
     void Update()
     {
         HandleStaminaRegen();
+
+        // Handle blood overlay fading
+        if (bloodOverlay != null)
+        {
+            if (bloodTimer > 0)
+            {
+                bloodTimer -= Time.deltaTime;
+                // Khoon fauran (instantly) screen par aata hai
+                currentBloodAlpha = Mathf.Lerp(currentBloodAlpha, 1f, Time.deltaTime * 15f);
+            }
+            else
+            {
+                // Timer khatam hone par ahista ahista fade out hota hai
+                currentBloodAlpha = Mathf.Lerp(currentBloodAlpha, 0f, Time.deltaTime * bloodFadeSpeed);
+            }
+
+            Color c = bloodOverlay.color;
+            c.a = currentBloodAlpha;
+            bloodOverlay.color = c;
+        }
+
         UpdateUI();
     }
 
@@ -68,6 +107,12 @@ public class PlayerStats : MonoBehaviour
 
         Debug.Log("Player took damage: " + amount + ". Current health: " + currentHealth);
 
+        // Screen par khoon ka chheenta (splatter) show karein
+        if (bloodOverlay != null)
+        {
+            bloodTimer = bloodDisplayTime; // Ye khoon ko screen par rok kar rakhega
+        }
+
         if (currentHealth <= 0f)
         {
             Die();
@@ -86,6 +131,13 @@ public class PlayerStats : MonoBehaviour
     {
         isDead = true;
         Debug.Log("Player has died!");
+        
+        // Trigger cinematic fall
+        PlayerController pc = GetComponent<PlayerController>();
+        if (pc != null)
+        {
+            pc.TriggerDeathCinematic();
+        }
         
         GameManager gameManager = FindAnyObjectByType<GameManager>();
         if (gameManager != null)
