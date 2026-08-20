@@ -38,6 +38,8 @@ public class EnemyAI : MonoBehaviour
     [Header("Animation Settings")]
     [Tooltip("Isme churail (witch) ka 3D model drag karein jis par Animator laga ho")]
     public Animator enemyAnimator;
+    [Tooltip("Agar attack ke waqt clown terha (sideways) ho jaye, to yahan 90 ya -90 set karein")]
+    public float attackRotationOffset = 90f;
 
     private float stepTimer = 0f;
     private float teaseTimer = 0f; // Timer for how long the enemy teases
@@ -213,6 +215,29 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
+    void LateUpdate()
+    {
+        if (enemyAnimator != null)
+        {
+            // Check if playing the attack animation
+            AnimatorStateInfo stateInfo = enemyAnimator.GetCurrentAnimatorStateInfo(0);
+            
+            if (stateInfo.IsName("Hell Slammer A"))
+            {
+                // SIRF attack ke doran clown ko 90 degree ghuma do taake terha pan khtam ho jaye!
+                enemyAnimator.transform.localRotation = Quaternion.Euler(0, attackRotationOffset, 0);
+            }
+            else
+            {
+                // Normal walk/run ke doran bilkul seedha rakho
+                enemyAnimator.transform.localRotation = Quaternion.identity;
+            }
+            
+            // Paon ko hawa mein janay se rokne ke liye position bhi lock rakhein
+            enemyAnimator.transform.localPosition = new Vector3(0, -1.1f, 0);
+        }
+    }
+
     // --- NEW: HEARING SYSTEM (GRANNY STYLE) ---
     private Vector3 soundInvestigationPoint;
     private float soundInvestigateTimer;
@@ -329,7 +354,22 @@ public class EnemyAI : MonoBehaviour
 
         if (Vector3.Distance(transform.position, playerTransform.position) <= attackRange)
         {
+            agent.updateRotation = false; // NavMesh ko ghumnay se roko!
+            
+            // Faza mein/Attack ke doran bilkul player ki taraf rukh kare (Face the player)
+            Vector3 direction = (playerTransform.position - transform.position).normalized;
+            direction.y = 0; // Sirf Y-axis par ghoomna chahiye (left/right)
+            if (direction.sqrMagnitude > 0.01f)
+            {
+                Quaternion lookRot = Quaternion.LookRotation(direction);
+                transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, Time.deltaTime * 15f); // Faster rotation
+            }
+
             AttackPlayer();
+        }
+        else
+        {
+            agent.updateRotation = true; // Wapis NavMesh ko control de do
         }
 
         // Failsafe: Agar rasta toota hua hai (NavMesh partial) aur player tak nahi pahunch pa raha

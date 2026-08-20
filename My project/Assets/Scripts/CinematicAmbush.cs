@@ -9,9 +9,16 @@ public class CinematicAmbush : MonoBehaviour
     [Tooltip("Where the enemy should spawn when the ambush starts")]
     public Transform ambushSpawnPoint;
 
-    [Header("Ambush Settings")]
+    [Header("Tease / Jumpscare Settings")]
     [Tooltip("The scary sound to play right when he spawns!")]
     public AudioClip ambushScream;
+    [Tooltip("If true, plays a Jumpscare animation (Tease) instead of chasing.")]
+    public bool useTeaseInsteadOfChase = true;
+    [Tooltip("How long the enemy yells/teases before walking away")]
+    public float teaseDuration = 3f;
+    [Tooltip("Optional: Where the enemy walks away to after the jumpscare")]
+    public Transform teaseLeaveTarget;
+
     private AudioSource audioSource;
     private bool hasAmbushed = false;
 
@@ -49,14 +56,21 @@ public class CinematicAmbush : MonoBehaviour
                 enemy.transform.position = ambushSpawnPoint.position;
             }
 
-            // Tell the enemy to WAKE UP and CHASE immediately!
+            // Tell the enemy to Jumpscare or Chase!
             PlayerController player = FindAnyObjectByType<PlayerController>();
             if (player != null)
             {
-                enemy.ForceAwaken(player.transform.position);
+                if (useTeaseInsteadOfChase)
+                {
+                    enemy.StartTeasing(player.transform, teaseDuration, teaseLeaveTarget);
+                }
+                else
+                {
+                    enemy.ForceAwaken(player.transform.position);
+                }
             }
             
-            Debug.Log("Cinematic Ambush Started! RUN!!!");
+            Debug.Log("Cinematic Ambush Started!");
         }
         else
         {
