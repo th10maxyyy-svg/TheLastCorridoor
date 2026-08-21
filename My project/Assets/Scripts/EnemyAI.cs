@@ -33,6 +33,10 @@ public class EnemyAI : MonoBehaviour
     [SerializeField] private AudioClip chaseMusic;
     [SerializeField] private AudioClip ambientSound;
     [SerializeField] private AudioClip[] teaseVoiceLines; // Voice lines for teasing the player
+    [Tooltip("Clown ke random bolne ke sounds (laughs, grunts) isme dalein")]
+    [SerializeField] private AudioClip[] patrolVoiceLines; 
+    [SerializeField] private float minVoiceDelay = 5f;
+    [SerializeField] private float maxVoiceDelay = 15f;
     [SerializeField] private float stepInterval = 0.6f;
 
     [Header("Animation Settings")]
@@ -40,9 +44,12 @@ public class EnemyAI : MonoBehaviour
     public Animator enemyAnimator;
     [Tooltip("Agar attack ke waqt clown terha (sideways) ho jaye, to yahan 90 ya -90 set karein")]
     public float attackRotationOffset = 90f;
+    [Tooltip("Agar enemy hawa mein hai to isay -1.2 ya -1.3 karein taake paon zameen par aa jayen")]
+    public float groundOffset = -1.1f;
 
     private float stepTimer = 0f;
     private float teaseTimer = 0f; // Timer for how long the enemy teases
+    private float nextVoiceTime = 0f; // NEW: Timer for random patrol voices
     private Transform teaseTarget; // Who to look at while teasing
     private Transform teaseLeaveTarget; // Where to go after teasing
     private NavMeshAgent agent;
@@ -66,18 +73,27 @@ public class EnemyAI : MonoBehaviour
     
     private float navMeshCheckCooldown = 0f;
 
-    void Start()
+    void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
         
-        PlayerController player = FindAnyObjectByType<PlayerController>();
-        if (player != null)
+        // Failsafe: Agar user enemy ko disable karna bhool jaye, to game shuru hote hi ye khud chupp jayega!
+        if (currentState == AIState.Dormant)
         {
-            playerTransform = player.transform;
-            playerStats = player.GetComponent<PlayerStats>();
+            gameObject.SetActive(false);
+        }
+    }
+
+    void Start()
+    {
+        playerTransform = GameObject.FindGameObjectWithTag("Player")?.transform;
+        if (playerTransform != null)
+        {
+            playerStats = playerTransform.GetComponent<PlayerStats>();
         }
 
-        agent.speed = patrolSpeed;
+        if (agent != null) agent.speed = patrolSpeed;
+        nextVoiceTime = Time.time + Random.Range(minVoiceDelay, maxVoiceDelay);
     }
 
     void Update()
@@ -234,7 +250,7 @@ public class EnemyAI : MonoBehaviour
             }
             
             // Paon ko hawa mein janay se rokne ke liye position bhi lock rakhein
-            enemyAnimator.transform.localPosition = new Vector3(0, -1.1f, 0);
+            enemyAnimator.transform.localPosition = new Vector3(0, groundOffset, 0);
         }
     }
 
@@ -292,11 +308,19 @@ public class EnemyAI : MonoBehaviour
         agent.speed = patrolSpeed;
         HandleFootsteps();
 
-        if (enemyAudioSource != null && ambientSound != null && !enemyAudioSource.isPlaying)
+        // Clown ki random darawni aawazein (Random Voices)
+        if (patrolVoiceLines != null && patrolVoiceLines.Length > 0 && Time.time >= nextVoiceTime)
         {
-            enemyAudioSource.clip = ambientSound;
-            enemyAudioSource.Play();
+            AudioClip voice = patrolVoiceLines[Random.Range(0, patrolVoiceLines.Length)];
+            if (enemyAudioSource != null && voice != null)
+            {
+                enemyAudioSource.PlayOneShot(voice); // Play without stopping ambient sound
+            }
+            // Naya time set karein agli aawaz ke liye
+            nextVoiceTime = Time.time + Random.Range(minVoiceDelay, maxVoiceDelay);
         }
+
+        ResetAudioToAmbient();
 
         if (CanSeePlayer())
         {
@@ -396,6 +420,7 @@ public class EnemyAI : MonoBehaviour
     {
         agent.speed = patrolSpeed;
         HandleFootsteps();
+        ResetAudioToAmbient();
 
         if (CanSeePlayer())
         {
@@ -642,13 +667,11 @@ public class EnemyAI : MonoBehaviour
             }
         }
 
-        // Count down the tease timer
         teaseTimer -= Time.deltaTime;
         if (teaseTimer <= 0)
         {
-            // Done teasing, go back to normal patrol and ignore player for 10 seconds so he walks away
-            Debug.Log("Enemy finished teasing, ignoring player and leaving area.");
-            ignorePlayerTimer = 10f; // Blind for 10 seconds!
+            // Done teasing, go back to normal patrol and ignore player for 1 second so he doesn't instantly insta-kill you, but chases sooner.
+            ignorePlayerTimer = 1f; // Pehle 10 seconds tha, ab 1 second kar diya!
             
             if (agent.isActiveAndEnabled && agent.isOnNavMesh)
             {
@@ -699,6 +722,7 @@ public class EnemyAI : MonoBehaviour
         }
         
         HandleFootsteps();
+        ResetAudioToAmbient();
 
         // Safely ignore player during this state
         ignorePlayerTimer = 1f;
@@ -724,6 +748,50 @@ public class EnemyAI : MonoBehaviour
             currentState = AIState.Patrol;
             GetNewPatrolTarget();
             leaveStuckTimer = 0f;
+        }
+    }
+
+    void OnGUI()
+    {
+        if (agent != null && gameObject.activeInHierarchy)
+        {
+            GUI.color = Color.red;
+            GUILayout.Label("--- ENEMY DEBUG ---");
+            GUILayout.Label("State: " + currentState);
+            GUILayout.Label("On NavMesh: " + agent.isOnNavMesh);
+            GUILayout.Label("Has Path: " + agent.hasPath);
+            GUILayout.Label("Path Status: " + agent.pathStatus);
+            GUILayout.Label("Is Stopped: " + agent.isStopped);
+            GUILayout.Label("Velocity: " + agent.velocity.magnitude);
+            GUILayout.Label("Agent Speed: " + agent.speed);
+            GUILayout.Label("Remaining Dist: " + agent.remainingDistance);
+            GUILayout.Label("Update Pos: " + agent.updatePosition);
+            if (enemyAnimator != null)
+            {
+                GUILayout.Label("Animator Speed: " + enemyAnimator.GetFloat("Speed"));
+            }
+            GUI.color = Color.white;
+        }
+    }
+
+    private void ResetAudioToAmbient()
+    {
+        if (enemyAudioSource != null)
+        {
+            // Agar pehle se chase music baj raha tha to use band karo
+            if (ambientSound != null)
+            {
+                if (enemyAudioSource.clip != ambientSound)
+                {
+                    enemyAudioSource.clip = ambientSound;
+                    enemyAudioSource.Play();
+                }
+            }
+            else if (enemyAudioSource.clip == chaseMusic)
+            {
+                enemyAudioSource.Stop();
+                enemyAudioSource.clip = null;
+            }
         }
     }
 }

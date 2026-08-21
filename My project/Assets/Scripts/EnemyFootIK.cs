@@ -46,10 +46,9 @@ public class EnemyFootIK : MonoBehaviour
             newPosition.y = hit.point.y + footOffset;
             animator.SetIKPosition(foot, newPosition);
 
-            // Paon ka angle zameen (stairs/slope) ke hisab se terha kar do
-            Quaternion footRotation = animator.GetIKRotation(foot);
-            Quaternion groundSlopeRotation = Quaternion.FromToRotation(Vector3.up, hit.normal);
-            animator.SetIKRotation(foot, groundSlopeRotation * footRotation);
+            // Paon ki rotation ko flat rakhne ke liye hum groundSlopeRotation nikal dete hain,
+            // kyunki flat zameen par iski wajah se paon terhay (crooked) nazar aate hain.
+            // animator.SetIKRotation(...) hata diya gaya hai.
         }
     }
 }

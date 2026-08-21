@@ -42,32 +42,55 @@ public class CinematicAmbush : MonoBehaviour
 
         if (enemy != null && ambushSpawnPoint != null)
         {
-            // Turn on the enemy if it was off
+            NavMeshAgent agent = enemy.GetComponent<NavMeshAgent>();
+            
+            // Fix: NavMeshAgent ko pehle band kar ke position set karni parti hai, warna Unity usay disable kar deta hai aur wo putla ban jata hai!
+            if (agent != null) agent.enabled = false;
+            
+            enemy.transform.position = ambushSpawnPoint.position;
             enemy.gameObject.SetActive(true);
             
-            // Teleport the enemy right behind the player!
-            NavMeshAgent agent = enemy.GetComponent<NavMeshAgent>();
-            if (agent != null)
+            if (agent != null) 
             {
+                agent.enabled = true;
                 agent.Warp(ambushSpawnPoint.position);
-            }
-            else
-            {
-                enemy.transform.position = ambushSpawnPoint.position;
             }
 
             // Tell the enemy to Jumpscare or Chase!
-            PlayerController player = FindAnyObjectByType<PlayerController>();
-            if (player != null)
+            Transform playerTransform = null;
+
+            // Tareeqa 1: Script se dhoondo
+            PlayerStats stats = FindAnyObjectByType<PlayerStats>();
+            if (stats != null) playerTransform = stats.transform;
+
+            // Tareeqa 2: Name se dhoondo (Hierarchy mein jo naam hai)
+            if (playerTransform == null)
+            {
+                GameObject p = GameObject.Find("Player");
+                if (p != null) playerTransform = p.transform;
+            }
+
+            // Tareeqa 3: Tag se dhoondo
+            if (playerTransform == null)
+            {
+                GameObject p = GameObject.FindGameObjectWithTag("Player");
+                if (p != null) playerTransform = p.transform;
+            }
+
+            if (playerTransform != null)
             {
                 if (useTeaseInsteadOfChase)
                 {
-                    enemy.StartTeasing(player.transform, teaseDuration, teaseLeaveTarget);
+                    enemy.StartTeasing(playerTransform, teaseDuration, teaseLeaveTarget);
                 }
                 else
                 {
-                    enemy.ForceAwaken(player.transform.position);
+                    enemy.ForceAwaken(playerTransform.position);
                 }
+            }
+            else
+            {
+                Debug.LogWarning("Ambush script couldn't find the Player by Script, Name, OR Tag!");
             }
             
             Debug.Log("Cinematic Ambush Started!");
