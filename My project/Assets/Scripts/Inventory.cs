@@ -9,6 +9,64 @@ public class Inventory : MonoBehaviour
 
     private GameObject currentItem;
 
+    void Start()
+    {
+        // FINAL GRIP FIX: Hum cheez ko hamesha ke liye haath ki haddi (bone) ke sath jor rahe hain!
+        // Is se cheez hamesha haath mein rahegi. Agar aap oopar dekhenge, to cheez aur haath dono neechay rahenge.
+        Animator anim = transform.root.GetComponentInChildren<Animator>();
+        Transform rHand = null;
+        
+        if (anim != null && anim.isHuman)
+        {
+            // Ungliyon ke darmiyan laane ke liye seedha Middle Finger par attach karo!
+            rHand = anim.GetBoneTransform(HumanBodyBones.RightMiddleProximal);
+            if (rHand == null) rHand = anim.GetBoneTransform(HumanBodyBones.RightHand);
+        }
+        else
+        {
+            Transform[] allBones = transform.root.GetComponentsInChildren<Transform>(true);
+            foreach (Transform t in allBones)
+            {
+                if (t.name.ToLower().Contains("rightmiddle1") || t.name.ToLower().Contains("right_middle"))
+                {
+                    rHand = t;
+                    break;
+                }
+            }
+            if (rHand == null)
+            {
+                foreach (Transform t in allBones)
+                {
+                    if (t.name.ToLower().Contains("righthand") || t.name.ToLower().Contains("right_hand"))
+                    {
+                        rHand = t;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (rHand != null)
+        {
+            Camera cam = GetComponentInChildren<Camera>();
+            if (cam != null)
+            {
+                Transform hp = cam.transform.Find("hold position");
+                if (hp != null) Destroy(hp.gameObject);
+            }
+
+            // Naya hold position direct ungliyon (fingers) ke andar banao
+            GameObject newHp = new GameObject("Hand_HoldPosition");
+            newHp.transform.SetParent(rHand);
+            
+            // Hold position ko bilkul zero par rakho, hum cheez par direct apply karenge offset!
+            newHp.transform.localPosition = Vector3.zero; 
+            newHp.transform.localRotation = Quaternion.identity;
+            
+            holdPosition = newHp.transform;
+        }
+    }
+
     void Update()
     {
         // Drop item on pressing G
@@ -28,7 +86,7 @@ public class Inventory : MonoBehaviour
 
         currentItem = item;
         
-        // Disable physics while holding
+        // Disable physics
         Rigidbody rb = currentItem.GetComponent<Rigidbody>();
         if (rb != null)
         {
@@ -36,11 +94,19 @@ public class Inventory : MonoBehaviour
             rb.useGravity = false;
         }
 
-        // Parent to hand and reset position
+        Collider col = currentItem.GetComponent<Collider>();
+        if (col != null)
+        {
+            col.enabled = false;
+        }
+
+        // Attach to hold position
         if (holdPosition != null)
         {
             currentItem.transform.SetParent(holdPosition);
-            currentItem.transform.localPosition = Vector3.zero;
+            
+            // Aapne jo exact Inspector mein dekha hai, wohi direct CHEEZ par apply ho raha hai!
+            currentItem.transform.localPosition = new Vector3(-0.03f, 0.24f, 0.15f);
             currentItem.transform.localRotation = Quaternion.identity;
         }
         else

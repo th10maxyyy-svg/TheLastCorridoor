@@ -20,7 +20,7 @@ public class PlayerController : MonoBehaviour
     [Header("Look Settings")]
     [SerializeField] private float mouseSensitivity = 2.0f;
     [SerializeField] private float upperLookLimit = -80.0f;
-    [SerializeField] private float lowerLookLimit = 80.0f;
+    [SerializeField] private float lowerLookLimit = 50.0f; // Restrict downward look to avoid neck clipping
 
     [Header("Headbob & Footsteps")]
     [SerializeField] private float walkBobSpeed = 14f;
@@ -78,14 +78,38 @@ public class PlayerController : MonoBehaviour
         playerCamera = GetComponentInChildren<Camera>();
         playerStats = GetComponent<PlayerStats>();
 
+        // GUARANTEED FIX: Agar 'remy' ya uske parts ghalti se disable ho gaye hain to unhe automatically on karo
+        Transform remyTransform = transform.Find("remy");
+        if (remyTransform != null)
+        {
+            remyTransform.gameObject.SetActive(true);
+            SkinnedMeshRenderer[] meshes = remyTransform.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+            foreach (SkinnedMeshRenderer smr in meshes)
+            {
+                smr.gameObject.SetActive(true);
+                smr.enabled = true;
+            }
+        }
+
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 
         currentSpeed = walkSpeed;
         if (playerCamera != null)
         {
-            defaultYPos = playerCamera.transform.localPosition.y;
+            // FORCE CAMERA FIXES OVERRIDING INSPECTOR
+            Vector3 camPos = playerCamera.transform.localPosition;
+            camPos.z = 0.35f; // Aagay push karo taake chhaati bilkul cross ho jaye
+            playerCamera.transform.localPosition = camPos;
+            playerCamera.nearClipPlane = 0.01f; // Clipping theek karo
+            
+            // Camera ki Editor wali height ko hi standing height bana dein
+            standingCameraPosition.y = camPos.y;
+            defaultYPos = camPos.y;
         }
+
+        // FORCE LOOK LIMIT
+        lowerLookLimit = 50f;
 
         if (playWakeUpCinematic)
         {
@@ -197,25 +221,28 @@ public class PlayerController : MonoBehaviour
     private System.Collections.IEnumerator CrouchStandRoutine()
     {
         float targetHeight = isCrouching ? crouchingHeight : standingHeight;
-        Vector3 targetCamPosition = isCrouching ? crouchingCameraPosition : standingCameraPosition;
+        float targetCamY = isCrouching ? crouchingCameraPosition.y : standingCameraPosition.y;
         float currentHeight = characterController.height;
         Vector3 currentCamPos = playerCamera.transform.localPosition;
+        
+        // CAMERA KI X aur Z position wohi rakho jo editor mein set ki thi (Sirf Y change karo)
+        Vector3 targetCamPos = new Vector3(currentCamPos.x, targetCamY, currentCamPos.z);
 
         float elapsedTime = 0f;
 
         while (elapsedTime < timeToCrouch)
         {
             characterController.height = Mathf.Lerp(currentHeight, targetHeight, elapsedTime / timeToCrouch);
-            playerCamera.transform.localPosition = Vector3.Lerp(currentCamPos, targetCamPosition, elapsedTime / timeToCrouch);
+            playerCamera.transform.localPosition = Vector3.Lerp(currentCamPos, targetCamPos, elapsedTime / timeToCrouch);
             elapsedTime += Time.deltaTime;
             yield return null;
         }
 
         characterController.height = targetHeight;
-        playerCamera.transform.localPosition = targetCamPosition;
+        playerCamera.transform.localPosition = targetCamPos;
         
         // Update defaultYPos for headbob base calculation
-        defaultYPos = targetCamPosition.y;
+        defaultYPos = targetCamY;
     }
 
     private void ApplyMovement()
@@ -293,13 +320,17 @@ public class PlayerController : MonoBehaviour
     {
         if (bodyAnimator == null) return;
 
-        // IsMoving will be true if input is not zero
-        bool isMoving = currentInput.sqrMagnitude > 0.01f;
-        
-        // Setting standard animation parameters (Make sure your Animator uses these names!)
-        bodyAnimator.SetBool("IsMoving", isMoving);
+        bodyAnimator.SetBool("IsMoving", moveDirection.magnitude > 0.1f);
         bodyAnimator.SetBool("IsSprinting", isSprinting);
         bodyAnimator.SetBool("IsCrouching", isCrouching);
+    }
+
+    public void TriggerInteractAnimation()
+    {
+        if (bodyAnimator != null)
+        {
+            bodyAnimator.SetTrigger("InteractTrigger");
+        }
     }
 
     public bool IsSprinting => isSprinting && currentInput.magnitude > 0;
@@ -342,7 +373,7 @@ public class PlayerController : MonoBehaviour
         Vector3 startPos = playerCamera.transform.localPosition;
         Quaternion startRot = playerCamera.transform.localRotation;
         
-        Vector3 midPos = new Vector3(0, defaultYPos * 0.4f, 0);
+        Vector3 midPos = new Vector3(0, defaultYPos * 0.4f, 0.35f); // FIX Z
         Quaternion midRot = Quaternion.Euler(40f, 0, 10f); // Looking down at the floor, slightly tilted
 
         while (elapsed < duration1)
@@ -364,7 +395,7 @@ public class PlayerController : MonoBehaviour
         startPos = playerCamera.transform.localPosition;
         startRot = playerCamera.transform.localRotation;
         
-        Vector3 targetPos = new Vector3(0, defaultYPos, 0);
+        Vector3 targetPos = new Vector3(0, defaultYPos, 0.35f); // FIX Z
         Quaternion targetRot = Quaternion.Euler(0, 0, 0); // Straight head
 
         while (elapsed < duration2)
@@ -447,7 +478,7 @@ public class PlayerController : MonoBehaviour
         Quaternion startRot = playerCamera.transform.localRotation;
         
         // Target: Fall to the floor, tilt head by 75 degrees, slightly look up
-        Vector3 targetPos = new Vector3(0, 0.2f, 0); 
+        Vector3 targetPos = new Vector3(0, 0.2f, 0.35f); // FIX Z
         Quaternion targetLocalRot = Quaternion.Euler(-10f, startRot.eulerAngles.y, 75f);
         
         while (elapsed < duration)

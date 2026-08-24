@@ -4,6 +4,7 @@ public class InteractionRaycast : MonoBehaviour
 {
     [Header("Interaction Settings")]
     [SerializeField] private float rayDistance = 3.0f;
+    [SerializeField] private KeyCode interactKey = KeyCode.E;
     [Header("Audio Settings")]
     [SerializeField] private AudioSource interactionAudioSource;
     [SerializeField] private AudioClip pickupSound;
