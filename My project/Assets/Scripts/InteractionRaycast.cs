@@ -4,7 +4,9 @@ public class InteractionRaycast : MonoBehaviour
 {
     [Header("Interaction Settings")]
     [SerializeField] private float rayDistance = 3.0f;
-    [SerializeField] private KeyCode interactKey = KeyCode.E;
+    [Header("Audio Settings")]
+    [SerializeField] private AudioSource interactionAudioSource;
+    [SerializeField] private AudioClip pickupSound;
 
     private PlayerStats playerStats;
     private string currentPrompt = "";
@@ -61,6 +63,10 @@ public class InteractionRaycast : MonoBehaviour
 
                 if (Input.GetKeyDown(interactKey))
                 {
+                    if (interactionAudioSource != null && pickupSound != null)
+                    {
+                        interactionAudioSource.PlayOneShot(pickupSound);
+                    }
                     interactable.Interact(playerStats);
                 }
             }

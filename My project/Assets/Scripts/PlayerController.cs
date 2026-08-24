@@ -35,6 +35,15 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float crouchStepMultiplier = 1.5f;
     [SerializeField] private float sprintStepMultiplier = 0.6f;
 
+    [Header("Immersive Audio (Muttering)")]
+    [SerializeField] private AudioSource mutteringAudioSource;
+    [SerializeField] private AudioClip[] mutteringSounds;
+    [SerializeField] private float minMutterDelay = 60f;
+    [SerializeField] private float maxMutterDelay = 120f;
+    
+    [Header("First Person Body")]
+    [SerializeField] private Animator bodyAnimator;
+
     [Header("Cinematic")]
     [SerializeField] private bool playWakeUpCinematic = false;
     [SerializeField] private UnityEngine.UI.Image fadeImage;
@@ -55,6 +64,7 @@ public class PlayerController : MonoBehaviour
     private float defaultYPos = 0;
     private float timer = 0;
     private float footstepTimer = 0;
+    private float mutterTimer = 0f;
     
     public bool isHidden { get; private set; }
     private Transform currentExitPos;
@@ -81,6 +91,8 @@ public class PlayerController : MonoBehaviour
         {
             StartCoroutine(WakeUpSequence());
         }
+
+        mutterTimer = Time.time + Random.Range(minMutterDelay, maxMutterDelay);
     }
 
     private float hideTime;
@@ -111,6 +123,8 @@ public class PlayerController : MonoBehaviour
         ApplyMovement();
         HandleHeadBob();
         HandleFootsteps();
+        HandleMuttering();
+        UpdateBodyAnimations();
     }
 
     public void EnterHiding(Transform hidePos, Transform exitPos)
@@ -261,6 +275,31 @@ public class PlayerController : MonoBehaviour
 
             footstepTimer = baseStepSpeed * (isCrouching ? crouchStepMultiplier : isSprinting ? sprintStepMultiplier : 1f);
         }
+    }
+
+    private void HandleMuttering()
+    {
+        if (mutteringAudioSource == null || mutteringSounds == null || mutteringSounds.Length == 0) return;
+
+        if (Time.time >= mutterTimer)
+        {
+            AudioClip mutter = mutteringSounds[Random.Range(0, mutteringSounds.Length)];
+            mutteringAudioSource.PlayOneShot(mutter);
+            mutterTimer = Time.time + Random.Range(minMutterDelay, maxMutterDelay);
+        }
+    }
+
+    private void UpdateBodyAnimations()
+    {
+        if (bodyAnimator == null) return;
+
+        // IsMoving will be true if input is not zero
+        bool isMoving = currentInput.sqrMagnitude > 0.01f;
+        
+        // Setting standard animation parameters (Make sure your Animator uses these names!)
+        bodyAnimator.SetBool("IsMoving", isMoving);
+        bodyAnimator.SetBool("IsSprinting", isSprinting);
+        bodyAnimator.SetBool("IsCrouching", isCrouching);
     }
 
     public bool IsSprinting => isSprinting && currentInput.magnitude > 0;

@@ -86,7 +86,24 @@ public class EnemyAI : MonoBehaviour
 
     void Start()
     {
-        playerTransform = GameObject.FindGameObjectWithTag("Player")?.transform;
+        // Tareeqa 1: Script se dhoondo
+        PlayerStats stats = FindAnyObjectByType<PlayerStats>();
+        if (stats != null) playerTransform = stats.transform;
+
+        // Tareeqa 2: Name se dhoondo (Hierarchy mein jo naam hai)
+        if (playerTransform == null)
+        {
+            GameObject p = GameObject.Find("Player");
+            if (p != null) playerTransform = p.transform;
+        }
+
+        // Tareeqa 3: Tag se dhoondo
+        if (playerTransform == null)
+        {
+            GameObject p = GameObject.FindGameObjectWithTag("Player");
+            if (p != null) playerTransform = p.transform;
+        }
+
         if (playerTransform != null)
         {
             playerStats = playerTransform.GetComponent<PlayerStats>();
@@ -474,11 +491,11 @@ public class EnemyAI : MonoBehaviour
             RaycastHit hit;
             if (!Physics.Raycast(transform.position + Vector3.up, directionToPlayer, out hit, distanceToPlayer, obstacleMask))
             {
-                return true;
+                return true; // Raste mein koi deewar nahi
             }
-            else if (hit.transform == playerTransform)
+            else if (hit.transform == playerTransform || hit.transform.IsChildOf(playerTransform))
             {
-                return true;
+                return true; // Raycast player se ya player ke kisi hisse se takrai hai
             }
         }
 
@@ -765,7 +782,27 @@ public class EnemyAI : MonoBehaviour
             GUILayout.Label("Velocity: " + agent.velocity.magnitude);
             GUILayout.Label("Agent Speed: " + agent.speed);
             GUILayout.Label("Remaining Dist: " + agent.remainingDistance);
-            GUILayout.Label("Update Pos: " + agent.updatePosition);
+            
+            if (playerTransform != null)
+            {
+                float dist = Vector3.Distance(transform.position, playerTransform.position);
+                Vector3 dir = (playerTransform.position - transform.position).normalized;
+                float angle = Vector3.Angle(transform.forward, dir);
+                GUILayout.Label($"Dist to Player: {dist:F1} (Range: {detectionRange})");
+                GUILayout.Label($"Angle to Player: {angle:F1} (FOV: {fovAngle})");
+                
+                RaycastHit hit;
+                bool hitWall = Physics.Raycast(transform.position + Vector3.up, dir, out hit, dist, obstacleMask);
+                string hitName = hitWall ? hit.transform.name : "None";
+                GUILayout.Label($"Raycast Hit: {hitName}");
+            }
+            else
+            {
+                GUILayout.Label("Player Transform: NULL!");
+            }
+            
+            GUILayout.Label("Ignore Timer: " + ignorePlayerTimer);
+
             if (enemyAnimator != null)
             {
                 GUILayout.Label("Animator Speed: " + enemyAnimator.GetFloat("Speed"));

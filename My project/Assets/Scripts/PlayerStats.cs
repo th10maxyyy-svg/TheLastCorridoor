@@ -19,6 +19,11 @@ public class PlayerStats : MonoBehaviour
     [SerializeField] private Slider healthSlider;
     [SerializeField] private Slider staminaSlider;
 
+    [Header("Immersive Audio (Breathing)")]
+    [SerializeField] private AudioSource breathingAudioSource;
+    [SerializeField] private AudioClip heavyBreathingSound;
+    private bool isBreathing = false;
+
     private bool isDead = false;
 
     [Header("Damage UI")]
@@ -49,6 +54,7 @@ public class PlayerStats : MonoBehaviour
     void Update()
     {
         HandleStaminaRegen();
+        HandleBreathing();
 
         // Handle blood overlay fading
         if (bloodOverlay != null)
@@ -83,6 +89,28 @@ public class PlayerStats : MonoBehaviour
         {
             currentStamina += staminaRegenRate * Time.deltaTime;
             currentStamina = Mathf.Min(currentStamina, maxStamina);
+        }
+    }
+
+    private void HandleBreathing()
+    {
+        if (breathingAudioSource == null || heavyBreathingSound == null || isDead) return;
+
+        // Jab stamina 30% se kam ho, saans phulna shuru
+        if (!isBreathing && currentStamina <= maxStamina * 0.3f)
+        {
+            isBreathing = true;
+            breathingAudioSource.clip = heavyBreathingSound;
+            breathingAudioSource.loop = true;
+            breathingAudioSource.Play();
+        }
+        // Jab stamina 70% tak wapis aa jaye, saans normal ho jaye
+        else if (isBreathing && currentStamina >= maxStamina * 0.7f)
+        {
+            isBreathing = false;
+            // Dheere dheere stop karne ke liye hum volume bhi kam kar sakte hain, 
+            // par abhi ke liye directly stop kar dete hain
+            breathingAudioSource.Stop();
         }
     }
 
@@ -131,6 +159,11 @@ public class PlayerStats : MonoBehaviour
     {
         isDead = true;
         Debug.Log("Player has died!");
+        
+        if (breathingAudioSource != null && breathingAudioSource.isPlaying)
+        {
+            breathingAudioSource.Stop();
+        }
         
         // Trigger cinematic fall
         PlayerController pc = GetComponent<PlayerController>();
