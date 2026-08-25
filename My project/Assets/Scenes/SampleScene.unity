@@ -3066,6 +3066,8 @@ MonoBehaviour:
   gameOverPanel: {fileID: 1844501635}
   gameManagerAudio: {fileID: 161284101}
   gameOverSound: {fileID: 8300000, guid: 6ac67909f37860f4db75cee9043cad54, type: 3}
+  bgmAudioSource: {fileID: 0}
+  backgroundAmbience: {fileID: 0}
 --- !u!4 &161284099
 Transform:
   m_ObjectHideFlags: 0
@@ -6369,7 +6371,6 @@ GameObject:
   - component: {fileID: 347203920}
   - component: {fileID: 347203922}
   - component: {fileID: 347203923}
-  - component: {fileID: 347203924}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -6608,20 +6609,6 @@ MonoBehaviour:
   isOn: 0
   audioSource: {fileID: 0}
   clickSound: {fileID: 0}
---- !u!114 &347203924
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 347203911}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4d893a691765f2e4db92b19e21888177, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ScreenshotTaker
-  captureKey: 293
-  resolutionMultiplier: 2
 --- !u!1 &351269959
 GameObject:
   m_ObjectHideFlags: 0

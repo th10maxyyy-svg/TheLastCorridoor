@@ -14,6 +14,10 @@ public class GameManager : MonoBehaviour
     public AudioSource gameManagerAudio;
     public AudioClip gameOverSound;
 
+    [Header("Background Music")]
+    [SerializeField] private AudioSource bgmAudioSource;
+    [SerializeField] private AudioClip backgroundAmbience; // Madham horror sound (Drone)
+
     void Awake()
     {
         if (instance == null)
@@ -25,6 +29,22 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         Time.timeScale = 1f;
+
+        // AUTO-FIX: Create background music audio source if missing
+        if (bgmAudioSource == null)
+        {
+            bgmAudioSource = gameObject.AddComponent<AudioSource>();
+            bgmAudioSource.spatialBlend = 0f; // 2D sound so it plays everywhere equally
+            bgmAudioSource.loop = true; // Loop forever
+            bgmAudioSource.volume = 0.4f; // Keep it low/madham
+        }
+
+        // Start playing background horror ambience if assigned
+        if (backgroundAmbience != null && !bgmAudioSource.isPlaying)
+        {
+            bgmAudioSource.clip = backgroundAmbience;
+            bgmAudioSource.Play();
+        }
 
         // 1. AUTO-FIX: Ensure EventSystem exists (without it, UI buttons CANNOT be clicked!)
         if (FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
