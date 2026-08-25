@@ -7,10 +7,20 @@ public class Inventory : MonoBehaviour
     [SerializeField] private Transform holdPosition; // Assign a 'Hand' empty object under Main Camera in Unity
     [SerializeField] private float throwForce = 5f;
 
+    [Header("Audio Settings")]
+    [SerializeField] private AudioSource inventoryAudioSource;
+    [SerializeField] private AudioClip pickupSound;
+    [SerializeField] private AudioClip dropSound;
+
     private GameObject currentItem;
 
     void Start()
     {
+        if (inventoryAudioSource == null)
+        {
+            inventoryAudioSource = gameObject.AddComponent<AudioSource>();
+            inventoryAudioSource.spatialBlend = 0f; // 2D sound for player UI
+        }
         // FINAL GRIP FIX: Hum cheez ko hamesha ke liye haath ki haddi (bone) ke sath jor rahe hain!
         // Is se cheez hamesha haath mein rahegi. Agar aap oopar dekhenge, to cheez aur haath dono neechay rahenge.
         Animator anim = transform.root.GetComponentInChildren<Animator>();
@@ -86,6 +96,12 @@ public class Inventory : MonoBehaviour
 
         currentItem = item;
         
+        // Play pickup sound
+        if (inventoryAudioSource != null && pickupSound != null)
+        {
+            inventoryAudioSource.PlayOneShot(pickupSound);
+        }
+
         // Disable physics
         Rigidbody rb = currentItem.GetComponent<Rigidbody>();
         if (rb != null)
@@ -94,8 +110,9 @@ public class Inventory : MonoBehaviour
             rb.useGravity = false;
         }
 
-        Collider col = currentItem.GetComponent<Collider>();
-        if (col != null)
+        // Disable ALL colliders (even in children) to prevent getting stuck in doors
+        Collider[] colliders = currentItem.GetComponentsInChildren<Collider>();
+        foreach (Collider col in colliders)
         {
             col.enabled = false;
         }
@@ -127,6 +144,12 @@ public class Inventory : MonoBehaviour
     public void DropCurrentItem()
     {
         if (currentItem == null) return;
+
+        // Play drop sound
+        if (inventoryAudioSource != null && dropSound != null)
+        {
+            inventoryAudioSource.PlayOneShot(dropSound);
+        }
 
         currentItem.transform.SetParent(null);
         

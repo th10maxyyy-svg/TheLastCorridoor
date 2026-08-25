@@ -390,6 +390,13 @@ public class EnemyAI : MonoBehaviour
         {
             currentState = AIState.Search;
             searchTimer = searchDuration;
+            
+            // NEW: Player bach nikla! Darr ki wajah se saans phoolay gi
+            if (playerStats != null)
+            {
+                playerStats.TriggerHeavyBreathing(6f);
+            }
+            
             return;
         }
 

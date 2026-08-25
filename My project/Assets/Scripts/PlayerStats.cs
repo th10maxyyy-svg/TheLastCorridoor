@@ -23,8 +23,14 @@ public class PlayerStats : MonoBehaviour
     [SerializeField] private AudioSource breathingAudioSource;
     [SerializeField] private AudioClip heavyBreathingSound;
     private bool isBreathing = false;
+    private float forceBreatheTimer = 0f; // NEW: Jab stamina bhara ho lekin darr se saans phoolay
 
     private bool isDead = false;
+
+    [Header("Voice & Dialogue")]
+    [SerializeField] private AudioSource voiceAudioSource;
+    [SerializeField] private AudioClip damageGruntSound; // NEW: Sirf aah/ouch wali aawaz
+    [SerializeField] private AudioClip damageVoiceSound; // Jab chot lagay aur bolna ho
 
     [Header("Damage UI")]
     [Tooltip("Screen par blood dikhane wala image")]
@@ -41,6 +47,21 @@ public class PlayerStats : MonoBehaviour
     {
         currentHealth = maxHealth;
         currentStamina = maxStamina;
+        
+        // AUTO-FIX: Create audio source for breathing if it's missing!
+        if (breathingAudioSource == null)
+        {
+            breathingAudioSource = gameObject.AddComponent<AudioSource>();
+            breathingAudioSource.spatialBlend = 0f; // 2D sound
+        }
+
+        // AUTO-FIX: Create audio source for voice/dialogue!
+        if (voiceAudioSource == null)
+        {
+            voiceAudioSource = gameObject.AddComponent<AudioSource>();
+            voiceAudioSource.spatialBlend = 0f; // 2D sound
+        }
+
         UpdateUI();
         
         if (bloodOverlay != null)
@@ -48,6 +69,7 @@ public class PlayerStats : MonoBehaviour
             Color c = bloodOverlay.color;
             c.a = 0f;
             bloodOverlay.color = c;
+            bloodOverlay.raycastTarget = false; // GUARANTEED FIX: Khoon ka nishaan UI clicks block nahi karega!
         }
     }
 
@@ -92,24 +114,42 @@ public class PlayerStats : MonoBehaviour
         }
     }
 
+    // NEW METHOD: Kisi bhi event se saans phulane ke liye (Cinematic, Damage, Escape)
+    public void TriggerHeavyBreathing(float duration)
+    {
+        if (isDead) return;
+        forceBreatheTimer = Mathf.Max(forceBreatheTimer, duration);
+    }
+
     private void HandleBreathing()
     {
-        if (breathingAudioSource == null || heavyBreathingSound == null || isDead) return;
+        if (heavyBreathingSound == null)
+        {
+            if (forceBreatheTimer > 0) Debug.LogWarning("PlayerStats: Saans ki aawaz play karni thi par 'Heavy Breathing Sound' mein koi file nahi dali hui!");
+            return;
+        }
 
-        // Jab stamina 30% se kam ho, saans phulna shuru
-        if (!isBreathing && currentStamina <= maxStamina * 0.3f)
+        if (breathingAudioSource == null || isDead) return;
+
+        if (forceBreatheTimer > 0)
+        {
+            forceBreatheTimer -= Time.deltaTime;
+        }
+
+        // Jab stamina 30% se kam ho, YA phir koi darawna scene hua ho (forceBreatheTimer > 0)
+        bool shouldBreathe = (currentStamina <= maxStamina * 0.3f) || (forceBreatheTimer > 0);
+        bool shouldStop = (currentStamina >= maxStamina * 0.7f) && (forceBreatheTimer <= 0);
+
+        if (!isBreathing && shouldBreathe)
         {
             isBreathing = true;
             breathingAudioSource.clip = heavyBreathingSound;
             breathingAudioSource.loop = true;
             breathingAudioSource.Play();
         }
-        // Jab stamina 70% tak wapis aa jaye, saans normal ho jaye
-        else if (isBreathing && currentStamina >= maxStamina * 0.7f)
+        else if (isBreathing && shouldStop)
         {
             isBreathing = false;
-            // Dheere dheere stop karne ke liye hum volume bhi kam kar sakte hain, 
-            // par abhi ke liye directly stop kar dete hain
             breathingAudioSource.Stop();
         }
     }
@@ -135,6 +175,12 @@ public class PlayerStats : MonoBehaviour
 
         Debug.Log("Player took damage: " + amount + ". Current health: " + currentHealth);
 
+        // NAYA CODE: Pehle Dard ki aawaz (Grunt), phir 1 second baad Dialogue!
+        if (voiceAudioSource != null && !voiceAudioSource.isPlaying)
+        {
+            StartCoroutine(PlayDamageVoiceSequence());
+        }
+
         // Screen par khoon ka chheenta (splatter) show karein
         if (bloodOverlay != null)
         {
@@ -144,6 +190,23 @@ public class PlayerStats : MonoBehaviour
         if (currentHealth <= 0f)
         {
             Die();
+        }
+    }
+
+    private System.Collections.IEnumerator PlayDamageVoiceSequence()
+    {
+        // 1. Play pain grunt ("Ouch!")
+        if (damageGruntSound != null)
+        {
+            voiceAudioSource.PlayOneShot(damageGruntSound);
+            // Wait for half a second before speaking
+            yield return new WaitForSeconds(0.6f);
+        }
+
+        // 2. Play the dialogue ("Where am I stuck?!")
+        if (damageVoiceSound != null && !isDead)
+        {
+            voiceAudioSource.PlayOneShot(damageVoiceSound);
         }
     }
 

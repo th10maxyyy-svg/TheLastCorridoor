@@ -75,6 +75,9 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         characterController = GetComponent<CharacterController>();
+        // Ensure player is thin enough to pass through doors easily!
+        if (characterController != null) characterController.radius = 0.3f;
+        
         playerCamera = GetComponentInChildren<Camera>();
         playerStats = GetComponent<PlayerStats>();
 
@@ -111,8 +114,16 @@ public class PlayerController : MonoBehaviour
         // FORCE LOOK LIMIT
         lowerLookLimit = 50f;
 
+        // AUTO-FIX: Automatically add AudioSource for footsteps if not assigned
+        if (footstepAudioSource == null)
+        {
+            footstepAudioSource = gameObject.AddComponent<AudioSource>();
+            footstepAudioSource.spatialBlend = 0f; // 2D sound for first person
+        }
+
         if (playWakeUpCinematic)
         {
+            if (fadeImage != null) fadeImage.raycastTarget = false; // GUARANTEED FIX: Fade UI ko click block karne se roko
             StartCoroutine(WakeUpSequence());
         }
 
@@ -289,18 +300,38 @@ public class PlayerController : MonoBehaviour
 
     private void HandleFootsteps()
     {
-        if (!characterController.isGrounded || moveDirection.magnitude < 0.1f) return;
+        // Vector3.y ko ignore kar ke sirf horizontal movement check karein (X aur Z axis)
+        Vector2 horizontalVelocity = new Vector2(characterController.velocity.x, characterController.velocity.z);
 
-        footstepTimer -= Time.deltaTime;
-
-        if (footstepTimer <= 0)
+        // Agar player hawa mein hai ya ruka hua hai, to aawaz foran band (Stop) kar do
+        if (!characterController.isGrounded || horizontalVelocity.magnitude < 0.1f)
         {
-            if (footstepAudioSource != null && footstepSounds != null && footstepSounds.Length > 0)
+            if (footstepAudioSource != null && footstepAudioSource.isPlaying)
             {
-                footstepAudioSource.PlayOneShot(footstepSounds[Random.Range(0, footstepSounds.Length)]);
+                footstepAudioSource.Stop();
+            }
+            return;
+        }
+
+        // Agar player chal raha hai
+        if (footstepAudioSource != null && footstepSounds != null && footstepSounds.Length > 0)
+        {
+            // Pehli dafa aawaz set karna aur loop enable karna
+            if (footstepAudioSource.clip == null)
+            {
+                // Jo pehli sound aapne daali hai (9 sec wali), wo set ho jayegi
+                footstepAudioSource.clip = footstepSounds[0]; 
+                footstepAudioSource.loop = true; // Taake wo 9 sec ke baad khud repeat ho
             }
 
-            footstepTimer = baseStepSpeed * (isCrouching ? crouchStepMultiplier : isSprinting ? sprintStepMultiplier : 1f);
+            // Agar aawaz abhi nahi chal rahi, to shuru karo
+            if (!footstepAudioSource.isPlaying)
+            {
+                footstepAudioSource.Play();
+            }
+
+            // Bhagne (Sprint) ke waqt aawaz ki speed (Pitch) bohat tez kar di hai taake bhagne wali feel aye
+            footstepAudioSource.pitch = isSprinting ? 1.8f : (isCrouching ? 0.7f : 1.0f);
         }
     }
 
@@ -342,6 +373,12 @@ public class PlayerController : MonoBehaviour
     {
         isWakingUp = true;
         
+        // Start heavy breathing immediately upon waking up
+        if (playerStats != null)
+        {
+            playerStats.TriggerHeavyBreathing(7f);
+        }
+
         // 1. Initial State: Lying on the floor, head tilted
         playerCamera.transform.localPosition = new Vector3(0, 0.2f, 0);
         playerCamera.transform.localRotation = Quaternion.Euler(0, 0, 75f);

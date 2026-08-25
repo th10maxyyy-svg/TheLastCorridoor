@@ -6369,6 +6369,7 @@ GameObject:
   - component: {fileID: 347203920}
   - component: {fileID: 347203922}
   - component: {fileID: 347203923}
+  - component: {fileID: 347203924}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -6490,6 +6491,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Inventory
   holdPosition: {fileID: 1356110048}
   throwForce: 5
+  inventoryAudioSource: {fileID: 0}
+  pickupSound: {fileID: 0}
+  dropSound: {fileID: 0}
 --- !u!114 &347203919
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6523,7 +6527,10 @@ MonoBehaviour:
   healthSlider: {fileID: 1745099815}
   staminaSlider: {fileID: 610326}
   breathingAudioSource: {fileID: 0}
-  heavyBreathingSound: {fileID: 0}
+  heavyBreathingSound: {fileID: 8300000, guid: 4f3856025fc2c6442ab41c1cd29024ef, type: 3}
+  voiceAudioSource: {fileID: 0}
+  damageGruntSound: {fileID: 0}
+  damageVoiceSound: {fileID: 8300000, guid: 5764825654607104ab70a2c598c51ee0, type: 3}
   bloodOverlay: {fileID: 957303950}
   bloodDisplayTime: 6
   bloodFadeSpeed: 0.5
@@ -6559,7 +6566,8 @@ MonoBehaviour:
   crouchBobSpeed: 8
   crouchBobAmount: 0.02
   footstepAudioSource: {fileID: 0}
-  footstepSounds: []
+  footstepSounds:
+  - {fileID: 8300000, guid: 711d72615158bf44e970fb650e5040b7, type: 3}
   baseStepSpeed: 0.5
   crouchStepMultiplier: 1.5
   sprintStepMultiplier: 0.6
@@ -6600,6 +6608,20 @@ MonoBehaviour:
   isOn: 0
   audioSource: {fileID: 0}
   clickSound: {fileID: 0}
+--- !u!114 &347203924
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 347203911}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d893a691765f2e4db92b19e21888177, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ScreenshotTaker
+  captureKey: 293
+  resolutionMultiplier: 2
 --- !u!1 &351269959
 GameObject:
   m_ObjectHideFlags: 0
