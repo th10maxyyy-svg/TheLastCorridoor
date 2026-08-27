@@ -25,6 +25,64 @@ body {
     line-height: 1.6;
 }
 
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+}
+::-webkit-scrollbar-track {
+    background: #050505;
+}
+::-webkit-scrollbar-thumb {
+    background: #222;
+    border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-color);
+}
+
+/* Scroll Progress Bar */
+#scroll-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    background: var(--accent-color);
+    z-index: 9999;
+    box-shadow: 0 0 10px var(--accent-color);
+}
+
+/* Scanlines Effect */
+.scanlines {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(
+        to bottom,
+        rgba(255,255,255,0),
+        rgba(255,255,255,0) 50%,
+        rgba(0,0,0,0.2) 50%,
+        rgba(0,0,0,0.2)
+    );
+    background-size: 100% 4px;
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 0.4;
+}
+
+/* Particle Canvas */
+#particle-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0; /* Behind everything but above background */
+    pointer-events: none;
+}
+
 /* Custom Cursor */
 .cursor-glow {
     position: fixed;
@@ -107,6 +165,50 @@ a {
     box-shadow: 0 0 15px rgba(255, 42, 0, 0.5);
 }
 
+.btn-headlamp {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: var(--font-primary);
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+}
+
+.btn-headlamp:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #fff;
+}
+
+.btn-headlamp.active {
+    background: #fff;
+    color: #000;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+}
+
+/* Headlamp Overlay */
+#headlamp-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle 150px at 50% 50%, transparent 0%, rgba(0,0,0,0.98) 100%);
+    z-index: 1500;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    mix-blend-mode: multiply;
+}
+
+#headlamp-overlay.active {
+    opacity: 1;
+}
+
 /* Hero Section */
 .hero {
     height: 100vh;
@@ -137,7 +239,7 @@ a {
     max-width: 800px;
 }
 
-/* Glitch Effect */
+/* Glitch Effect Enhanced */
 .glitch {
     font-size: 5rem;
     font-weight: 800;
@@ -145,7 +247,7 @@ a {
     position: relative;
     display: inline-block;
     margin-bottom: 20px;
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+    text-shadow: 0 0 10px rgba(255, 42, 0, 0.6), 0 0 30px rgba(255, 42, 0, 0.4);
 }
 
 .glitch::before, .glitch::after {
@@ -155,39 +257,39 @@ a {
     left: 0;
     width: 100%;
     height: 100%;
-    background: var(--bg-color);
+    background: transparent;
 }
 
 .glitch::before {
-    left: 2px;
-    text-shadow: -2px 0 red;
+    left: 3px;
+    text-shadow: -3px 0 var(--accent-color);
     clip: rect(24px, 550px, 90px, 0);
-    animation: glitch-anim-2 3s infinite linear alternate-reverse;
+    animation: glitch-anim-2 2s infinite linear alternate-reverse;
 }
 
 .glitch::after {
-    left: -2px;
-    text-shadow: -2px 0 blue;
+    left: -3px;
+    text-shadow: -3px 0 #00ffff;
     clip: rect(85px, 550px, 140px, 0);
     animation: glitch-anim 2.5s infinite linear alternate-reverse;
 }
 
 @keyframes glitch-anim {
-    0% { clip: rect(10px, 9999px, 86px, 0); }
-    20% { clip: rect(62px, 9999px, 15px, 0); }
-    40% { clip: rect(35px, 9999px, 98px, 0); }
-    60% { clip: rect(78px, 9999px, 12px, 0); }
-    80% { clip: rect(5px, 9999px, 66px, 0); }
-    100% { clip: rect(93px, 9999px, 45px, 0); }
+    0% { clip: rect(15px, 9999px, 90px, 0); transform: skew(0.8deg); }
+    20% { clip: rect(70px, 9999px, 20px, 0); transform: skew(-0.8deg); }
+    40% { clip: rect(40px, 9999px, 100px, 0); transform: skew(0.8deg); }
+    60% { clip: rect(80px, 9999px, 15px, 0); transform: skew(-0.8deg); }
+    80% { clip: rect(10px, 9999px, 70px, 0); transform: skew(0.8deg); }
+    100% { clip: rect(95px, 9999px, 40px, 0); transform: skew(-0.8deg); }
 }
 
 @keyframes glitch-anim-2 {
-    0% { clip: rect(65px, 9999px, 100px, 0); }
-    20% { clip: rect(12px, 9999px, 56px, 0); }
-    40% { clip: rect(87px, 9999px, 24px, 0); }
-    60% { clip: rect(43px, 9999px, 90px, 0); }
-    80% { clip: rect(15px, 9999px, 78px, 0); }
-    100% { clip: rect(99px, 9999px, 12px, 0); }
+    0% { clip: rect(70px, 9999px, 110px, 0); transform: translate(-2px, 2px); }
+    20% { clip: rect(15px, 9999px, 60px, 0); transform: translate(2px, -2px); }
+    40% { clip: rect(90px, 9999px, 30px, 0); transform: translate(-2px, -2px); }
+    60% { clip: rect(45px, 9999px, 95px, 0); transform: translate(2px, 2px); }
+    80% { clip: rect(20px, 9999px, 80px, 0); transform: translate(-2px, 2px); }
+    100% { clip: rect(100px, 9999px, 15px, 0); transform: translate(2px, -2px); }
 }
 
 .subtitle {
@@ -536,6 +638,20 @@ a {
 }
 
 /* Animations */
+@keyframes room-flicker {
+    0%, 100% { opacity: 1; }
+    5%, 9% { opacity: 0.8; }
+    7% { opacity: 0.2; }
+    25% { opacity: 1; }
+    50%, 54% { opacity: 0.9; }
+    52% { opacity: 0.1; }
+    80% { opacity: 1; }
+}
+
+.flicker-active {
+    animation: room-flicker 0.4s ease-in-out;
+}
+
 .fade-in-section {
     opacity: 0;
     transform: translateY(40px);
