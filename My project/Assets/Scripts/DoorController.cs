@@ -69,6 +69,16 @@ public class DoorController : MonoBehaviour, IInteractable
                 isLocked = false;
                 ToggleDoor();
                 Debug.Log("Door unlocked and opened!");
+
+                // NAYA FIX: Auto-Trigger Cinematic Ambush! (Bina Unity Editor mein set kiye)
+                if (requiredKey.ToLower().Contains("guard"))
+                {
+                    CinematicAmbush[] ambushes = FindObjectsByType<CinematicAmbush>(FindObjectsSortMode.None);
+                    foreach (var ambush in ambushes)
+                    {
+                        ambush.TriggerAmbush();
+                    }
+                }
             }
             else
             {

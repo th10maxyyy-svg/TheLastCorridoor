@@ -69,6 +69,7 @@ public class PlayerController : MonoBehaviour
     public bool isHidden { get; private set; }
     private Transform currentExitPos;
     public bool isDead { get; private set; }
+    [HideInInspector] public bool isCinematicPlaying = false;
 
 
 
@@ -140,7 +141,7 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        if (isWakingUp) return; // Paralyze player during cinematic
+        if (isWakingUp || isCinematicPlaying) return; // Paralyze player during cinematic
 
         if (isHidden)
         {
@@ -258,6 +259,8 @@ public class PlayerController : MonoBehaviour
 
     private void ApplyMovement()
     {
+        if (characterController == null || !characterController.enabled) return;
+
         if (!characterController.isGrounded)
         {
             moveDirection.y += gravity * Time.deltaTime;
@@ -456,6 +459,7 @@ public class PlayerController : MonoBehaviour
         if (fadeImage != null) fadeImage.gameObject.SetActive(false);
         
         isWakingUp = false; // Player can now move!
+        if (characterController != null) characterController.enabled = true; // RE-ENABLE THE CONTROLLER SO THEY CAN WALK!
     }
 
     private System.Collections.IEnumerator FadeScreen(float startAlpha, float targetAlpha, float duration)
@@ -475,6 +479,135 @@ public class PlayerController : MonoBehaviour
         
         color.a = targetAlpha;
         fadeImage.color = color;
+    }
+
+    // --- NEW: DRAG TO BASEMENT CINEMATIC ---
+    public void TriggerDragToBasementCinematic(Transform spawnPoint, GameObject dragger = null)
+    {
+        if (spawnPoint == null)
+        {
+            Debug.LogError("PlayerController: Basement Spawn Point missing! Drag sequence failed.");
+            return;
+        }
+        StartCoroutine(DragToBasementSequence(spawnPoint, dragger));
+    }
+
+    private System.Collections.IEnumerator DragToBasementSequence(Transform spawnPoint, GameObject dragger)
+    {
+        isWakingUp = true; // Paralyze player Update loop immediately!
+        if (characterController != null) characterController.enabled = false;
+        if (fadeImage != null) fadeImage.gameObject.SetActive(true);
+
+        // NAYA: Saans zor se phoolay gi behoshi ke doran
+        if (playerStats != null)
+        {
+            playerStats.TriggerHeavyBreathing(10f);
+        }
+        
+        if (dragger != null)
+        {
+            // Enemy ko normal AI se rok kar dragging scene ka hissa bana dein!
+            UnityEngine.AI.NavMeshAgent agent = dragger.GetComponent<UnityEngine.AI.NavMeshAgent>();
+            if (agent != null) agent.enabled = false;
+            
+            EnemyAI enemyAI = dragger.GetComponent<EnemyAI>();
+            if (enemyAI != null) enemyAI.enabled = false;
+            
+            Animator draggerAnim = dragger.GetComponentInChildren<Animator>();
+            if (draggerAnim != null) draggerAnim.SetFloat("Speed", 1.5f); // Walk animation while dragging
+        }
+
+        // 1. Fall Down (Drop to floor quickly)
+        float duration = 0.6f;
+        float elapsed = 0f;
+        Vector3 startPos = playerCamera.transform.localPosition;
+        Quaternion startRot = playerCamera.transform.localRotation;
+        
+        Vector3 targetPos = new Vector3(0, 0.2f, 0.35f); 
+        Quaternion targetLocalRot = Quaternion.Euler(-10f, startRot.eulerAngles.y, 75f); // Tilted head
+        
+        while (elapsed < duration)
+        {
+            float t = elapsed / duration;
+            t = t * t * (3f - 2f * t); 
+            playerCamera.transform.localPosition = Vector3.Lerp(startPos, targetPos, t);
+            playerCamera.transform.localRotation = Quaternion.Lerp(startRot, targetLocalRot, t);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        playerCamera.transform.localPosition = targetPos;
+        playerCamera.transform.localRotation = targetLocalRot;
+
+        // 2. The Drag (Slide backward while blinking)
+        float dragDuration = 2.5f; // Faster fade to avoid seeing wall clipping!
+        elapsed = 0f;
+        
+        // Start fading in and out to simulate blinking/fainting
+        StartCoroutine(FadeScreen(0f, 0.8f, 0.8f)); // Fade almost to black quickly
+        
+        while (elapsed < dragDuration)
+        {
+            // Drag backward slowly
+            Vector3 moveDelta = -transform.forward * 1.5f * Time.deltaTime;
+            transform.position += moveDelta;
+            
+            // Enemy (Dragger) ko bhi saath peeche kheench kar le jao taake lagay wo drag kar raha hai!
+            if (dragger != null)
+            {
+                dragger.transform.position += moveDelta;
+                // Force him to look at player
+                dragger.transform.rotation = Quaternion.Slerp(dragger.transform.rotation, Quaternion.LookRotation(transform.position - dragger.transform.position), Time.deltaTime * 10f);
+            }
+            
+            // Eye blink logic
+            if (elapsed > 0.8f && elapsed < 0.9f)
+            {
+                StartCoroutine(FadeScreen(0.8f, 0.3f, 0.5f)); // Open eyes a bit
+            }
+            if (elapsed > 1.4f && elapsed < 1.5f)
+            {
+                StartCoroutine(FadeScreen(0.3f, 1f, 1f)); // Close fully (Blackout)
+            }
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        // Wait in complete darkness
+        yield return new WaitForSeconds(1.5f);
+        
+        if (dragger != null)
+        {
+            // Enemy ko band nahi karna! Wapas NavMesh par rakh kar AI chalu karni hai taake wo 1st floor par ghoomta rahay.
+            UnityEngine.AI.NavMeshAgent agent = dragger.GetComponent<UnityEngine.AI.NavMeshAgent>();
+            if (agent != null)
+            {
+                UnityEngine.AI.NavMeshHit hit;
+                if (UnityEngine.AI.NavMesh.SamplePosition(dragger.transform.position, out hit, 10.0f, UnityEngine.AI.NavMesh.AllAreas))
+                {
+                    dragger.transform.position = hit.position;
+                }
+                agent.enabled = true;
+            }
+            
+            EnemyAI enemyAI = dragger.GetComponent<EnemyAI>();
+            if (enemyAI != null) enemyAI.enabled = true;
+        }
+
+        // 3. Teleport to Basement
+        transform.position = spawnPoint.position;
+        transform.rotation = spawnPoint.rotation;
+
+        // Reset stats!
+        if (playerStats != null)
+        {
+            playerStats.isScriptedDeath = false;
+            playerStats.LoadStats(100f, 100f);
+        }
+        isDead = false;
+
+        // 4. Wake Up Sequence!
+        StartCoroutine(WakeUpSequence());
     }
 
     // --- NEW: DEATH CINEMATIC ---

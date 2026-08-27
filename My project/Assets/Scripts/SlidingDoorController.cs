@@ -16,6 +16,9 @@ public class SlidingDoorController : MonoBehaviour, IInteractable
     [SerializeField] private AudioClip openSound;
     [SerializeField] private AudioClip closeSound;
 
+    [Header("Events")]
+    public UnityEngine.Events.UnityEvent onDoorUnlocked;
+
     private bool isOpen = false;
     private Vector3 closedPosition;
     private Vector3 openPosition;
@@ -59,7 +62,20 @@ public class SlidingDoorController : MonoBehaviour, IInteractable
             {
                 isLocked = false;
                 ToggleDoor();
+                onDoorUnlocked?.Invoke();
                 Debug.Log("Sliding Door unlocked and opened!");
+
+                // NAYA FIX: Auto-Trigger Cinematic Ambush! (Bina Unity Editor mein set kiye)
+                Debug.Log("Checking required key for Ambush: " + requiredKey);
+                if (requiredKey.ToLower().Contains("guard"))
+                {
+                    CinematicAmbush[] ambushes = FindObjectsByType<CinematicAmbush>(FindObjectsSortMode.None);
+                    Debug.Log("Found " + ambushes.Length + " CinematicAmbushes in the scene.");
+                    foreach (var ambush in ambushes)
+                    {
+                        ambush.TriggerAmbush();
+                    }
+                }
             }
             else
             {

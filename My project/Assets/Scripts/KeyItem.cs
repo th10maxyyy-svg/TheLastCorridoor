@@ -6,6 +6,10 @@ public class KeyItem : MonoBehaviour, IInteractable
     [SerializeField] private string keyName = "RedKey";
     [SerializeField] private string promptMessage = "Press E to pick up Key";
 
+    [Header("Horror Events")]
+    [Tooltip("If true, picking up this key will wake up the enemy and start the Nightmare Phase!")]
+    [SerializeField] private bool wakesUpEnemy = false;
+
     public string GetKeyName()
     {
         return keyName;
@@ -31,8 +35,8 @@ public class KeyItem : MonoBehaviour, IInteractable
                 ir.ShowNotification("Picked up: " + keyName);
             }
 
-            // Special logic for progression
-            if (keyName == "Staff Key")
+            // Wake up enemy if this key triggers the nightmare phase
+            if (wakesUpEnemy || keyName == "Staff Key")
             {
                 ProgressionManager pm = FindAnyObjectByType<ProgressionManager>();
                 if (pm != null)

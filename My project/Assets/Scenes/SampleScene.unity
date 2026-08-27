@@ -865,7 +865,7 @@ MonoBehaviour:
   openAngle: 80
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -1185,7 +1185,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -1825,6 +1825,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::KeyItem
   keyName: blue key
   promptMessage: Press E to pick up Key
+  wakesUpEnemy: 0
 --- !u!1 &55258093
 GameObject:
   m_ObjectHideFlags: 0
@@ -1956,7 +1957,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -2134,7 +2135,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -2238,7 +2239,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -2614,7 +2615,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -2673,7 +2674,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -2908,7 +2909,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -3067,7 +3068,7 @@ MonoBehaviour:
   gameManagerAudio: {fileID: 161284101}
   gameOverSound: {fileID: 8300000, guid: 6ac67909f37860f4db75cee9043cad54, type: 3}
   bgmAudioSource: {fileID: 0}
-  backgroundAmbience: {fileID: 0}
+  backgroundAmbience: {fileID: 8300000, guid: f58fc03a1cf9f154fb4fd6a4eb35dde8, type: 3}
 --- !u!4 &161284099
 Transform:
   m_ObjectHideFlags: 0
@@ -3368,7 +3369,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -3580,7 +3581,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -3844,7 +3845,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -4264,7 +4265,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -4728,7 +4729,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -4940,7 +4941,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -5061,7 +5062,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -5108,7 +5109,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -5358,7 +5359,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -5495,7 +5496,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -5640,7 +5641,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -6007,7 +6008,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -6054,7 +6055,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -6535,6 +6536,8 @@ MonoBehaviour:
   bloodOverlay: {fileID: 957303950}
   bloodDisplayTime: 6
   bloodFadeSpeed: 0.5
+  isScriptedDeath: 0
+  basementSpawnPoint: {fileID: 0}
 --- !u!114 &347203921
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6579,6 +6582,7 @@ MonoBehaviour:
   bodyAnimator: {fileID: 7861481597012102126}
   playWakeUpCinematic: 1
   fadeImage: {fileID: 212174170}
+  isCinematicPlaying: 0
 --- !u!114 &347203922
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6720,7 +6724,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -6862,7 +6866,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -7244,7 +7248,7 @@ MonoBehaviour:
   openAngle: -90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -7873,7 +7877,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -9402,7 +9406,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -9449,7 +9453,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -9571,7 +9575,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -10867,7 +10871,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -11004,7 +11008,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 78ba00d4f5bb7474d97e2f2aa97363b6, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -11321,7 +11325,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -12754,7 +12758,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -12891,7 +12895,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -12938,7 +12942,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -13312,7 +13316,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -13482,7 +13486,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -14042,7 +14046,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -14331,7 +14335,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -14383,7 +14387,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -15159,7 +15163,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -15660,7 +15664,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -15707,7 +15711,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -15844,7 +15848,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -15891,7 +15895,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -16106,7 +16110,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -16153,7 +16157,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -16217,6 +16221,8 @@ MonoBehaviour:
   useTeaseInsteadOfChase: 1
   teaseDuration: 3
   teaseLeaveTarget: {fileID: 0}
+  isBasementTransition: 1
+  basementSpawnPoint: {fileID: 1974804433}
 --- !u!4 &882173117
 Transform:
   m_ObjectHideFlags: 0
@@ -16439,7 +16445,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -16754,6 +16760,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::KeyItem
   keyName: EscapeKey
   promptMessage: Press E to pick up Key
+  wakesUpEnemy: 0
 --- !u!23 &904176640
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -16850,7 +16857,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -17423,7 +17430,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -18171,7 +18178,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -18275,7 +18282,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -18502,7 +18509,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -18806,7 +18813,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -19004,7 +19011,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -19049,6 +19056,7 @@ GameObject:
   - component: {fileID: 1048910448}
   - component: {fileID: 1048910450}
   - component: {fileID: 1048910451}
+  - component: {fileID: 1048910452}
   m_Layer: 0
   m_Name: enemy
   m_TagString: Untagged
@@ -19334,6 +19342,28 @@ AudioReverbZone:
   m_Density: 100
   m_LFReference: 250
   m_RoomLF: 0
+--- !u!95 &1048910452
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1048910441}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 0}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!4 &1052488169 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: e3c95b89345eed64bacea2b05584843d, type: 3}
@@ -19447,7 +19477,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -20296,7 +20326,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -20433,7 +20463,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -20963,7 +20993,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -21137,7 +21167,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -21577,7 +21607,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -21681,7 +21711,7 @@ MonoBehaviour:
   openAngle: -80
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -21854,7 +21884,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -21963,7 +21993,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 78ba00d4f5bb7474d97e2f2aa97363b6, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -22010,7 +22040,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -22078,7 +22108,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -22789,7 +22819,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -22926,7 +22956,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -23030,7 +23060,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -23077,7 +23107,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -23255,7 +23285,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 78ba00d4f5bb7474d97e2f2aa97363b6, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -23511,7 +23541,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -23558,7 +23588,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -23695,7 +23725,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -23832,7 +23862,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -23879,7 +23909,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -23926,7 +23956,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -23973,7 +24003,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -24254,7 +24284,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -24306,7 +24336,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -24840,7 +24870,7 @@ MonoBehaviour:
   openAngle: -90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -24918,7 +24948,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -25078,7 +25108,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -25125,7 +25155,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -25172,7 +25202,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -25309,7 +25339,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -25446,7 +25476,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -25796,7 +25826,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -25933,7 +25963,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -26371,7 +26401,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -26688,7 +26718,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -27045,7 +27075,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -27539,7 +27569,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 78ba00d4f5bb7474d97e2f2aa97363b6, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -27802,7 +27832,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -27849,7 +27879,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -27896,7 +27926,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 78ba00d4f5bb7474d97e2f2aa97363b6, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -28054,7 +28084,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -28281,7 +28311,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -28578,7 +28608,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -28715,7 +28745,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -28762,7 +28792,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -28848,6 +28878,162 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ad2e00a29b893684badcf4a95835b385, type: 3}
+--- !u!1 &1608031269
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1608031270}
+  - component: {fileID: 1608031274}
+  - component: {fileID: 1608031273}
+  - component: {fileID: 1608031272}
+  - component: {fileID: 1608031271}
+  - component: {fileID: 1608031275}
+  m_Layer: 0
+  m_Name: guard room key
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1608031270
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1608031269}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 28.626, y: 4.256, z: -12.233}
+  m_LocalScale: {x: 0.2, y: 0.2, z: 0.2}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7245059733301964641}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1608031271
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1608031269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d240eea6538f94489b93dd0c1498a74, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KeyItem
+  keyName: guard key
+  promptMessage: Press E to pick up Key
+  wakesUpEnemy: 0
+--- !u!65 &1608031272
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1608031269}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!23 &1608031273
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1608031269}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &1608031274
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1608031269}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!54 &1608031275
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1608031269}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!114 &1614408915
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -28866,7 +29052,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -29060,7 +29246,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -29630,7 +29816,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -29914,6 +30100,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::KeyItem
   keyName: Morgue Key
   promptMessage: Press E to pick up Key
+  wakesUpEnemy: 0
 --- !u!65 &1672630390
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -30052,7 +30239,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -30099,7 +30286,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -30663,7 +30850,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -30710,7 +30897,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -31326,7 +31513,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -32283,7 +32470,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -32510,7 +32697,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -32799,7 +32986,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -33026,7 +33213,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -33073,7 +33260,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -33120,7 +33307,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -33517,7 +33704,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -33834,7 +34021,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -33881,7 +34068,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -34108,7 +34295,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -34444,6 +34631,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::KeyItem
   keyName: RedKey
   promptMessage: Press E to pick up Key
+  wakesUpEnemy: 0
 --- !u!4 &1953670883 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4762396254282262, guid: 3cbb80945b533fc48b6379a688829730, type: 3}
@@ -34746,7 +34934,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -35078,6 +35266,37 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1974687701}
   m_Mesh: {fileID: -3410944087502363961, guid: b8bf2f706c7dfef4eb25bf5b0ed7b936, type: 3}
+--- !u!1 &1974804432
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1974804433}
+  m_Layer: 0
+  m_Name: basement drop point
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1974804433
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1974804432}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 130.69, y: -17.47, z: -57.16}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7244992683935652705}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1978359743
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -35096,7 +35315,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -35218,7 +35437,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -35376,7 +35595,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -35513,7 +35732,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -35581,7 +35800,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -35628,7 +35847,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -35765,7 +35984,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -35948,7 +36167,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -36027,6 +36246,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::KeyItem
   keyName: rusty key
   promptMessage: Press E to pick up Key
+  wakesUpEnemy: 0
 --- !u!65 &2005783381
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -41223,7 +41443,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -41383,7 +41603,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -41430,7 +41650,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -41567,7 +41787,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -41614,7 +41834,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -41661,7 +41881,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -41911,7 +42131,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -42081,7 +42301,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -42128,7 +42348,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -42265,7 +42485,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -42344,6 +42564,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::KeyItem
   keyName: crank handle
   promptMessage: Press E to pick up Key
+  wakesUpEnemy: 0
 --- !u!65 &2094586846
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -42631,7 +42852,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -42997,7 +43218,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -43259,7 +43480,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -43375,7 +43596,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 3
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
@@ -118821,6 +119042,7 @@ Transform:
   - {fileID: 3601447}
   - {fileID: 2005783379}
   - {fileID: 816293742}
+  - {fileID: 1974804433}
   m_Father: {fileID: 7247642695638309917}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &7244994036057336889
@@ -120329,6 +120551,7 @@ Transform:
   - {fileID: 7247683003411351635}
   - {fileID: 7138034301922475683}
   - {fileID: 7138034300885641431}
+  - {fileID: 1608031270}
   m_Father: {fileID: 7244802577321214739}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &7245060310743566623
@@ -122622,7 +122845,7 @@ MonoBehaviour:
   openAngle: 90
   smoothSpeed: 5
   audioSource: {fileID: 0}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
   onDoorOpen:
     m_PersistentCalls:
