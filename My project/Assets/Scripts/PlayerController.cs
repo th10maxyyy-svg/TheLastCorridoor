@@ -371,6 +371,12 @@ public class PlayerController : MonoBehaviour
     public bool IsCrouching => isCrouching;
     public float GetCurrentSpeed() => characterController.velocity.magnitude;
 
+    public void TriggerWakeUpSequence()
+    {
+        if (fadeImage != null) fadeImage.raycastTarget = false;
+        StartCoroutine(WakeUpSequence());
+    }
+
     // --- NEW: WAKE UP CINEMATIC ---
     private System.Collections.IEnumerator WakeUpSequence()
     {
