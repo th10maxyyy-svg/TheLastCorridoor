@@ -274,6 +274,7 @@ public class EnemyAI : MonoBehaviour
     // --- NEW: HEARING SYSTEM (GRANNY STYLE) ---
     private Vector3 soundInvestigationPoint;
     private float soundInvestigateTimer;
+    private float currentInvestigateDuration = 3f;
 
     public void HearNoise(Vector3 noiseLocation)
     {
@@ -286,12 +287,32 @@ public class EnemyAI : MonoBehaviour
         Debug.Log("EnemyAI: Heard a noise! Investigating...");
         soundInvestigationPoint = noiseLocation;
         currentState = AIState.InvestigateSound;
+        currentInvestigateDuration = 3f; // Default search time
         
         NavMeshHit hit;
         if (NavMesh.SamplePosition(noiseLocation, out hit, 5f, NavMesh.AllAreas))
         {
             agent.SetDestination(hit.position);
             agent.speed = chaseSpeed * 0.8f; // Walk fast to the sound, but not full sprint
+        }
+    }
+
+    public void ForceInvestigate(Vector3 noiseLocation, float searchTime = 15f)
+    {
+        Debug.Log("EnemyAI: FORCED to investigate loud noise!");
+        soundInvestigationPoint = noiseLocation;
+        currentState = AIState.InvestigateSound;
+        currentInvestigateDuration = searchTime; // Custom search time
+        
+        if (agent == null) agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+        if (agent.isActiveAndEnabled && agent.isOnNavMesh)
+        {
+            NavMeshHit hit;
+            if (NavMesh.SamplePosition(noiseLocation, out hit, 5f, NavMesh.AllAreas))
+            {
+                agent.SetDestination(hit.position);
+                agent.speed = chaseSpeed * 0.9f; 
+            }
         }
     }
 
@@ -306,12 +327,12 @@ public class EnemyAI : MonoBehaviour
         }
 
         // Reached the sound location
-        if (!agent.pathPending && (agent.remainingDistance < 1f || agent.pathStatus == NavMeshPathStatus.PathInvalid || !agent.hasPath))
+        if (!agent.pathPending && (agent.remainingDistance < 1f || agent.pathStatus == UnityEngine.AI.NavMeshPathStatus.PathInvalid || !agent.hasPath))
         {
             soundInvestigateTimer += Time.deltaTime;
             
-            // Look around for 3 seconds
-            if (soundInvestigateTimer > 3f)
+            // Look around for the specified duration
+            if (soundInvestigateTimer > currentInvestigateDuration)
             {
                 soundInvestigateTimer = 0f;
                 currentState = AIState.Patrol;
