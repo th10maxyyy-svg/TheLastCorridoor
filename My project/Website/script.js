@@ -235,3 +235,21 @@ setInterval(() => {
         }, 500);
     }
 }, 3000);
+
+// 4. Video Auto-Play on Scroll (Intersection Observer)
+const gameplayVideo = document.getElementById('gameplay-video');
+if (gameplayVideo) {
+    const videoObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                // Video is visible, play it
+                gameplayVideo.play().catch(e => console.log("Auto-play blocked", e));
+            } else {
+                // Video is not visible, pause it
+                gameplayVideo.pause();
+            }
+        });
+    }, { threshold: 0.3 }); // Play when at least 30% of the video is visible
+
+    videoObserver.observe(gameplayVideo);
+}
