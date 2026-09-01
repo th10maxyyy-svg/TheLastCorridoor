@@ -4,7 +4,7 @@ using UnityEngine.AI;
 [RequireComponent(typeof(NavMeshAgent))]
 public class EnemyAI : MonoBehaviour
 {
-    public enum AIState { Dormant, Patrol, Chase, Search, InvestigateSound, Tease, LeaveTease, VanishAfterKill }
+    public enum AIState { Dormant, Patrol, Chase, Search, InvestigateSound, Tease, LeaveTease, VanishAfterKill, Stunned }
 
     [Header("State")]
     [SerializeField] private AIState currentState = AIState.Dormant; // Starts asleep!
@@ -182,8 +182,8 @@ public class EnemyAI : MonoBehaviour
             return; // Jab tak NavMesh na mile, aagay ka code na chalaye
         }
 
-        // Ensure agent is not stopped (unless dormant or teasing)
-        if (agent.isStopped && currentState != AIState.Dormant && currentState != AIState.Tease && currentState != AIState.LeaveTease && (playerStats == null || !playerStats.IsDead()))
+        // Ensure agent is not stopped (unless dormant, teasing or stunned)
+        if (agent.isStopped && currentState != AIState.Dormant && currentState != AIState.Tease && currentState != AIState.LeaveTease && currentState != AIState.Stunned && (playerStats == null || !playerStats.IsDead()))
         {
             agent.isStopped = false;
         }
@@ -244,6 +244,9 @@ public class EnemyAI : MonoBehaviour
                 break;
             case AIState.VanishAfterKill:
                 // Do nothing, just stand still
+                break;
+            case AIState.Stunned:
+                // Frozen by coroutine, do nothing
                 break;
         }
     }
@@ -338,6 +341,58 @@ public class EnemyAI : MonoBehaviour
                 currentState = AIState.Patrol;
                 GetNewPatrolTarget();
             }
+        }
+    }
+
+    public void TakeStun(float duration)
+    {
+        if (currentState == AIState.Dormant || currentState == AIState.VanishAfterKill) return;
+        StartCoroutine(StunRoutine(duration));
+    }
+    
+    private System.Collections.IEnumerator StunRoutine(float duration)
+    {
+        AIState previousState = currentState;
+        currentState = AIState.Stunned;
+        
+        if (agent.isActiveAndEnabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+        }
+        
+        if (enemyAnimator != null)
+        {
+            enemyAnimator.speed = 0f; // Freeze animation
+        }
+        
+        // Dushman ko zameen par lita dein (Rotate 90 degrees backward)
+        float originalXRotation = transform.localEulerAngles.x;
+        transform.localEulerAngles = new Vector3(90f, transform.localEulerAngles.y, transform.localEulerAngles.z);
+        
+        yield return new WaitForSeconds(duration);
+        
+        // Dushman ko wapas khara karein
+        transform.localEulerAngles = new Vector3(originalXRotation, transform.localEulerAngles.y, transform.localEulerAngles.z);
+        
+        if (enemyAnimator != null)
+        {
+            enemyAnimator.speed = 1f; // Unfreeze animation
+        }
+        
+        // After stun, the enemy is angry and immediately chases the player if possible
+        if (playerTransform != null)
+        {
+            currentState = AIState.Chase;
+        }
+        else
+        {
+            currentState = previousState;
+        }
+        
+        if (agent.isActiveAndEnabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = false;
         }
     }
 

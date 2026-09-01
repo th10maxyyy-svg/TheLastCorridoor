@@ -1,10 +1,12 @@
 using UnityEngine;
+using UnityEngine.Events;
 
 public class KeypadController : MonoBehaviour, IInteractable
 {
     [Header("Keypad Settings")]
     [SerializeField] private string passcode = "2024";
     [SerializeField] private ElectricTrap trapToDisable;
+    public UnityEvent onUnlock;
     
     [Header("UI Status")]
     private bool isKeypadOpen = false;
@@ -20,8 +22,6 @@ public class KeypadController : MonoBehaviour, IInteractable
 
     public void Interact(PlayerStats playerStats)
     {
-        if (trapToDisable == null) return;
-        
         isKeypadOpen = !isKeypadOpen;
         
         if (isKeypadOpen)
@@ -177,6 +177,11 @@ public class KeypadController : MonoBehaviour, IInteractable
             if (trapToDisable != null)
             {
                 trapToDisable.DisableTrap();
+            }
+            
+            if (onUnlock != null)
+            {
+                onUnlock.Invoke();
             }
             
             // Close keypad after success

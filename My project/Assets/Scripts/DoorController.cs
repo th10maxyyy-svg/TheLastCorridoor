@@ -48,6 +48,17 @@ public class DoorController : MonoBehaviour, IInteractable
         Quaternion targetRotation = isOpen ? openRotation : closedRotation;
         transform.localRotation = Quaternion.Slerp(transform.localRotation, targetRotation, Time.deltaTime * smoothSpeed);
     }
+    
+    // Can be called by KeypadController's OnUnlock Event
+    public void UnlockDoor()
+    {
+        isLocked = false;
+        isOpen = true; // Automatically open when unlocked via keypad
+        if (audioSource != null && openSound != null)
+        {
+            audioSource.PlayOneShot(openSound);
+        }
+    }
 
     public string GetInteractPrompt()
     {
