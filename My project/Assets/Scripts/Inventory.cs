@@ -191,6 +191,16 @@ public class Inventory : MonoBehaviour
         return false;
     }
 
+    public void RemoveItem(string itemName)
+    {
+        if (HasItem(itemName) && currentItem != null)
+        {
+            Destroy(currentItem);
+            currentItem = null;
+            Debug.Log("Removed and destroyed item: " + itemName);
+        }
+    }
+
     public GameObject GetCurrentItem()
     {
         return currentItem;
