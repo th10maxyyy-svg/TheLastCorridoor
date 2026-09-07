@@ -72,15 +72,16 @@ body {
     opacity: 0.4;
 }
 
-/* Particle Canvas */
-#particle-canvas {
+/* 3D WebGL Background */
+#webgl-canvas {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    z-index: 0; /* Behind everything but above background */
+    z-index: 0;
     pointer-events: none;
+    outline: none;
 }
 
 /* Custom Cursor */
@@ -245,10 +246,10 @@ a {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    position: relative;
     text-align: center;
-    overflow: hidden;
-    background: url('images/hero_background.jpg') center/cover no-repeat;
+    position: relative;
+    padding: 0 20px;
+    background: transparent; /* Let the 3D WebGL show through */
 }
 
 /* Adding a dark, gritty vignette effect */
