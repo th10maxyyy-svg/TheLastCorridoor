@@ -11,15 +11,31 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Bloody Pre-loader -->
+    <div id="preloader">
+        <div class="preloader-content">
+            <h1 class="glitch" data-text="CONNECTING TO CAMERA 04...">CONNECTING TO CAMERA 04...</h1>
+            <div class="loading-bar"><div class="loading-progress"></div></div>
+        </div>
+    </div>
+
+    <!-- Camcorder HUD Overlay -->
+    <div class="camcorder-hud">
+        <div class="hud-rec">
+            <span class="rec-dot"></span> REC
+        </div>
+        <div class="hud-battery">
+            <div class="battery-level"></div>
+            <span>PWR</span>
+        </div>
+        <div class="hud-timecode" id="timecode">00:00:00:00</div>
+    </div>
+
     <div class="scanlines"></div>
     <canvas id="webgl-canvas"></canvas>
     <div class="cursor-glow" id="cursor-glow"></div>
     
     <div id="headlamp-overlay"></div>
-
-    <div class="announcement-bar">
-        <a href="#teaser">🚨 OFFICIAL TEASER LAUNCHED — GAMEPLAY COMING SOON 🚨</a>
-    </div>
 
     <nav class="navbar">
         <div class="logo">T.L.C</div>

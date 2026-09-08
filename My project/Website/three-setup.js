@@ -35,6 +35,17 @@ scene.add(frontLight);
 
 // 3. Load GLTF Model
 let statueModel = null;
+let targetRotationX = 0;
+let targetRotationY = Math.PI / 4;
+let mouseX = 0;
+let mouseY = 0;
+
+// Mouse Tracking for Parallax
+document.addEventListener('mousemove', (event) => {
+    // Normalize mouse position from -1 to 1
+    mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+    mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+});
 
 const gltfLoader = new GLTFLoader();
 gltfLoader.load(
@@ -62,12 +73,20 @@ gltfLoader.load(
         // Store the base position to use in animation
         object.userData.baseY = object.position.y;
         object.userData.baseZ = object.position.z;
+        object.userData.baseRotY = Math.PI / 4;
 
         statueModel = object;
         scene.add(object);
+
+        // Hide Preloader once loaded
+        setTimeout(() => {
+            document.body.classList.add('loaded');
+        }, 500); // Small delay for dramatic effect
     },
     (xhr) => {
-        console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
+        const progress = (xhr.loaded / xhr.total) * 100;
+        const progressBar = document.querySelector('.loading-progress');
+        if (progressBar) progressBar.style.width = progress + '%';
     },
     (error) => {
         console.error('An error happened while loading the GLTF', error);
@@ -86,8 +105,13 @@ function animate() {
     requestAnimationFrame(animate);
 
     if (statueModel) {
-        // Slowly rotate statue idly
-        statueModel.rotation.y += 0.002;
+        // Map mouse position to target rotation (Parallax effect)
+        targetRotationY = statueModel.userData.baseRotY + mouseX * 0.5;
+        targetRotationX = -mouseY * 0.2;
+
+        // Smoothly interpolate rotation towards the target (creepy tracking)
+        statueModel.rotation.y += (targetRotationY - statueModel.rotation.y) * 0.05;
+        statueModel.rotation.x += (targetRotationX - statueModel.rotation.x) * 0.05;
         
         // Map scroll position to statue's Y position and scale (Exploded View effect)
         // As you scroll down, the statue rises and comes closer

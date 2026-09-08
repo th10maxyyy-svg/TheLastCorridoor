@@ -10,6 +10,10 @@ public class KeyItem : MonoBehaviour, IInteractable
     [Tooltip("If true, picking up this key will wake up the enemy and start the Nightmare Phase!")]
     [SerializeField] private bool wakesUpEnemy = false;
 
+    [Header("Custom Event")]
+    [Tooltip("Add things here that should happen when this key is picked up (e.g. Turn off lights, Spawn enemies)")]
+    public UnityEngine.Events.UnityEvent onPickUpEvent;
+
     public string GetKeyName()
     {
         return keyName;
@@ -27,6 +31,12 @@ public class KeyItem : MonoBehaviour, IInteractable
         {
             // Instead of destroying, pick up the physical object
             inventory.PickUpItem(this.gameObject);
+
+            // Trigger any custom events
+            if (onPickUpEvent != null)
+            {
+                onPickUpEvent.Invoke();
+            }
 
             // Show notification on screen
             InteractionRaycast ir = Camera.main.GetComponent<InteractionRaycast>();

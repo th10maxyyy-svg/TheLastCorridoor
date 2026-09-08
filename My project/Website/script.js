@@ -175,3 +175,99 @@ setInterval(() => {
         }, 500);
     }
 }, 3000);
+
+// ==========================================
+// ULTRA-PREMIUM HORROR HUD & AUDIO
+// ==========================================
+
+// 1. Camcorder Timecode
+const timecodeEl = document.getElementById('timecode');
+if (timecodeEl) {
+    let startTime = Date.now();
+    setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const date = new Date(elapsed);
+        const hrs = String(date.getUTCHours()).padStart(2, '0');
+        const mins = String(date.getUTCMinutes()).padStart(2, '0');
+        const secs = String(date.getUTCSeconds()).padStart(2, '0');
+        const ms = String(Math.floor(date.getUTCMilliseconds() / 10)).padStart(2, '0');
+        timecodeEl.innerText = `${hrs}:${mins}:${secs}:${ms}`;
+    }, 40); // 25fps update rate
+}
+
+// 2. Drone and Heartbeat Audio
+let isAudioInitialized = false;
+let droneOsc, droneGain;
+let lastHeartbeatTime = 0;
+
+function initAmbientAudio() {
+    if (isAudioInitialized) return;
+    isAudioInitialized = true;
+
+    // Dark Drone
+    droneOsc = audioCtx.createOscillator();
+    droneOsc.type = 'sine';
+    droneOsc.frequency.setValueAtTime(40, audioCtx.currentTime); // Low rumble
+
+    droneGain = audioCtx.createGain();
+    droneGain.gain.setValueAtTime(0, audioCtx.currentTime);
+    droneGain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 5); // Fade in over 5s
+
+    droneOsc.connect(droneGain);
+    droneGain.connect(audioCtx.destination);
+    droneOsc.start();
+}
+
+function playHeartbeat() {
+    if (!isAudioInitialized) return;
+    const now = audioCtx.currentTime;
+    
+    // Create kick drum heartbeat sound
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    osc.frequency.setValueAtTime(150, now);
+    osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.5);
+    
+    gainNode.gain.setValueAtTime(1, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+    
+    osc.start(now);
+    osc.stop(now + 0.5);
+}
+
+// Start audio on first click
+document.addEventListener('click', () => {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    initAmbientAudio();
+}, { once: true });
+
+// Heartbeat mapped to scroll
+window.addEventListener('scroll', () => {
+    if (!isAudioInitialized) return;
+    
+    // The further down you scroll, the faster the heartbeat
+    const scrollPercent = window.scrollY / (document.body.scrollHeight - window.innerHeight);
+    
+    // Base interval 1.5s, fastest 0.3s
+    const heartbeatInterval = 1.5 - (scrollPercent * 1.2); 
+    
+    const now = audioCtx.currentTime;
+    if (now - lastHeartbeatTime > heartbeatInterval) {
+        playHeartbeat();
+        // Double beat effect
+        setTimeout(playHeartbeat, 150);
+        lastHeartbeatTime = now;
+    }
+    
+    // Drone gets slightly louder/higher pitched when scrolling down
+    droneOsc.frequency.setValueAtTime(40 + (scrollPercent * 20), now);
+});
