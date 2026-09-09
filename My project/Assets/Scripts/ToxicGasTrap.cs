@@ -12,17 +12,26 @@ public class ToxicGasTrap : MonoBehaviour
     [Header("References")]
     public DoorController entranceDoor;
     public GameObject gasParticleSystem; // The green fog/gas visual
-    public AudioSource gasHissingSound;
-    public AudioSource hallucinationSound; // Random spooky noises
+    public AudioClip gasHissingSound;
+    public AudioClip hallucinationSound; // Random spooky noises
 
     [Header("Hallucination Settings")]
     public GameObject fakeJokerPrefab;
     [Tooltip("How close the fake Joker spawns to the player")]
     public float spawnDistance = 2.5f;
 
+    [Header("Visual Effects (Lights & Explosion)")]
+    [Tooltip("Lights that will explode/turn off when trap starts")]
+    public Light[] roomLights;
+    public AudioClip explosionSound;
+    public ParticleSystem sparksParticle; // Optional sparks on explode
+
     private bool isTrapActive = false;
     private PlayerStats playerStats;
     private Camera mainCam;
+    private ParticleSystem.EmissionModule gasEmission;
+    private float originalEmissionRate = 0f;
+    private AudioSource myAudioSource;
 
     private void OnTriggerEnter(Collider other)
     {
@@ -65,13 +74,37 @@ public class ToxicGasTrap : MonoBehaviour
                 AudioClip clip = (AudioClip)closeSoundField.GetValue(entranceDoor);
                 if (src != null && clip != null) src.PlayOneShot(clip);
             }
+        }
 
-            Debug.Log("ToxicGasTrap: Entrance Door SLAMMED and LOCKED!");
+        // --- NEW: Lights Explode! ---
+        if (myAudioSource == null) myAudioSource = gameObject.AddComponent<AudioSource>();
+
+        if (explosionSound != null) myAudioSource.PlayOneShot(explosionSound);
+        if (sparksParticle != null) sparksParticle.Play();
+
+        foreach (Light l in roomLights)
+        {
+            if (l != null) l.enabled = false;
         }
 
         // Start visuals and audio
-        if (gasParticleSystem != null) gasParticleSystem.SetActive(true);
-        if (gasHissingSound != null) gasHissingSound.Play();
+        if (gasParticleSystem != null) 
+        {
+            gasParticleSystem.SetActive(true);
+            ParticleSystem ps = gasParticleSystem.GetComponent<ParticleSystem>();
+            if (ps != null)
+            {
+                gasEmission = ps.emission;
+                originalEmissionRate = gasEmission.rateOverTimeMultiplier;
+            }
+        }
+
+        if (gasHissingSound != null) 
+        {
+            myAudioSource.clip = gasHissingSound;
+            myAudioSource.loop = true;
+            myAudioSource.Play();
+        }
 
         // Start the death sequence
         StartCoroutine(GasTrapRoutine());
@@ -86,12 +119,34 @@ public class ToxicGasTrap : MonoBehaviour
         if (!isTrapActive) return;
         isTrapActive = false;
         
-        Debug.Log("ToxicGasTrap: Gas stopped! Valve turned.");
+        Debug.Log("ToxicGasTrap: Gas is clearing! Fans turned on.");
+
+        if (myAudioSource != null && myAudioSource.isPlaying) myAudioSource.Stop();
+
+        // NAYA: Gas fauran (instantly) gayab nahi hogi, ahista ahista clear hogi!
+        StartCoroutine(ClearGasRoutine());
+    }
+
+    private IEnumerator ClearGasRoutine()
+    {
+        float fadeTime = 5f;
+        float currentRate = originalEmissionRate;
+
+        // Ahista ahista emission kam karein
+        while (fadeTime > 0)
+        {
+            fadeTime -= Time.deltaTime;
+            currentRate = Mathf.Lerp(currentRate, 0f, Time.deltaTime * 2f);
+            gasEmission.rateOverTimeMultiplier = currentRate;
+            yield return null;
+        }
+
+        gasEmission.rateOverTimeMultiplier = 0f;
+
+        // Thora wait karein taake hawa mein jo gas bachi hai wo khatam ho jaye
+        yield return new WaitForSeconds(6f);
 
         if (gasParticleSystem != null) gasParticleSystem.SetActive(false);
-        if (gasHissingSound != null) gasHissingSound.Stop();
-
-        // If you want to unlock a door here, you can!
     }
 
     private IEnumerator GasTrapRoutine()
@@ -150,9 +205,9 @@ public class ToxicGasTrap : MonoBehaviour
 
         GameObject fakeJoker = Instantiate(fakeJokerPrefab, spawnPos, Quaternion.LookRotation(mainCam.transform.position - spawnPos));
         
-        if (hallucinationSound != null)
+        if (hallucinationSound != null && myAudioSource != null)
         {
-            hallucinationSound.Play();
+            myAudioSource.PlayOneShot(hallucinationSound);
         }
 
         // Destroy it after a split second

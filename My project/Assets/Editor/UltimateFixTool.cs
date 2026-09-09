@@ -26,7 +26,7 @@ public class UltimateFixTool : MonoBehaviour
         if (oldStartArea != null) Undo.DestroyObjectImmediate(oldStartArea);
 
         // 3. Delete any other random floors
-        Collider[] allCols = FindObjectsByType<Collider>(FindObjectsSortMode.None);
+        Collider[] allCols = FindObjectsByType<Collider>(FindObjectsInactive.Exclude);
         foreach (var c in allCols)
         {
             if (c.name.ToLower().Contains("navfloor")) Undo.DestroyObjectImmediate(c.gameObject);

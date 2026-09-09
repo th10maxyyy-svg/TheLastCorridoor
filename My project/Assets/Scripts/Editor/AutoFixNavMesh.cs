@@ -1,3 +1,4 @@
+#pragma warning disable 0618 // Suppress obsolete warnings for Legacy NavMeshBuilder
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.AI; // For automatic NavMesh baking
@@ -41,10 +42,10 @@ public class AutoFixNavMesh : EditorWindow
         }
 
         // 2. Puraana NavMesh delete karo
-        NavMeshBuilder.ClearAllNavMeshes();
+        UnityEditor.AI.NavMeshBuilder.ClearAllNavMeshes();
 
         // 3. Problematic NavMeshSurface ko delete karo (Kyunke wo static flags ko ignore karta hai aur walls ke andar NavMesh bana deta hai)
-        Unity.AI.Navigation.NavMeshSurface[] surfaces = FindObjectsByType<Unity.AI.Navigation.NavMeshSurface>(FindObjectsSortMode.None);
+        Unity.AI.Navigation.NavMeshSurface[] surfaces = FindObjectsByType<Unity.AI.Navigation.NavMeshSurface>(FindObjectsInactive.Exclude);
         foreach (Unity.AI.Navigation.NavMeshSurface surface in surfaces)
         {
             DestroyImmediate(surface);
@@ -52,7 +53,7 @@ public class AutoFixNavMesh : EditorWindow
         }
 
         // 4. Sirf aur sirf Standard Unity NavMesh Bake karo (Jo exactly static flags ko follow karega!)
-        NavMeshBuilder.BuildNavMesh();
+        UnityEditor.AI.NavMeshBuilder.BuildNavMesh();
         Debug.Log("Baked perfect Legacy NavMesh.");
         
         // 5. Ek pyara sa Popup message dikhao!
