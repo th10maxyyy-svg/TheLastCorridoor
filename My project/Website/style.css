@@ -438,10 +438,21 @@ a {
     align-items: center;
 }
 
+.about-text {
+    background: rgba(0, 0, 0, 0.75);
+    padding: 30px;
+    border-radius: 8px;
+    border-left: 4px solid var(--accent-color);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+}
+
 .about-text p {
     font-size: 1.1rem;
-    color: #a0a0a0;
+    color: #e0e0e0; /* Brighter for readability */
     margin-bottom: 20px;
+    line-height: 1.6;
+    text-shadow: 1px 1px 3px #000;
 }
 
 .about-text strong {
