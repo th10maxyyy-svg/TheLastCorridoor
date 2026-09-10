@@ -29,6 +29,8 @@ public class OvenPuzzleManager : MonoBehaviour
     void Start()
     {
         if (audioSource == null) audioSource = GetComponent<AudioSource>();
+        if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
+        
         if (classroomKey != null) classroomKey.SetActive(false); // Hide the key initially
     }
 
