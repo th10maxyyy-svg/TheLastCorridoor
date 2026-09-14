@@ -38,6 +38,13 @@ public class BodyBag : MonoBehaviour, IInteractable
         if (unzipSound != null) AudioSource.PlayClipAtPoint(unzipSound, transform.position);
         if (bagAnimator != null) bagAnimator.SetTrigger("Unzip"); // Agar zip khulne ki animation hai
         
+        // Bag ko foran ghaib (vanish) kar do!
+        MeshRenderer bagMesh = GetComponent<MeshRenderer>();
+        if (bagMesh != null) bagMesh.enabled = false;
+        
+        Collider bagCollider = GetComponent<Collider>();
+        if (bagCollider != null) bagCollider.enabled = false;
+        
         if (containsFuses)
         {
             if (fusesItem != null) fusesItem.SetActive(true);

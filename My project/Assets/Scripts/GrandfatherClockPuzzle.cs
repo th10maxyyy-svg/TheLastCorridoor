@@ -5,7 +5,6 @@ public class GrandfatherClockPuzzle : MonoBehaviour, IInteractable
 {
     [Header("Requirements (Item Names)")]
     public string pendulumName = "Pendulum";
-    public string handsName = "Clock Hands";
 
     [Header("Time Setting")]
     public int targetHour = 3;
@@ -30,7 +29,6 @@ public class GrandfatherClockPuzzle : MonoBehaviour, IInteractable
     public GameObject glassPane; // Ghari ka sheesha jo tootega
 
     private bool hasPendulum = false;
-    private bool hasHands = false;
     private bool isSolved = false;
     private bool isShifting = false;
 
@@ -46,12 +44,9 @@ public class GrandfatherClockPuzzle : MonoBehaviour, IInteractable
     {
         if (isSolved || isShifting) return "";
 
-        if (!hasPendulum || !hasHands)
+        if (!hasPendulum)
         {
-            string missing = "";
-            if (!hasPendulum) missing += pendulumName;
-            if (!hasHands) missing += (missing == "" ? "" : " and ") + handsName;
-            return "Missing parts: " + missing + " (Press E to insert)";
+            return "Missing parts: " + pendulumName + " (Press E to insert)";
         }
         else
         {
@@ -66,23 +61,15 @@ public class GrandfatherClockPuzzle : MonoBehaviour, IInteractable
         Inventory inventory = playerStats.GetComponent<Inventory>();
 
         // 1. Missing parts lagayen
-        if (!hasPendulum || !hasHands)
+        if (!hasPendulum)
         {
-            if (!hasPendulum && inventory.HasItem(pendulumName))
+            if (inventory.HasItem(pendulumName))
             {
                 hasPendulum = true;
                 inventory.RemoveItem(pendulumName);
                 if (pendulumVisual != null) pendulumVisual.SetActive(true);
-                return;
             }
-            else if (!hasHands && inventory.HasItem(handsName))
-            {
-                hasHands = true;
-                inventory.RemoveItem(handsName);
-                if (clockHandsVisual != null) clockHandsVisual.SetActive(true);
-                return;
-            }
-            return; // Agar dono nahi hain to kuch na karo
+            return;
         }
 
         // 2. Time change karo (15 minute aagay)
