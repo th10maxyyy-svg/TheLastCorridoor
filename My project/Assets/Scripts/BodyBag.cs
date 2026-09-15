@@ -56,13 +56,50 @@ public class BodyBag : MonoBehaviour, IInteractable
         else if (containsJumpscare)
         {
             if (jumpscareSound != null) AudioSource.PlayClipAtPoint(jumpscareSound, transform.position);
-            if (jumpscareZombie != null) jumpscareZombie.SetActive(true);
-            
-            // Jumpscare punishment
-            if (playerStats != null)
+            if (jumpscareZombie != null) 
             {
-                playerStats.TakeDamage(15f); // Thora damage de do
+                jumpscareZombie.SetActive(true);
+                StartCoroutine(JumpscareRoutine(playerStats));
             }
+            else
+            {
+                // Fallback agar zombie assign nahi kiya
+                if (playerStats != null) playerStats.TakeDamage(5f);
+            }
+        }
+    }
+
+    private System.Collections.IEnumerator JumpscareRoutine(PlayerStats player)
+    {
+        float duration = 0.3f;
+        float elapsed = 0f;
+        Vector3 startPos = jumpscareZombie.transform.position;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            
+            if (player != null && jumpscareZombie != null)
+            {
+                // Player ki chhati (chest) ki taraf bhage ga
+                Vector3 targetPos = player.transform.position + Vector3.up * 1.2f;
+                jumpscareZombie.transform.position = Vector3.Lerp(startPos, targetPos, t);
+                jumpscareZombie.transform.LookAt(targetPos);
+            }
+            yield return null;
+        }
+
+        // Hit and Damage!
+        if (player != null)
+        {
+            player.TakeDamage(5f);
+        }
+
+        // Hit karne ke baad ghaib ho jaye (taake rasta block na ho)
+        if (jumpscareZombie != null)
+        {
+            jumpscareZombie.SetActive(false);
         }
     }
 }
