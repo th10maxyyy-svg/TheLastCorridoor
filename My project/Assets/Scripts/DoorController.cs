@@ -74,6 +74,14 @@ public class DoorController : MonoBehaviour, IInteractable
     {
         if (isLocked)
         {
+            // NAYA FIX: Agar Required Key empty hai, to matlab isay inventory se nahi, kisi Puzzle se khulna hai!
+            if (string.IsNullOrEmpty(requiredKey))
+            {
+                Debug.Log("Door is locked via puzzle!");
+                if (onLockedInteract != null) onLockedInteract.Invoke();
+                return;
+            }
+
             Inventory inventory = playerStats.GetComponent<Inventory>();
             if (inventory != null && inventory.HasItem(requiredKey))
             {
@@ -81,7 +89,7 @@ public class DoorController : MonoBehaviour, IInteractable
                 ToggleDoor();
                 Debug.Log("Door unlocked and opened!");
 
-                // NAYA FIX: Auto-Trigger Cinematic Ambush! (Bina Unity Editor mein set kiye)
+                // Auto-Trigger Cinematic Ambush! 
                 if (requiredKey.ToLower().Contains("guard"))
                 {
                     CinematicAmbush[] ambushes = FindObjectsByType<CinematicAmbush>(FindObjectsSortMode.None);
