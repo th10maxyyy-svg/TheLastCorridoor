@@ -23,6 +23,8 @@ public class RespawnManager : MonoBehaviour
     private void Start()
     {
         // 1. Setup UI
+        if (spookyText != null) spookyText.text = ""; // Editor wala text foran clear kar do!
+
         if (blackScreen != null)
         {
             blackScreen.alpha = 1f; // Start black if loading in
@@ -47,14 +49,36 @@ public class RespawnManager : MonoBehaviour
             Vector3 savedPos = SaveManager.instance.GetVector3(data.playerPosition);
             if (savedPos != Vector3.zero)
             {
-                // Disable CharacterController temporarily to teleport
+                // Zameen se thora sa oopar rakhein taake floor ke andar spawn na ho
+                savedPos.y += 1.0f; 
+
                 CharacterController cc = player.GetComponent<CharacterController>();
                 if (cc != null) cc.enabled = false;
                 
                 player.transform.position = savedPos;
                 
+                // CRITICAL FIX: Unity Physics engine ko foran update karo warna player neechay gir jata hai
+                Physics.SyncTransforms();
+                
                 if (cc != null) cc.enabled = true;
-                Debug.Log("Player respawned at saved position.");
+                Debug.Log("Player respawned safely at: " + savedPos);
+            }
+        }
+
+        // WORLD STATE: Remove items that were already picked up or used!
+        if (!string.IsNullOrEmpty(data.collectedItemsCSV))
+        {
+            string[] itemsToDestroy = data.collectedItemsCSV.Split(new char[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries);
+            foreach (string itemName in itemsToDestroy)
+            {
+                if (itemName == data.droppedItemName) continue; // Drop hui cheez ko delete nahi karna!
+                
+                GameObject oldItem = GameObject.Find(itemName);
+                if (oldItem != null)
+                {
+                    Destroy(oldItem);
+                    Debug.Log("[WorldState] Destroyed already collected item: " + itemName);
+                }
             }
         }
 
@@ -84,10 +108,7 @@ public class RespawnManager : MonoBehaviour
 
     private IEnumerator FadeOutBlackScreen()
     {
-        yield return new WaitForSeconds(2f); // Show text for a bit
-        
-        if (spookyText != null) spookyText.text = ""; // clear text
-        
+        // Foran fade out shuru karo
         while (blackScreen != null && blackScreen.alpha > 0)
         {
             blackScreen.alpha -= Time.deltaTime * 0.5f;
@@ -123,8 +144,8 @@ public class RespawnManager : MonoBehaviour
 
         yield return new WaitForSeconds(3f); // Read time
 
-        // Decide Respawn Point (Random between basement and dayroom for now)
-        Transform chosenRespawn = (Random.value > 0.5f && basementRespawn != null) ? basementRespawn : dayRoomRespawn;
+        // USER REQUEST: Sirf basement mein hi spawn karna hai dayroom mein nahi!
+        Transform chosenRespawn = basementRespawn;
         
         // Save the new respawn position to the SaveManager
         if (chosenRespawn != null && SaveManager.instance != null)

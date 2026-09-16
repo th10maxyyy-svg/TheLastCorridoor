@@ -3,7 +3,6 @@ using UnityEngine.SceneManagement;
 
 public class MainMenuManager : MonoBehaviour
 {
-    // Ye function Play button ke liye hai
     public void StartGame()
     {
         PlayClickSound();
@@ -15,7 +14,7 @@ public class MainMenuManager : MonoBehaviour
             Debug.Log("Old save deleted for New Game.");
         }
         
-        SceneManager.LoadScene("SampleScene");
+        SceneManager.LoadScene("neww");
     }
 
     [Header("UI Screens")]
@@ -65,7 +64,7 @@ public class MainMenuManager : MonoBehaviour
     {
         PlayClickSound();
         Debug.Log("Resume Game command received! Loading last save...");
-        SceneManager.LoadScene("SampleScene");
+        SceneManager.LoadScene("neww");
     }
 
     // Ye function Settings kholne ke liye hai

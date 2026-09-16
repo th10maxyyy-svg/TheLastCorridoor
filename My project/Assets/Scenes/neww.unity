@@ -1027,6 +1027,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &15398854
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1397,7 +1398,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a7fca13118cfe264987db2bc386379ac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorController
-  isLocked: 0
+  isLocked: 1
   requiredKey: genreator power
   rotationAxis: {x: 0, y: 1, z: 0}
   openAngle: 90
@@ -1411,6 +1412,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &29788800
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -7259,6 +7261,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &71197632
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -7437,6 +7440,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &88172727
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -7775,6 +7779,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &96281476
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -8398,6 +8403,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &114592245
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -8445,6 +8451,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &118466769
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -9079,6 +9086,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &144130871
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -9838,6 +9846,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &183084638
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -10050,6 +10059,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &189942872
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -10405,6 +10415,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &202984707
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -10926,6 +10937,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &242423039
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -11610,6 +11622,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &262261658
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -11985,6 +11998,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &268111041
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -12287,6 +12301,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &283870729
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -12472,6 +12487,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &295443774
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -12519,6 +12535,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &298041811
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -12902,6 +12919,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &308714752
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -13039,6 +13057,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &313449862
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -13421,6 +13440,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &327553730
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -13970,6 +13990,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &333751143
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -14146,6 +14167,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &336724472
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -14960,6 +14982,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &356759994
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -15249,6 +15272,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &372764657
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -15754,6 +15778,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &390292522
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -16858,6 +16883,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &421025854
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -24254,6 +24280,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &502465321
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -24365,6 +24392,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &509691494
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -24559,13 +24587,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 515186682}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -23.699, y: 4.347, z: 19.554}
+  m_LocalRotation: {x: 0.00000003774895, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -23.699, y: 4.3469996, z: 3.804001}
   m_LocalScale: {x: 0.1, y: 0.1, z: 0.16}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 53291742}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 7244670487598098897}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &516761879
 MonoBehaviour:
@@ -24593,6 +24621,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &516761880
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -25329,6 +25358,7 @@ RectTransform:
   - {fileID: 1844501636}
   - {fileID: 212174169}
   - {fileID: 957303949}
+  - {fileID: 1351011045}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -26068,6 +26098,56 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 565724238}
   m_Mesh: {fileID: 4300000, guid: ed20d9817f1c154459d5001260cf5125, type: 3}
+--- !u!1 &566122144
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 566122146}
+  - component: {fileID: 566122145}
+  m_Layer: 0
+  m_Name: respawn manager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &566122145
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 566122144}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 537e853564b85ec41aa3b4bed82a7ad1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RespawnManager
+  basementRespawn: {fileID: 657873149}
+  dayRoomRespawn: {fileID: 1953368968}
+  blackScreen: {fileID: 1351011048}
+  spookyText: {fileID: 728866831}
+--- !u!4 &566122146
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 566122144}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -15.01033, y: 3.81324, z: 14.32897}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 657873149}
+  - {fileID: 1953368968}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &570679535
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -26755,6 +26835,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &598997339
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -27159,7 +27240,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a7fca13118cfe264987db2bc386379ac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorController
-  isLocked: 0
+  isLocked: 1
   requiredKey: rusty key
   rotationAxis: {x: 0, y: 1, z: 0}
   openAngle: 90
@@ -27173,6 +27254,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &604876072
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -27844,6 +27926,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &628554639
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -28565,6 +28648,37 @@ MonoBehaviour:
   displayMessage: Elevator is Out of Order
   audioSource: {fileID: 0}
   errorSound: {fileID: 0}
+--- !u!1 &657873148
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 657873149}
+  m_Layer: 0
+  m_Name: 'basement respawn '
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &657873149
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 657873148}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 41.519333, y: -6.86, z: -10.34597}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 566122146}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &659548333
 GameObject:
   m_ObjectHideFlags: 0
@@ -29927,6 +30041,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &690262481
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -30064,6 +30179,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &695981412
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -30523,6 +30639,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &709316816
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -31126,6 +31243,143 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 724414858}
   m_Mesh: {fileID: 3925360246919112806, guid: 1bb431fb826cd6740a21c5fabc39e8a9, type: 3}
+--- !u!1 &728866830
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 728866833}
+  - component: {fileID: 728866832}
+  - component: {fileID: 728866831}
+  m_Layer: 5
+  m_Name: death text
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &728866831
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 728866830}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_text: You cannot escape..
+  m_isRightToLeft: 0
+  m_fontAsset: {fileID: 11400000, guid: ad8db70cade0d2c4aadf2e53c7254b4e, type: 2}
+  m_sharedMaterial: {fileID: -7920255888495401152, guid: ad8db70cade0d2c4aadf2e53c7254b4e, type: 2}
+  m_fontSharedMaterials: []
+  m_fontMaterial: {fileID: 0}
+  m_fontMaterials: []
+  m_fontColor32:
+    serializedVersion: 2
+    rgba: 4278190219
+  m_fontColor: {r: 0.5450981, g: 0, b: 0, a: 1}
+  m_enableVertexGradient: 0
+  m_colorMode: 3
+  m_fontColorGradient:
+    topLeft: {r: 1, g: 1, b: 1, a: 1}
+    topRight: {r: 1, g: 1, b: 1, a: 1}
+    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
+    bottomRight: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColorGradientPreset: {fileID: 0}
+  m_spriteAsset: {fileID: 0}
+  m_tintAllSprites: 0
+  m_StyleSheet: {fileID: 0}
+  m_TextStyleHashCode: -1183493901
+  m_overrideHtmlColors: 0
+  m_faceColor:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontSize: 36
+  m_fontSizeBase: 36
+  m_fontWeight: 400
+  m_enableAutoSizing: 0
+  m_fontSizeMin: 18
+  m_fontSizeMax: 72
+  m_fontStyle: 0
+  m_HorizontalAlignment: 1
+  m_VerticalAlignment: 256
+  m_textAlignment: 65535
+  m_characterSpacing: 0
+  m_characterHorizontalScale: 1
+  m_wordSpacing: 0
+  m_lineSpacing: 0
+  m_lineSpacingMax: 0
+  m_paragraphSpacing: 0
+  m_charWidthMaxAdj: 0
+  m_TextWrappingMode: 1
+  m_wordWrappingRatios: 0.4
+  m_overflowMode: 0
+  m_linkedTextComponent: {fileID: 0}
+  parentLinkedComponent: {fileID: 0}
+  m_enableKerning: 0
+  m_ActiveFontFeatures: 6e72656b
+  m_enableExtraPadding: 0
+  checkPaddingRequired: 0
+  m_isRichText: 1
+  m_EmojiFallbackSupport: 1
+  m_parseCtrlCharacters: 1
+  m_isOrthographic: 1
+  m_isCullingEnabled: 0
+  m_horizontalMapping: 0
+  m_verticalMapping: 0
+  m_uvLineOffset: 0
+  m_geometrySortingOrder: 0
+  m_IsTextObjectScaleStatic: 0
+  m_VertexBufferAutoSizeReduction: 0
+  m_useMaxVisibleDescender: 1
+  m_pageToDisplay: 1
+  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_isUsingLegacyAnimationComponent: 0
+  m_isVolumetricText: 0
+  m_hasFontAssetChanged: 0
+  m_baseMaterial: {fileID: 0}
+  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!222 &728866832
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 728866830}
+  m_CullTransparentMesh: 1
+--- !u!224 &728866833
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 728866830}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1351011045}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 200, y: 50}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &730110325
 GameObject:
   m_ObjectHideFlags: 0
@@ -31343,6 +31597,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &732605864
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -31513,6 +31768,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &741711883
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -32461,6 +32717,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &764271012
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -32848,6 +33105,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &774361787
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -32900,6 +33158,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &775443260
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -34175,6 +34434,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &818345417
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -39783,6 +40043,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &849705439
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -39921,6 +40182,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &853198019
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -40058,6 +40320,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &854117012
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -40105,6 +40368,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &855154653
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -40499,6 +40763,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &879929565
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -40578,6 +40843,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &881461457
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -40636,6 +40902,7 @@ MonoBehaviour:
   teaseLeaveTarget: {fileID: 0}
   isBasementTransition: 1
   basementSpawnPoint: {fileID: 1974804433}
+  triggerOnWalk: 0
 --- !u!4 &882173117
 Transform:
   m_ObjectHideFlags: 0
@@ -41031,6 +41298,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &887070229
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -41665,6 +41933,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &915843593
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -42768,6 +43037,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &943845377
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -43958,6 +44228,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &980478825
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -44125,6 +44396,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &989437439
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -44383,6 +44655,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &992876726
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -49333,6 +49606,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!23 &999518532
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -54649,6 +54923,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1028283412
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -55111,6 +55386,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1043833159
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -55608,6 +55884,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1060042964
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -56840,6 +57117,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1097713074
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -57139,6 +57417,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1103424591
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -57765,6 +58044,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1133480731
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -57971,6 +58251,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1142799738
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -58443,6 +58724,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1161162676
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -58464,6 +58746,70 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.454121, y: 1.875416, z: 0.076693}
   m_Center: {x: -0.23047051, y: -0.707034, z: 0.009453501}
+--- !u!1 &1164073939
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1164073941}
+  - component: {fileID: 1164073940}
+  m_Layer: 0
+  m_Name: save manager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1164073940
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1164073939}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a0c917986148e2f48beba43968a1c62d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SaveManager
+  currentSaveData:
+    lives: 3
+    playerPosition:
+    - 0
+    - 0
+    - 0
+    playerRotation:
+    - 0
+    - 0
+    - 0
+    - 0
+    heldItemName: 
+    droppedItemName: 
+    droppedItemPosition:
+    - 0
+    - 0
+    - 0
+    unlockedDoorsCSV: 
+    collectedItemsCSV: 
+    isNightmareActive: 0
+--- !u!4 &1164073941
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1164073939}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 23.24306, y: 0.03194, z: -5.47372}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1165166239
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -58642,6 +58988,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1168711747
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -58906,6 +59253,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1181590640
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -59050,6 +59398,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1187149237
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -59097,6 +59446,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1189946674
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -59165,6 +59515,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1193448290
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -60306,6 +60657,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!1 &1219582398
 GameObject:
   m_ObjectHideFlags: 0
@@ -60443,6 +60795,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1226152554
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -60547,6 +60900,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1228899555
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -60594,6 +60948,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1230715754
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -61086,6 +61441,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1247051224
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -61540,6 +61896,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1263537203
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -61722,13 +62079,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1272476515}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -23.678, y: 4.393, z: 19.52}
+  m_LocalRotation: {x: 0.00000003774895, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -23.678, y: 4.3929996, z: 3.7700007}
   m_LocalScale: {x: 0.1, y: 0.1, z: 0.16}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 428372049}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 7244670487598098897}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1276556608
 GameObject:
@@ -61788,6 +62145,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1279019499
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -62106,6 +62464,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1285109264
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -62243,6 +62602,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1285466049
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -62290,6 +62650,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1289121169
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -62415,6 +62776,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1292682849
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -62494,6 +62856,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1295797621
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -63058,6 +63421,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1319645782
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -63142,6 +63506,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1323393357
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -63981,6 +64346,95 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4784972042056500, guid: 387e76a7ea1b2d84ab42f645bdc8f61e, type: 3}
   m_PrefabInstance: {fileID: 1253158385}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1351011044
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1351011045}
+  - component: {fileID: 1351011047}
+  - component: {fileID: 1351011046}
+  - component: {fileID: 1351011048}
+  m_Layer: 5
+  m_Name: blackdeathscreen
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1351011045
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1351011044}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 728866833}
+  m_Father: {fileID: 542944827}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1351011046
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1351011044}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 0}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!222 &1351011047
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1351011044}
+  m_CullTransparentMesh: 1
+--- !u!225 &1351011048
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1351011044}
+  m_Enabled: 1
+  m_Alpha: 0
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!114 &1353476840
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -64007,6 +64461,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1353476841
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -64116,6 +64571,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1356432451
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -64308,6 +64764,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1358273880
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -64355,6 +64812,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1358329102
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -64433,6 +64891,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1360619361
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -64664,6 +65123,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1367446954
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -64904,6 +65364,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1369912401
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -65639,6 +66100,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1402352645
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -65776,6 +66238,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1419920078
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -66541,6 +67004,7 @@ MonoBehaviour:
   teaseLeaveTarget: {fileID: 0}
   isBasementTransition: 0
   basementSpawnPoint: {fileID: 0}
+  triggerOnWalk: 0
 --- !u!65 &1452043472
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -66645,6 +67109,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1454550299
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -67204,6 +67669,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1479165055
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -67781,6 +68247,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1512752210
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -68015,6 +68482,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1517192393
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -68447,6 +68915,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1525246604
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -68710,6 +69179,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1531430730
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -68757,6 +69227,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1532182200
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -68804,6 +69275,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1535457114
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -68962,6 +69434,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1538133204
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -69223,6 +69696,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1546728300
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -69695,6 +70169,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1584520677
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -69863,6 +70338,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1595541808
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -70055,6 +70531,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1597531941
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -70830,6 +71307,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1614408916
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -71313,6 +71791,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1627435582
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -72025,6 +72504,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1644466267
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -72520,6 +73000,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1675769433
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -72645,6 +73126,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1679417662
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -73500,6 +73982,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1715966756
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -73630,6 +74113,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1716722466
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -74573,6 +75057,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1749413207
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -75664,6 +76149,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1783103785
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -76040,6 +76526,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1806097192
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -76590,6 +77077,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1838210934
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -76913,6 +77401,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1855048032
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -77023,6 +77512,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1871882616
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -77070,6 +77560,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1873440639
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -77993,6 +78484,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1909030605
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -78310,6 +78802,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1914200666
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -78484,6 +78977,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1915949635
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -79051,6 +79545,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1930596735
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -79416,6 +79911,37 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 7247809911392509721}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1953368967
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1953368968}
+  m_Layer: 0
+  m_Name: dayroom respawn
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1953368968
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1953368967}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 37.79, y: -3.17, z: -20.09897}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 566122146}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1953578569
 GameObject:
@@ -79920,6 +80446,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1963189188
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -80455,6 +80982,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1978359744
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -80577,6 +81105,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1982956595
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -80866,6 +81395,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1989433287
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -81003,6 +81533,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1990453942
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -81103,6 +81634,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1993807023
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -81150,6 +81682,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1994548872
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -81319,6 +81852,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &1999067206
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -81502,6 +82036,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &2000659487
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -87061,6 +87596,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &2025421206
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -92165,6 +92701,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &2036766666
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -92212,6 +92749,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &2037082357
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -92349,6 +92887,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &2046648995
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -92396,6 +92935,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &2047100905
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -92443,6 +92983,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &2050037557
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -93124,6 +93665,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &2068897617
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -93294,6 +93836,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &2073384065
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -93472,6 +94015,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &2074205568
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -93850,6 +94394,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &2088203713
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -94251,6 +94796,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &2099761867
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -99884,6 +100430,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &2130930298
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -100177,6 +100724,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &2138808167
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -100293,6 +100841,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!65 &2143680693
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -102247,15 +102796,15 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 970628560459726704}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: 0.03408717, z: -0, w: 0.99941885}
-  m_LocalPosition: {x: -4.58, y: -0.06, z: 6.4912887}
-  m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
+  m_LocalRotation: {x: 0.00000003772701, y: 0.03408717, z: 0.0000000012867548, w: 0.99941885}
+  m_LocalPosition: {x: -22.60045, y: -0.2960723, z: -45.688}
+  m_LocalScale: {x: 0.4934596, y: 0.4934596, z: 0.4934596}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2934356665092617642}
   - {fileID: 5306376964349317296}
   - {fileID: 8801497566890725194}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 7244820435338592199}
   m_LocalEulerAnglesHint: {x: 0, y: 3.907, z: 0}
 --- !u!1 &448107797747015988
 GameObject:
@@ -104321,14 +104870,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 553780618856841639}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.011686005, y: -0.73394376, z: -0.67899233, w: -0.012631759}
-  m_LocalPosition: {x: -23.727913, y: 3.94, z: 18.6}
-  m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
+  m_LocalRotation: {x: -0.011686006, y: -0.73394376, z: -0.67899233, w: -0.012631759}
+  m_LocalPosition: {x: -23.727913, y: 3.9399998, z: 2.8500006}
+  m_LocalScale: {x: 0.1, y: 0.10000001, z: 0.099999994}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8970332173854937854}
   - {fileID: 228086187503690056}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 7244670487598098897}
   m_LocalEulerAnglesHint: {x: -85.13, y: -203.909, z: 23.833}
 --- !u!4 &937719385909041727
 Transform:
@@ -185022,6 +185571,9 @@ Transform:
   - {fileID: 7138034301304421079}
   - {fileID: 7138034301001154545}
   - {fileID: 7138034301749185294}
+  - {fileID: 929074292204051229}
+  - {fileID: 515186686}
+  - {fileID: 1272476519}
   m_Father: {fileID: 7244802577321214739}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &7244670642281444891
@@ -188724,6 +189276,7 @@ Transform:
   - {fileID: 7247900414616034337}
   - {fileID: 7247783229624735349}
   - {fileID: 7245025102277233183}
+  - {fileID: 446855977585386954}
   m_Father: {fileID: 7245040225313764629}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &7244820633399951885
@@ -196838,6 +197391,7 @@ MonoBehaviour:
   onLockedInteract:
     m_PersistentCalls:
       m_Calls: []
+  ambushToTrigger: {fileID: 0}
 --- !u!4 &7247501017630781549
 Transform:
   m_ObjectHideFlags: 0
@@ -311347,7 +311901,5 @@ SceneRoots:
   - {fileID: 100565582}
   - {fileID: 1369492273}
   - {fileID: 2007147415}
-  - {fileID: 1272476519}
-  - {fileID: 929074292204051229}
-  - {fileID: 446855977585386954}
-  - {fileID: 515186686}
+  - {fileID: 566122146}
+  - {fileID: 1164073941}

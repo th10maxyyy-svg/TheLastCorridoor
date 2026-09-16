@@ -17,8 +17,19 @@ public class ProgressionManager : MonoBehaviour
 
     void Start()
     {
-        // OLD CODE: Shuru mein Enemy ko disable rakhein
-        // NAYA CODE: Ab hum enemy ko disable nahi karte, balkay EnemyAI script usay khud "Dormant" rakhta hai.
+        // WORLD STATE CHECK: Agar nightmare pehle hi shuru ho chuka tha to Reload par usay wapas jaga do!
+        if (SaveManager.instance != null && SaveManager.instance.currentSaveData.isNightmareActive)
+        {
+            currentPhase = GamePhase.Nightmare;
+            if (enemyAI != null)
+            {
+                enemyAI.gameObject.SetActive(true);
+                PlayerController player = FindAnyObjectByType<PlayerController>();
+                Vector3 targetPos = player != null ? player.transform.position : transform.position;
+                enemyAI.ForceAwaken(targetPos);
+            }
+            Debug.Log("[Progression] World State: Nightmare Resumed!");
+        }
     }
 
     public void StartNightmarePhase()
@@ -27,6 +38,12 @@ public class ProgressionManager : MonoBehaviour
         {
             currentPhase = GamePhase.Nightmare;
             Debug.Log("[Progression] Phase Changed: The Nightmare Begins!");
+
+            if (SaveManager.instance != null)
+            {
+                SaveManager.instance.currentSaveData.isNightmareActive = true;
+                SaveManager.instance.SaveWorldState();
+            }
 
             // Enemy ko awake karein (dormant se nikalein)
             if (enemyAI != null)

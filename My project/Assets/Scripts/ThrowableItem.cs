@@ -15,6 +15,20 @@ public class ThrowableItem : MonoBehaviour
         audioSource.maxDistance = noiseRadius;
     }
 
+    void Start()
+    {
+        // WORLD STATE CHECK: Agar ye item pehle hi uthaya ja chuka hai, to isay hamesha ke liye delete kar do!
+        if (SaveManager.instance != null && SaveManager.instance.IsItemCollected(gameObject.name))
+        {
+            // Lekin agar ye wo item hai jo marte waqt player ne giraya tha, to ise delete mat karo
+            if (SaveManager.instance.currentSaveData.droppedItemName != gameObject.name)
+            {
+                Destroy(gameObject);
+                Debug.Log("[WorldState] ThrowableItem deleted because it was already collected: " + gameObject.name);
+            }
+        }
+    }
+
     public void MarkAsDropped()
     {
         hasDropped = true;

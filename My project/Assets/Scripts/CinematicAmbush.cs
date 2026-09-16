@@ -34,23 +34,27 @@ public class CinematicAmbush : MonoBehaviour
         if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
     }
 
+    [Header("Trigger Settings")]
+    [Tooltip("Agar true hai, to player iske qareeb jayega to ye trigger ho jayega (like hallway jumpscare). Agar false hai to sirf Door khulne par chalega!")]
+    public bool triggerOnWalk = false;
+
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player"))
+        if (triggerOnWalk && other.CompareTag("Player"))
         {
             TriggerAmbush();
         }
     }
 
     // Call this from DoorController's "OnLockedInteract" Event or just walk into the Trigger!
-    public void TriggerAmbush()
+    public void TriggerAmbush(bool forceChase = false)
     {
-        Debug.Log("TriggerAmbush called on GameObject: " + gameObject.name);
+        Debug.Log("TriggerAmbush called on GameObject: " + gameObject.name + " | Force Chase: " + forceChase);
         
-        if (hasAmbushed) 
+        if (hasAmbushed && !forceChase) 
         {
             Debug.LogWarning("Ambush SKIPPED on " + gameObject.name + " because it was already triggered earlier!");
-            return; // Only ambush once!
+            return; // Only ambush once, unless forced!
         }
         hasAmbushed = true;
 
@@ -104,16 +108,27 @@ public class CinematicAmbush : MonoBehaviour
                 // NAYA: Story Transition Check!
                 if (isBasementTransition && basementSpawnPoint != null)
                 {
+                    // WORLD STATE: Mark Nightmare as active so the enemy stays awake while player is in basement!
+                    ProgressionManager pm = FindAnyObjectByType<ProgressionManager>();
+                    if (pm != null) pm.StartNightmarePhase();
+
                     // Jumpscare karega, uske baad player behosh hoga!
                     StartCoroutine(ExecuteBasementTransition(playerTransform));
                 }
-                else if (useTeaseInsteadOfChase)
+                else if (useTeaseInsteadOfChase && !forceChase)
                 {
                     enemy.StartTeasing(playerTransform, teaseDuration, teaseLeaveTarget);
+                    // WORLD STATE: Mark Nightmare as active even if teasing, so it doesn't go back to sleep!
+                    ProgressionManager pm = FindAnyObjectByType<ProgressionManager>();
+                    if (pm != null) pm.StartNightmarePhase();
                 }
                 else
                 {
                     enemy.ForceAwaken(playerTransform.position);
+                    
+                    // WORLD STATE: Mark Nightmare as active so it survives death!
+                    ProgressionManager pm = FindAnyObjectByType<ProgressionManager>();
+                    if (pm != null) pm.StartNightmarePhase();
                 }
             }
             else

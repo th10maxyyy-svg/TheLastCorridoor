@@ -14,6 +14,20 @@ public class KeyItem : MonoBehaviour, IInteractable
     [Tooltip("Add things here that should happen when this key is picked up (e.g. Turn off lights, Spawn enemies)")]
     public UnityEngine.Events.UnityEvent onPickUpEvent;
 
+    void Start()
+    {
+        // WORLD STATE CHECK: Agar ye key pehle hi uthai ja chuki hai, to isay hamesha ke liye delete kar do!
+        if (SaveManager.instance != null && SaveManager.instance.IsItemCollected(gameObject.name))
+        {
+            // Lekin agar ye wo key hai jo marte waqt player ne girai thi, to ise delete mat karo (kyun ke RespawnManager ise sahi jagah move karega)
+            if (SaveManager.instance.currentSaveData.droppedItemName != gameObject.name)
+            {
+                Destroy(gameObject);
+                Debug.Log("[WorldState] KeyItem deleted because it was already collected: " + keyName);
+            }
+        }
+    }
+
     public string GetKeyName()
     {
         return keyName;

@@ -138,6 +138,12 @@ public class Inventory : MonoBehaviour
             }
         }
 
+        // WORLD STATE CHECK: Jab koi cheez uthai jaye, to usay save kar lo taake reload par wahan wapas na aaye!
+        if (SaveManager.instance != null)
+        {
+            SaveManager.instance.CollectItem(item.name);
+        }
+
         Debug.Log("Picked up " + item.name);
     }
 

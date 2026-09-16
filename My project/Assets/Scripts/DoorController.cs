@@ -20,6 +20,10 @@ public class DoorController : MonoBehaviour, IInteractable
     public UnityEvent onDoorOpen;
     [Tooltip("Fires when player tries to open but it's locked")]
     public UnityEvent onLockedInteract;
+    
+    [Header("Horror Events")]
+    [Tooltip("If this door should trigger an ambush when unlocked, assign it here.")]
+    public CinematicAmbush ambushToTrigger;
 
     private bool isOpen = false;
     private Quaternion closedRotation;
@@ -41,6 +45,14 @@ public class DoorController : MonoBehaviour, IInteractable
                 audioSource.spatialBlend = 1f; // Make it 3D sound
             }
         }
+
+        // WORLD STATE CHECK: Agar ye darwaza pehle se unlock tha to isay automatically open kar do!
+        if (SaveManager.instance != null && SaveManager.instance.IsDoorUnlocked(GetDoorID()))
+        {
+            isLocked = false;
+            isOpen = true;
+            transform.localRotation = openRotation; // Snap to open immediately
+        }
     }
 
     void Update()
@@ -58,6 +70,7 @@ public class DoorController : MonoBehaviour, IInteractable
         {
             audioSource.PlayOneShot(openSound);
         }
+        SaveDoorState();
     }
 
     public string GetInteractPrompt()
@@ -88,14 +101,42 @@ public class DoorController : MonoBehaviour, IInteractable
                 isLocked = false;
                 ToggleDoor();
                 Debug.Log("Door unlocked and opened!");
+                
+                // NAYA FIX: Key use hone ke baad usay inventory se khatam (consume) kar do!
+                inventory.RemoveItem(requiredKey);
+                
+                SaveDoorState();
 
                 // Auto-Trigger Cinematic Ambush! 
-                if (requiredKey.ToLower().Contains("guard"))
+                if (ambushToTrigger != null)
                 {
+                    ambushToTrigger.TriggerAmbush(true); // TRUE = Force Chase!
+                }
+                else if (!string.IsNullOrEmpty(requiredKey) && requiredKey.ToLower().Contains("guard"))
+                {
+                    // FALLBACK: Agar inspector mein assign karna bhool gaye to qareeb tareen ambush khud dhoondo!
                     CinematicAmbush[] ambushes = FindObjectsByType<CinematicAmbush>(FindObjectsSortMode.None);
+                    CinematicAmbush closestAmbush = null;
+                    float minDistance = Mathf.Infinity;
+                    
                     foreach (var ambush in ambushes)
                     {
-                        ambush.TriggerAmbush();
+                        float dist = Vector3.Distance(transform.position, ambush.transform.position);
+                        if (dist < minDistance)
+                        {
+                            minDistance = dist;
+                            closestAmbush = ambush;
+                        }
+                    }
+
+                    if (closestAmbush != null && minDistance < 10f) // Door ke paas hona chahiye
+                    {
+                        closestAmbush.TriggerAmbush(true); // TRUE = Force Chase!
+                        Debug.LogWarning("DoorController: ambushToTrigger inspector mein khali tha, lekin auto-fallback ne qareeb tareen ambush trigger kar diya!");
+                    }
+                    else
+                    {
+                        Debug.LogWarning("DoorController: Koi CinematicAmbush aas paas nahi mila!");
                     }
                 }
             }
@@ -140,5 +181,23 @@ public class DoorController : MonoBehaviour, IInteractable
     {
         isLocked = false;
         Debug.Log("Door " + gameObject.name + " unlocked externally!");
+        SaveDoorState();
+    }
+
+    // Helper to make a unique ID for this specific door, in case many doors are named "Door"
+    private string GetDoorID()
+    {
+        int x = Mathf.RoundToInt(transform.position.x * 10f);
+        int y = Mathf.RoundToInt(transform.position.y * 10f);
+        int z = Mathf.RoundToInt(transform.position.z * 10f);
+        return gameObject.name + "_" + x + "_" + y + "_" + z;
+    }
+
+    private void SaveDoorState()
+    {
+        if (SaveManager.instance != null)
+        {
+            SaveManager.instance.UnlockDoor(GetDoorID());
+        }
     }
 }

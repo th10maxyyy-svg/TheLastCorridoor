@@ -597,7 +597,11 @@ public class PlayerController : MonoBehaviour
             }
             
             EnemyAI enemyAI = dragger.GetComponent<EnemyAI>();
-            if (enemyAI != null) enemyAI.enabled = true;
+            if (enemyAI != null)
+            {
+                enemyAI.enabled = true;
+                enemyAI.ForcePatrol(); // Zabardasti patrol karwao taake tease se bahir aa jaye!
+            }
         }
 
         // 3. Teleport to Basement

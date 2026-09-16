@@ -37,6 +37,14 @@ public class SlidingDoorController : MonoBehaviour, IInteractable
                 audioSource.spatialBlend = 1f;
             }
         }
+
+        // WORLD STATE CHECK
+        if (SaveManager.instance != null && SaveManager.instance.IsDoorUnlocked(GetDoorID()))
+        {
+            isLocked = false;
+            isOpen = true;
+            transform.localPosition = openPosition;
+        }
     }
 
     void Update()
@@ -64,18 +72,9 @@ public class SlidingDoorController : MonoBehaviour, IInteractable
                 ToggleDoor();
                 onDoorUnlocked?.Invoke();
                 Debug.Log("Sliding Door unlocked and opened!");
-
-                // NAYA FIX: Auto-Trigger Cinematic Ambush! (Bina Unity Editor mein set kiye)
-                Debug.Log("Checking required key for Ambush: " + requiredKey);
-                if (requiredKey.ToLower().Contains("guard"))
-                {
-                    CinematicAmbush[] ambushes = FindObjectsByType<CinematicAmbush>(FindObjectsSortMode.None);
-                    Debug.Log("Found " + ambushes.Length + " CinematicAmbushes in the scene.");
-                    foreach (var ambush in ambushes)
-                    {
-                        ambush.TriggerAmbush();
-                    }
-                }
+                
+                inventory.RemoveItem(requiredKey);
+                SaveDoorState();
             }
             else
             {
@@ -107,6 +106,22 @@ public class SlidingDoorController : MonoBehaviour, IInteractable
         if (isOpen != state)
         {
             ToggleDoor();
+        }
+    }
+
+    private string GetDoorID()
+    {
+        int x = Mathf.RoundToInt(transform.position.x * 10f);
+        int y = Mathf.RoundToInt(transform.position.y * 10f);
+        int z = Mathf.RoundToInt(transform.position.z * 10f);
+        return gameObject.name + "_" + x + "_" + y + "_" + z;
+    }
+
+    private void SaveDoorState()
+    {
+        if (SaveManager.instance != null)
+        {
+            SaveManager.instance.UnlockDoor(GetDoorID());
         }
     }
 }

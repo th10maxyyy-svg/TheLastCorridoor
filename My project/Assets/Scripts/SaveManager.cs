@@ -13,6 +13,11 @@ public class SaveData
     // To save the location of the dropped item if the player dies and drops it
     public string droppedItemName = "";
     public float[] droppedItemPosition = new float[3];
+
+    // WORLD STATE PERSISTENCE (Foolproof CSV strings for JsonUtility)
+    public string unlockedDoorsCSV = "";
+    public string collectedItemsCSV = "";
+    public bool isNightmareActive = false;
 }
 
 public class SaveManager : MonoBehaviour
@@ -38,6 +43,36 @@ public class SaveManager : MonoBehaviour
         saveFilePath = Application.persistentDataPath + "/AsylumSave.json";
         LoadGame();
     }
+
+    // --- WORLD STATE HELPERS (FOOLPROOF CSV STRINGS) ---
+    public bool IsDoorUnlocked(string doorName)
+    {
+        return currentSaveData.unlockedDoorsCSV.Contains(doorName + ",");
+    }
+
+    public void UnlockDoor(string doorName)
+    {
+        if (!IsDoorUnlocked(doorName))
+        {
+            currentSaveData.unlockedDoorsCSV += doorName + ",";
+            SaveWorldState();
+        }
+    }
+
+    public bool IsItemCollected(string itemName)
+    {
+        return currentSaveData.collectedItemsCSV.Contains(itemName + ",");
+    }
+
+    public void CollectItem(string itemName)
+    {
+        if (!IsItemCollected(itemName))
+        {
+            currentSaveData.collectedItemsCSV += itemName + ",";
+            SaveWorldState();
+        }
+    }
+    // ----------------------------------------------------
 
     public void SaveGame(Transform playerTransform, string heldItem, string droppedItem = "", Vector3 droppedPos = default)
     {
@@ -66,6 +101,17 @@ public class SaveManager : MonoBehaviour
         }
 
         // 3. Write to File
+        WriteToFile();
+    }
+
+    public void SaveWorldState()
+    {
+        // Saves the current state (like doors/items) without altering player pos
+        WriteToFile();
+    }
+
+    private void WriteToFile()
+    {
         string json = JsonUtility.ToJson(currentSaveData, true);
         File.WriteAllText(saveFilePath, json);
         Debug.Log("Game Saved to: " + saveFilePath);

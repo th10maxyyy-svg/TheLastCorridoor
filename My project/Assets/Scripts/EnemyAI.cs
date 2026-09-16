@@ -723,6 +723,17 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
+    public void ForcePatrol()
+    {
+        Debug.Log("EnemyAI: Forced to Patrol! Ending any teases.");
+        currentState = AIState.Patrol;
+        if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = false;
+        }
+        GetNewPatrolTarget();
+    }
+
     // --- NEW: STAIRCASE TEASING (CINEMATIC) ---
     public void StartTeasing(Transform targetToLookAt, float teaseDuration, Transform leaveTarget = null)
     {
@@ -793,14 +804,12 @@ public class EnemyAI : MonoBehaviour
                         // NavMesh is broken at stairs! Warp him immediately so he doesn't freeze.
                         Debug.LogWarning("NavMesh path is broken to LeaveTarget! Warping immediately.");
                         agent.Warp(teaseLeaveTarget.position);
-                        currentState = AIState.Patrol;
-                        GetNewPatrolTarget();
+                        EndTeaseState();
                     }
                 }
                 else
                 {
-                    currentState = AIState.Patrol;
-                    GetNewPatrolTarget();
+                    EndTeaseState();
                 }
             }
         }
@@ -810,7 +819,7 @@ public class EnemyAI : MonoBehaviour
     {
         if (teaseLeaveTarget == null)
         {
-            currentState = AIState.Patrol;
+            EndTeaseState();
             return;
         }
 
@@ -830,9 +839,8 @@ public class EnemyAI : MonoBehaviour
         // Agar pahunch gaya
         if (!agent.pathPending && agent.remainingDistance < 1f)
         {
-            Debug.Log("Enemy reached LeaveTarget. Returning to Patrol.");
-            currentState = AIState.Patrol;
-            GetNewPatrolTarget();
+            Debug.Log("Enemy reached LeaveTarget. Ending tease state.");
+            EndTeaseState();
             return;
         }
 
@@ -845,9 +853,25 @@ public class EnemyAI : MonoBehaviour
             {
                 agent.Warp(teaseLeaveTarget.position);
             }
+            EndTeaseState();
+            leaveStuckTimer = 0f;
+        }
+    }
+
+    private void EndTeaseState()
+    {
+        ProgressionManager pm = FindAnyObjectByType<ProgressionManager>();
+        if (pm != null && pm.currentPhase != ProgressionManager.GamePhase.Nightmare)
+        {
+            Debug.Log("Nightmare phase not active yet. Enemy is going back to sleep (Dormant) after tease.");
+            currentState = AIState.Dormant;
+            gameObject.SetActive(false); // Disappears!
+        }
+        else
+        {
+            Debug.Log("Nightmare phase is active. Enemy is returning to Patrol after tease.");
             currentState = AIState.Patrol;
             GetNewPatrolTarget();
-            leaveStuckTimer = 0f;
         }
     }
 
