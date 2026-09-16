@@ -7,13 +7,23 @@ public class MainMenuManager : MonoBehaviour
     public void StartGame()
     {
         PlayClickSound();
-        // "SampleScene" ko load karega (ensure karein ke apke main game scene ka naam yahi ho)
+        // Nayi game shuru karte hue purani save delete kar do taake fresh start ho
+        string savePath = Application.persistentDataPath + "/AsylumSave.json";
+        if (System.IO.File.Exists(savePath)) 
+        {
+            System.IO.File.Delete(savePath);
+            Debug.Log("Old save deleted for New Game.");
+        }
+        
         SceneManager.LoadScene("SampleScene");
     }
 
     [Header("UI Screens")]
     public GameObject mainMenuScreen;
     public GameObject settingsScreen;
+
+    [Header("UI Buttons")]
+    public UnityEngine.UI.Button resumeButton;
 
     [Header("Audio Settings")]
     [Tooltip("Is dabbe mein menu wala canvas ya koi bhi game object daalein jis par AudioSource ho")]
@@ -34,6 +44,12 @@ public class MainMenuManager : MonoBehaviour
         // Shuru mein sirf Main Menu nazar aana chahiye
         if (mainMenuScreen != null) mainMenuScreen.SetActive(true);
         if (settingsScreen != null) settingsScreen.SetActive(false);
+
+        if (resumeButton != null)
+        {
+            string savePath = Application.persistentDataPath + "/AsylumSave.json";
+            resumeButton.interactable = System.IO.File.Exists(savePath);
+        }
     }
 
     // Ye function Quit button ke liye hai

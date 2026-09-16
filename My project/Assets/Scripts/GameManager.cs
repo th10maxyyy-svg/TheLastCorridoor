@@ -73,7 +73,6 @@ public class GameManager : MonoBehaviour
     public void TriggerGameOver()
     {
         if (isGameOver) return;
-
         isGameOver = true;
         Debug.Log("Game Over triggered!");
 
@@ -83,10 +82,53 @@ public class GameManager : MonoBehaviour
             gameManagerAudio.PlayOneShot(gameOverSound);
         }
 
-        // Time.timeScale = 0f; // Ab time nahi rukega, background real-time chalega!
+        if (SaveManager.instance != null)
+        {
+            // HARDCORE MECHANIC: Drop item on death
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+            {
+                Inventory inv = player.GetComponent<Inventory>();
+                if (inv != null && inv.HasItem())
+                {
+                    GameObject item = inv.GetCurrentItem();
+                    string itemName = item.name;
+                    Vector3 dropPos = player.transform.position; // Zameen par wahin girao
+                    
+                    inv.DropCurrentItem();
+                    item.transform.position = dropPos;
+                    
+                    // Save to disk
+                    SaveManager.instance.currentSaveData.droppedItemName = itemName;
+                    SaveManager.instance.currentSaveData.droppedItemPosition[0] = dropPos.x;
+                    SaveManager.instance.currentSaveData.droppedItemPosition[1] = dropPos.y;
+                    SaveManager.instance.currentSaveData.droppedItemPosition[2] = dropPos.z;
+                    SaveManager.instance.currentSaveData.heldItemName = ""; // Hath khali
+                }
+            }
+
+            SaveManager.instance.DecreaseLife();
+            int remainingLives = SaveManager.instance.currentSaveData.lives;
+
+            if (remainingLives > 0)
+            {
+                // Cinematic Death (Life 1 & 2)
+                if (RespawnManager.instance != null)
+                {
+                    RespawnManager.instance.TriggerCinematicDeath(remainingLives, player);
+                }
+                return; // Stop here, RespawnManager will handle reloading
+            }
+            else
+            {
+                // Final Death (Permadeath)
+                SaveManager.instance.DeleteSave();
+            }
+        }
+
+        // Fallback or Permadeath
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-
         StartCoroutine(GameOverSequence());
     }
 

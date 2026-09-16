@@ -15,8 +15,8 @@ public class AcidDrainPuzzle : MonoBehaviour, IInteractable
     
     [Header("Animation Settings")]
     public float drainDuration = 3f;
-    [Tooltip("Tezaab kitna neechay jayega (Y axis mein)")]
-    public float targetAcidYPos = -1.5f; 
+    [Tooltip("Tezaab kitna neechay jayega (Misaal ke tor par -1.5 likhne se wo 1.5 meter neechay chala jayega)")]
+    public float drainAmountY = -1.5f; 
     
     [Header("Audio")]
     public AudioClip valveTurnSound;
@@ -93,9 +93,15 @@ public class AcidDrainPuzzle : MonoBehaviour, IInteractable
 
     private IEnumerator DrainRoutine()
     {
+        Debug.Log("DrainRoutine Started!");
         // 1. Valve ghumane ki awaz
-        if (valveTurnSound != null) audioSource.PlayOneShot(valveTurnSound);
+        if (valveTurnSound != null && audioSource != null) 
+        {
+            audioSource.PlayOneShot(valveTurnSound);
+            Debug.Log("Played valve sound.");
+        }
         
+        Debug.Log("Waiting for 1 second (valve turn delay)...");
         // Valve ghumao (1 second ke liye)
         float elapsed = 0f;
         while (elapsed < 1f)
@@ -109,29 +115,42 @@ public class AcidDrainPuzzle : MonoBehaviour, IInteractable
             yield return null;
         }
 
+        Debug.Log("Valve delay finished! Now playing drain sound.");
         // 2. Tezaab ke neechay jane ki awaz
-        if (acidDrainSound != null) audioSource.PlayOneShot(acidDrainSound);
+        if (acidDrainSound != null && audioSource != null) 
+        {
+            audioSource.PlayOneShot(acidDrainSound);
+        }
 
         // 3. Tezaab ko aahista aahista neechay le jao (drain karo)
         if (acidMesh != null)
         {
-            Vector3 startPos = acidMesh.localPosition;
-            Vector3 targetPos = new Vector3(startPos.x, targetAcidYPos, startPos.z);
+            Debug.Log("AcidMesh found! Starting to lerp down by " + drainAmountY);
+            Vector3 startPos = acidMesh.position;
+            Vector3 targetPos = startPos + new Vector3(0, drainAmountY, 0); // Neechay ki taraf offset
             
             elapsed = 0f;
             while (elapsed < drainDuration)
             {
                 elapsed += Time.deltaTime;
                 float t = elapsed / drainDuration;
-                acidMesh.localPosition = Vector3.Lerp(startPos, targetPos, t);
+                acidMesh.position = Vector3.Lerp(startPos, targetPos, t);
                 yield return null;
             }
+            acidMesh.position = targetPos; // Make sure it reaches exact target
+            Debug.Log("Acid Lerp finished! Final position: " + acidMesh.position);
+        }
+        else
+        {
+            Debug.LogError("AcidMesh is null inside DrainRoutine! Cannot move acid.");
         }
 
         // 4. Sab complete hone par Key ko accessible banao!
         if (onDrainComplete != null)
         {
+            Debug.Log("Invoking onDrainComplete event.");
             onDrainComplete.Invoke();
         }
+        Debug.Log("DrainRoutine completely finished!");
     }
 }
