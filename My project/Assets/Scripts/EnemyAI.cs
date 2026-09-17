@@ -4,7 +4,7 @@ using UnityEngine.AI;
 [RequireComponent(typeof(NavMeshAgent))]
 public class EnemyAI : MonoBehaviour
 {
-    public enum AIState { Dormant, Patrol, Chase, Search, InvestigateSound, Tease, LeaveTease, VanishAfterKill, Stunned }
+    public enum AIState { Dormant, Patrol, Chase, Search, InvestigateSound, Tease, LeaveTease, VanishAfterKill, Stunned, CinematicEscape }
 
     [Header("State")]
     [SerializeField] private AIState currentState = AIState.Dormant; // Starts asleep!
@@ -248,6 +248,83 @@ public class EnemyAI : MonoBehaviour
             case AIState.Stunned:
                 // Frozen by coroutine, do nothing
                 break;
+            case AIState.CinematicEscape:
+                CinematicEscapeBehavior();
+                break;
+        }
+    }
+
+    // --- PHASE 4 ESCAPE CINEMATIC LOGIC ---
+    private Transform cinematicRunTarget;
+    private Transform cinematicRetreatTarget;
+    private string cinematicAnimationName;
+    private bool hasFlinched = false;
+    private float flinchTimer = 0f;
+
+    public void PlayCinematicEscape(Transform runTarget, Transform retreatTarget, string animationName)
+    {
+        currentState = AIState.CinematicEscape;
+        cinematicRunTarget = runTarget;
+        cinematicRetreatTarget = retreatTarget;
+        cinematicAnimationName = animationName;
+        hasFlinched = false;
+        
+        if (agent.isActiveAndEnabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = false;
+            agent.speed = chaseSpeed * 1.5f; // Fast aggressive run towards the door!
+            agent.SetDestination(cinematicRunTarget.position);
+        }
+    }
+
+    private void CinematicEscapeBehavior()
+    {
+        // 1. Running towards the light
+        if (!hasFlinched)
+        {
+            HandleFootsteps(0.2f); // fast footsteps
+            if (Vector3.Distance(transform.position, cinematicRunTarget.position) < 2f || 
+               (!agent.pathPending && agent.remainingDistance < 2f))
+            {
+                // Reached the door, trigger the flinch/scream!
+                hasFlinched = true;
+                flinchTimer = 3f; // Scream for 3 seconds
+                
+                if (agent.isActiveAndEnabled && agent.isOnNavMesh)
+                {
+                    agent.isStopped = true;
+                }
+                
+                if (enemyAnimator != null && !string.IsNullOrEmpty(cinematicAnimationName))
+                {
+                    enemyAnimator.SetTrigger(cinematicAnimationName); // Trigger custom user animation
+                }
+                
+                if (enemyAudioSource != null && teaseVoiceLines != null && teaseVoiceLines.Length > 0)
+                {
+                    enemyAudioSource.PlayOneShot(teaseVoiceLines[0]); // Scream sound
+                }
+            }
+        }
+        // 2. Screaming at the light
+        else if (flinchTimer > 0)
+        {
+            flinchTimer -= Time.deltaTime;
+            if (flinchTimer <= 0)
+            {
+                // Time to retreat back into the darkness
+                if (agent.isActiveAndEnabled && agent.isOnNavMesh && cinematicRetreatTarget != null)
+                {
+                    agent.isStopped = false;
+                    agent.speed = patrolSpeed; // Slow, defeated walk back
+                    agent.SetDestination(cinematicRetreatTarget.position);
+                }
+            }
+        }
+        // 3. Retreating
+        else
+        {
+            HandleFootsteps(0.6f); // Slow footsteps
         }
     }
 
