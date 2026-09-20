@@ -11,8 +11,18 @@ public class VideoPlaylist : MonoBehaviour
     private VideoPlayer videoPlayer;
     private int currentVideoIndex = 0;
 
+    private static bool hasPlayedThisSession = false;
+
     void Start()
     {
+        // CHECK: If player already saw the intro in this play session, disable projector!
+        if (hasPlayedThisSession)
+        {
+            gameObject.SetActive(false);
+            return;
+        }
+
+        hasPlayedThisSession = true;
         videoPlayer = GetComponent<VideoPlayer>();
         
         if (videos.Length > 0)

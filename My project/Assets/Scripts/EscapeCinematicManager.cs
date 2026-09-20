@@ -46,20 +46,24 @@ public class EscapeCinematicManager : MonoBehaviour
         }
     }
 
+    private Vector3 currentBasePosition;
+
     private void Update()
     {
         // Handle Camera Pan and Shake during cinematic
-        if (isCameraMoving && cinematicCamera != null && cameraStartPoint != null && cameraEndPoint != null)
+        if (isCameraMoving && cinematicCamera != null)
         {
-            // Move camera slowly towards end point
+            // Move our internal base position BACKWARDS from the door automatically
             float step = cameraMoveSpeed * Time.deltaTime;
-            cinematicCamera.transform.position = Vector3.MoveTowards(cinematicCamera.transform.position, cameraEndPoint.position, step);
+            currentBasePosition += transform.forward * step; // Assuming Z is forward, this pulls it back if trigger is facing out. If it goes wrong way, we use Z axis directly.
+
             
-            // Add Fear Shake Effect using Perlin Noise
+            // Calculate Fear Shake Effect using Perlin Noise
             float offsetX = (Mathf.PerlinNoise(Time.time * cameraShakeSpeed, 0) - 0.5f) * cameraShakeAmount;
             float offsetY = (Mathf.PerlinNoise(0, Time.time * cameraShakeSpeed) - 0.5f) * cameraShakeAmount;
             
-            cinematicCamera.transform.position += new Vector3(offsetX, offsetY, 0);
+            // Apply base position + shake offset directly to camera
+            cinematicCamera.transform.position = currentBasePosition + new Vector3(offsetX, offsetY, 0);
             
             // ALWAYS LOOK AT THE ENEMY!
             if (enemyAI != null)
@@ -91,11 +95,14 @@ public class EscapeCinematicManager : MonoBehaviour
         Renderer[] playerRenderers = player.GetComponentsInChildren<Renderer>();
         foreach(Renderer r in playerRenderers) { r.enabled = false; }
 
-        // Setup Camera Position
-        if (cinematicCamera != null && cameraStartPoint != null)
+        // Setup Camera Position Automatically! (No need for Start/End points)
+        // We use the Trigger's position (the door) and place the camera just outside it.
+        Vector3 startPos = transform.position + new Vector3(0, 1.5f, 1f); // Adjust height and push out a bit
+        
+        if (cinematicCamera != null)
         {
-            cinematicCamera.transform.position = cameraStartPoint.position;
-            cinematicCamera.transform.rotation = cameraStartPoint.rotation;
+            cinematicCamera.transform.position = startPos;
+            currentBasePosition = startPos; // NEW: Initialize base position for shake
         }
 
         // Turn off player's camera and turn on cinematic camera

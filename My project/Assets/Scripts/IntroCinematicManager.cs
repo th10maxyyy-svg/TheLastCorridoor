@@ -23,8 +23,28 @@ public class IntroCinematicManager : MonoBehaviour
     private Quaternion startCamRot;
     private Vector3 startCamPos;
 
+    private static bool hasPlayedThisSession = false;
+
     void Start()
     {
+        // CHECK: If it has already played in this Play session (e.g. they died and scene reloaded)
+        if (hasPlayedThisSession)
+        {
+            // Disable the cinematic black screen completely
+            if (blinkOverlay != null)
+            {
+                blinkOverlay.gameObject.SetActive(false);
+                if (blinkOverlay.canvas != null) blinkOverlay.canvas.gameObject.SetActive(false);
+            }
+
+            // Destroy this manager completely so it doesn't restrict the player!
+            Destroy(gameObject);
+            return;
+        }
+
+        // Mark as played so it won't play again if the player dies and scene reloads
+        hasPlayedThisSession = true;
+
         // Try auto-assigning if left empty
         if (playerController == null) playerController = FindObjectOfType<PlayerController>();
         if (playerStats == null && playerController != null) playerStats = playerController.GetComponent<PlayerStats>();

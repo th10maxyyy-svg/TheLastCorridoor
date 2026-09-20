@@ -32,6 +32,10 @@ public class MainMenuController : MonoBehaviour
 
     public void PlayGame()
     {
+        // Reset the Intro Cinematic flag for a fresh game!
+        PlayerPrefs.SetInt("HasSeenIntro", 0);
+        PlayerPrefs.Save();
+
         PlayClickSound();
         if (gameStartSound != null && uiAudioSource != null)
         {

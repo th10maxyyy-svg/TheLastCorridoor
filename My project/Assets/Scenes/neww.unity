@@ -22737,8 +22737,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 453266249}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0.037652206, z: -0, w: 0.99929094}
-  m_LocalPosition: {x: -0.029, y: 2.108, z: 2.726}
+  m_LocalRotation: {x: 0, y: -0.037515778, z: 0, w: 0.99929607}
+  m_LocalPosition: {x: -0.029, y: 2.1, z: 1.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -26162,6 +26162,7 @@ MonoBehaviour:
   dayRoomRespawn: {fileID: 1953368968}
   blackScreen: {fileID: 1351011048}
   spookyText: {fileID: 728866831}
+  deathImage: {fileID: 0}
 --- !u!4 &566122146
 Transform:
   m_ObjectHideFlags: 0
@@ -41977,8 +41978,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 909235134}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0.037652206, z: -0, w: 0.99929094}
-  m_LocalPosition: {x: -0.029, y: 2.108, z: 2.457}
+  m_LocalRotation: {x: 0, y: -0.037515778, z: 0, w: 0.99929607}
+  m_LocalPosition: {x: -0.029, y: 2.1, z: 3.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -65483,7 +65484,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1369492270
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -82699,7 +82700,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &2007147414
 MonoBehaviour:
   m_ObjectHideFlags: 0

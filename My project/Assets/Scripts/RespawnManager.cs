@@ -14,6 +14,7 @@ public class RespawnManager : MonoBehaviour
     [Header("Cinematic UI")]
     public CanvasGroup blackScreen;
     public TextMeshProUGUI spookyText;
+    public UnityEngine.UI.Image deathImage; // Image to show instead of text
 
     private void Awake()
     {
@@ -133,16 +134,33 @@ public class RespawnManager : MonoBehaviour
             }
         }
 
-        // Show Spooky Text
+        // 1. Hide Text (User requested to delete text)
         if (spookyText != null)
         {
-            if (livesRemaining == 2)
-                spookyText.text = "Did you really think you could hide?";
-            else if (livesRemaining == 1)
-                spookyText.text = "He is getting closer... You are running out of time.";
+            spookyText.gameObject.SetActive(false);
         }
 
-        yield return new WaitForSeconds(3f); // Read time
+        // 2. Show the new Cinematic Image!
+        if (deathImage != null)
+        {
+            deathImage.gameObject.SetActive(true);
+            
+            // Start transparent and fade the image in for cinematic effect
+            Color c = deathImage.color;
+            c.a = 0f;
+            deathImage.color = c;
+            
+            float imageFade = 0f;
+            while(imageFade < 1f)
+            {
+                imageFade += Time.deltaTime * 0.5f; // Slow fade
+                c.a = imageFade;
+                deathImage.color = c;
+                yield return null;
+            }
+        }
+
+        yield return new WaitForSeconds(4f); // Read time
 
         // USER REQUEST: Sirf basement mein hi spawn karna hai dayroom mein nahi!
         Transform chosenRespawn = basementRespawn;
