@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Last Corridor - Comprehensive Technical Report</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #2b2b2b;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px;
+            background-color: #fcfcfc;
+        }
+        h1 {
+            text-align: center;
+            color: #8B0000;
+            border-bottom: 3px solid #8B0000;
+            padding-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 28px;
+        }
+        h2 {
+            color: #1a1a1a;
+            margin-top: 40px;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 5px;
+            font-size: 22px;
+        }
+        h3 {
+            color: #8B0000;
+            margin-top: 25px;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        ul {
+            margin-top: 5px;
+            margin-bottom: 20px;
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        .header-info {
+            text-align: center;
+            font-style: italic;
+            color: #555;
+            margin-bottom: 40px;
+            background-color: #f1f1f1;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .highlight {
+            font-weight: bold;
+            color: #8B0000;
+        }
+        .code-snippet {
+            background-color: #eee;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        @media print {
+            body {
+                padding: 0;
+                background-color: #fff;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="no-print" style="background-color: #e9ecef; border-left: 4px solid #007bff; padding: 15px; margin-bottom: 20px; font-size: 14px;">
+        <strong>Tip:</strong> Right-click anywhere on this page and select <strong>"Print"</strong> (or press Ctrl+P). Then change the Destination to <strong>"Save as PDF"</strong> to generate your PDF document!
+    </div>
+
+    <h1>Comprehensive Technical Implementation Report</h1>
+    <div class="header-info">
+        <p><strong>Project Name:</strong> The Last Corridor</p>
+        <p><strong>Report Scope:</strong> Detailed System Architecture, Game Mechanics, and Narrative Implementation</p>
+        <p><strong>Development Period:</strong> Late August 2026 – Late September 2026</p>
+    </div>
+
+    <p>This document serves as an exhaustive technical breakdown of the systems, features, and mechanics implemented in <em>The Last Corridor</em>. Over the past several weeks, the project has transitioned from basic environments to a fully playable, immersive, and terrifying psychological horror experience. Below is a detailed explanation of the core pillars of the game's architecture.</p>
+
+    <h2>1. Advanced Artificial Intelligence (The Stalker/Joker)</h2>
+    <p>The primary antagonist is driven by a highly complex, state-based NavMesh AI system designed to keep the player in a constant state of paranoia.</p>
+    <ul>
+        <li><strong>State Machine Architecture:</strong> The AI operates on multiple behavioral states: <code>Patrol</code>, <code>Chase</code>, <code>InvestigateSound</code>, <code>Tease</code>, <code>Stunned</code>, and <code>CinematicEscape</code>. This allows the monster to react dynamically rather than just mindlessly walking toward the player.</li>
+        <li><strong>Field of View (FOV) & Line of Sight:</strong> The monster utilizes raycasting and dot-product mathematical checks to determine if the player is within its visual cone (e.g., 90-degree FOV). It ignores the player if the player is hidden behind walls or crouched behind specific cover objects.</li>
+        <li><strong>Dynamic Audio Investigation:</strong> If the player sprints or triggers an environment noise (like dropping an item or walking on glass), the AI instantly switches to <code>InvestigateSound</code>, calculating the NavMesh path to the exact coordinate of the noise.</li>
+        <li><strong>Tease & Ambush Mechanics:</strong> To build suspense, the AI occasionally teleports to a designated "tease" location just out of the player's direct sight, playing a sound or casting a shadow, and then disappearing when approached.</li>
+    </ul>
+
+    <h2>2. Persistent World State & Save System</h2>
+    <p>A robust save system was built from the ground up using JSON serialization and Unity's <code>PlayerPrefs</code> to ensure the game remembers everything between sessions and deaths.</p>
+    <ul>
+        <li><strong>Transform Serialization:</strong> The <code>SaveManager</code> logs the exact X, Y, Z coordinates of the player. Upon loading, the system uses <code>Physics.SyncTransforms()</code> to ensure the player doesn't clip through the floor.</li>
+        <li><strong>Inventory & World State Tracking:</strong> We implemented a <code>collectedItemsCSV</code> string system. When the player picks up a key or an item, its unique ID is saved. If the player dies and the scene reloads, the <code>RespawnManager</code> reads this list and destroys those items in the world so they cannot be duplicated.</li>
+        <li><strong>Dropped Item Logic:</strong> If a player drops an item (like a flashlight) right before dying, the exact position of that dropped item is saved. On respawn, the game physically moves the item to that location so the player can retrieve it.</li>
+    </ul>
+
+    <h2>3. The "3 Lives" & Respawn Mechanics</h2>
+    <p>Instead of a standard "Game Over" screen on every death, the game uses a cinematic 3-lives system to increase tension.</p>
+    <ul>
+        <li><strong>Drag to Basement Sequence:</strong> Upon the first and second deaths, control is stripped from the player. A customized cinematic plays where the camera falls to the floor, blinks heavily using UI alpha fades, and the player is dragged backward into the darkness by the Stalker.</li>
+        <li><strong>Dynamic Spooky Text:</strong> The <code>RespawnManager</code> handles the screen fade. Based on <code>livesRemaining</code>, it shows different terrifying messages using rich text formatting (e.g., <span class="highlight">"HE IS GETTING CLOSER... YOU ARE RUNNING OUT OF TIME"</span> with a dark crimson red font).</li>
+        <li><strong>Safe Zone Teleportation:</strong> After the death cinematic, the scene is reloaded, and the player wakes up safely in the Basement using a mathematically interpolated camera "stand-up" animation, giving them a chance to try again.</li>
+    </ul>
+
+    <h2>4. Cinematic Control Managers</h2>
+    <p>To give the game a "Movie-like" feel, several dedicated Cinematic Managers were programmed to handle complex camera and UI manipulations without breaking player movement logic.</p>
+    <ul>
+        <li><strong>IntroCinematicManager & VideoPlaylist:</strong> The game starts with a terrifying projector sequence. We engineered a bulletproof static boolean logic (replacing older PlayerPrefs logic) to guarantee the 3-minute intro plays exactly <em>once</em> per session. The player's camera is locked with a sluggish, restricted rotation to simulate waking up dizzy, while heavy breathing audio plays.</li>
+        <li><strong>EscapeCinematicManager:</strong> The climax of the game involves escaping through a door while the stalker chases you. We implemented a dynamic <code>Vector3.MoveTowards</code> logic that automatically pulls the camera backward along the Z-axis while applying Perlin Noise camera shake. This prevented earlier bugs where the camera would clip through walls or freeze the enemy incorrectly.</li>
+    </ul>
+
+    <h2>5. Psychological Horror Atmosphere & Puzzles</h2>
+    <p>Immersion is the most critical aspect of the game, achieved through precise audio-visual synchronization.</p>
+    <ul>
+        <li><strong>Dynamic Headbob & Footsteps:</strong> The <code>PlayerController</code> uses a sine wave mathematical function (<code>Mathf.Sin</code>) tied to the character's velocity to bob the camera up and down. Footstep audio pitch changes dynamically based on whether the player is crouching, walking, or sprinting.</li>
+        <li><strong>Grandfather Clock Puzzle:</strong> A highly complex script that manipulates time. When triggered, the hands of the clock spin wildly backwards using <code>Transform.Rotate</code> multiplied by <code>Time.deltaTime</code>. The room lights instantly turn blood red, and a creepy sound plays in reverse, directly alerting the Stalker to the player's location.</li>
+        <li><strong>Exhaustion & Heavy Breathing:</strong> The <code>PlayerStats</code> script tracks stamina. If the player sprints too much or experiences a cinematic shock, a heavy breathing audio source is triggered, simulating panic attacks that drown out other environmental sounds.</li>
+    </ul>
+
+    <h2>Conclusion</h2>
+    <p>The combination of these highly technical systems—state-machine AI, persistent JSON serialization, complex camera mathematics, and dynamic audio manipulation—transforms <em>The Last Corridor</em> from a simple walking simulator into a highly advanced, responsive, and terrifying psychological horror game. The architecture is modular, bug-tested, and ready for the final polishing phases.</p>
+
+</body>
+</html>
