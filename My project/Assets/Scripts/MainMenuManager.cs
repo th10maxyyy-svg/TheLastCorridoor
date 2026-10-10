@@ -6,6 +6,7 @@ public class MainMenuManager : MonoBehaviour
     public void StartGame()
     {
         PlayClickSound();
+        IntroState.ResetForNewGame(); // fresh game = intro plays again
         // Nayi game shuru karte hue purani save delete kar do taake fresh start ho
         string savePath = Application.persistentDataPath + "/AsylumSave.json";
         if (System.IO.File.Exists(savePath)) 

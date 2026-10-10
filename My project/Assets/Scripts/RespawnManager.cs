@@ -37,6 +37,31 @@ public class RespawnManager : MonoBehaviour
         {
             ApplySaveData();
         }
+
+        // After a death-respawn reload make sure the player is never left frozen
+        if (IntroState.skipIntro) StartCoroutine(EnsurePlayerFree());
+    }
+
+    private IEnumerator EnsurePlayerFree()
+    {
+        // Let every Start() (IntroCinematicManager, PlayerController, ...) finish first
+        yield return null;
+        yield return null;
+        yield return new WaitForSeconds(0.2f);
+
+        PlayerController pc = FindAnyObjectByType<PlayerController>();
+        if (pc != null)
+        {
+            pc.ForceUnlock();
+            Debug.Log("[Respawn] Player unlocked after respawn.");
+        }
+
+        // Projector video must never play after a respawn
+        foreach (UnityEngine.Video.VideoPlayer vp in FindObjectsByType<UnityEngine.Video.VideoPlayer>(FindObjectsInactive.Include))
+        {
+            vp.Stop();
+            vp.enabled = false;
+        }
     }
 
     private void ApplySaveData()
@@ -176,6 +201,9 @@ public class RespawnManager : MonoBehaviour
             string json = JsonUtility.ToJson(SaveManager.instance.currentSaveData, true);
             System.IO.File.WriteAllText(Application.persistentDataPath + "/AsylumSave.json", json);
         }
+
+        // Respawn reload: intro cinematic/projector must NOT play again
+        IntroState.skipIntro = true;
 
         // Reload Scene (It will auto-place the player and dropped item in Start)
         UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);

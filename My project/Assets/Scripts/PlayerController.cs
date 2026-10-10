@@ -367,9 +367,36 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    public Animator BodyAnimator => bodyAnimator;
     public bool IsSprinting => isSprinting && currentInput.magnitude > 0;
     public bool IsCrouching => isCrouching;
     public float GetCurrentSpeed() => characterController.velocity.magnitude;
+
+    /// <summary>
+    /// Failsafe used after a death-respawn scene reload: guarantees the player is never left frozen
+    /// by a cinematic flag/controller state.
+    /// </summary>
+    public void ForceUnlock()
+    {
+        StopAllCoroutines();
+        isWakingUp = false;
+        isCinematicPlaying = false;
+        isHidden = false;
+        enabled = true;
+        if (characterController == null) characterController = GetComponent<CharacterController>();
+        if (characterController != null) characterController.enabled = true;
+        if (fadeImage != null)
+        {
+            Color c = fadeImage.color;
+            c.a = 0f;
+            fadeImage.color = c;
+            fadeImage.raycastTarget = false;
+            fadeImage.gameObject.SetActive(false);
+        }
+        Time.timeScale = 1f;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
 
     public void TriggerWakeUpSequence()
     {

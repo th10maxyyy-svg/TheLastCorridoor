@@ -11,18 +11,21 @@ public class VideoPlaylist : MonoBehaviour
     private VideoPlayer videoPlayer;
     private int currentVideoIndex = 0;
 
-    private static bool hasPlayedThisSession = false;
+    void Awake()
+    {
+        // Respawn after death: never replay the projector video
+        if (IntroState.skipIntro)
+        {
+            VideoPlayer vp = GetComponent<VideoPlayer>();
+            if (vp != null) { vp.playOnAwake = false; vp.Stop(); }
+            gameObject.SetActive(false);
+        }
+    }
 
     void Start()
     {
-        // CHECK: If player already saw the intro in this play session, disable projector!
-        if (hasPlayedThisSession)
-        {
-            gameObject.SetActive(false);
-            return;
-        }
+        if (IntroState.skipIntro) return;
 
-        hasPlayedThisSession = true;
         videoPlayer = GetComponent<VideoPlayer>();
         
         if (videos.Length > 0)

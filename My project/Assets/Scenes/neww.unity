@@ -55767,6 +55767,9 @@ MonoBehaviour:
   enemyAnimator: {fileID: 5555971124308985356}
   attackRotationOffset: 250
   groundOffset: -1.1
+  cinematicStopDistance: 2
+  cinematicFlinchDuration: 3
+  cinematicRunSpeedMultiplier: 1.5
 --- !u!195 &1048910449
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -65484,7 +65487,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1369492270
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -82700,7 +82703,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &2007147414
 MonoBehaviour:
   m_ObjectHideFlags: 0

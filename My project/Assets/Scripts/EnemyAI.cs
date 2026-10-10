@@ -261,6 +261,18 @@ public class EnemyAI : MonoBehaviour
     private bool hasFlinched = false;
     private float flinchTimer = 0f;
 
+    [Header("Escape Cinematic Tuning")]
+    [Tooltip("How close (metres) the enemy gets to the run target before he stops and screams")]
+    public float cinematicStopDistance = 2f;
+    [Tooltip("How long he screams at the gate before walking back into the darkness")]
+    public float cinematicFlinchDuration = 3f;
+    [Tooltip("Run speed multiplier (x chaseSpeed) during the escape cinematic")]
+    public float cinematicRunSpeedMultiplier = 1.5f;
+    [Tooltip("If > 0 he RUNS back into the darkness at chaseSpeed x this value instead of a slow defeated walk")]
+    public float cinematicRetreatSpeedMultiplier = 0f;
+    /// <summary>True once the enemy has reached the gate and is screaming/retreating.</summary>
+    public bool CinematicHasArrived => hasFlinched;
+
     public void PlayCinematicEscape(Transform runTarget, Transform retreatTarget, string animationName)
     {
         currentState = AIState.CinematicEscape;
@@ -272,7 +284,7 @@ public class EnemyAI : MonoBehaviour
         if (agent.isActiveAndEnabled && agent.isOnNavMesh)
         {
             agent.isStopped = false;
-            agent.speed = chaseSpeed * 1.5f; // Fast aggressive run towards the door!
+            agent.speed = chaseSpeed * cinematicRunSpeedMultiplier; // Fast aggressive run towards the door!
             agent.SetDestination(cinematicRunTarget.position);
         }
     }
@@ -283,12 +295,12 @@ public class EnemyAI : MonoBehaviour
         if (!hasFlinched)
         {
             HandleFootsteps(0.2f); // fast footsteps
-            if (Vector3.Distance(transform.position, cinematicRunTarget.position) < 2f || 
-               (!agent.pathPending && agent.remainingDistance < 2f))
+            if (Vector3.Distance(transform.position, cinematicRunTarget.position) < cinematicStopDistance || 
+               (!agent.pathPending && agent.remainingDistance < cinematicStopDistance))
             {
                 // Reached the door, trigger the flinch/scream!
                 hasFlinched = true;
-                flinchTimer = 3f; // Scream for 3 seconds
+                flinchTimer = cinematicFlinchDuration; // Scream at the gate
                 
                 if (agent.isActiveAndEnabled && agent.isOnNavMesh)
                 {
@@ -316,7 +328,7 @@ public class EnemyAI : MonoBehaviour
                 if (agent.isActiveAndEnabled && agent.isOnNavMesh && cinematicRetreatTarget != null)
                 {
                     agent.isStopped = false;
-                    agent.speed = patrolSpeed; // Slow, defeated walk back
+                    agent.speed = cinematicRetreatSpeedMultiplier > 0f ? chaseSpeed * cinematicRetreatSpeedMultiplier : patrolSpeed; // walk back, or flee in panic
                     agent.SetDestination(cinematicRetreatTarget.position);
                 }
             }
@@ -324,7 +336,7 @@ public class EnemyAI : MonoBehaviour
         // 3. Retreating
         else
         {
-            HandleFootsteps(0.6f); // Slow footsteps
+            HandleFootsteps(cinematicRetreatSpeedMultiplier > 0f ? 0.25f : 0.6f); // Slow footsteps (or panicked sprint)
         }
     }
 

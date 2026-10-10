@@ -33,6 +33,7 @@ public class MainMenuController : MonoBehaviour
     public void PlayGame()
     {
         // Reset the Intro Cinematic flag for a fresh game!
+        IntroState.ResetForNewGame();
         PlayerPrefs.SetInt("HasSeenIntro", 0);
         PlayerPrefs.Save();
 

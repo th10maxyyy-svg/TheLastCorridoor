@@ -23,30 +23,27 @@ public class IntroCinematicManager : MonoBehaviour
     private Quaternion startCamRot;
     private Vector3 startCamPos;
 
-    private static bool hasPlayedThisSession = false;
-
     void Start()
     {
-        // CHECK: If it has already played in this Play session (e.g. they died and scene reloaded)
-        if (hasPlayedThisSession)
+        // If the player died and the scene was reloaded, skip the intro entirely
+        if (IntroState.skipIntro)
         {
-            // Disable the cinematic black screen completely
-            if (blinkOverlay != null)
-            {
-                blinkOverlay.gameObject.SetActive(false);
-                if (blinkOverlay.canvas != null) blinkOverlay.canvas.gameObject.SetActive(false);
-            }
+            if (blinkOverlay != null) SetAlpha(blinkOverlay, 0f);
 
-            // Destroy this manager completely so it doesn't restrict the player!
+            if (playerController == null) playerController = FindAnyObjectByType<PlayerController>();
+            if (playerController != null)
+            {
+                playerController.isCinematicPlaying = false;
+                playerController.enabled = true;
+            }
+            if (uiCanvas != null) uiCanvas.SetActive(true);
+
             Destroy(gameObject);
             return;
         }
 
-        // Mark as played so it won't play again if the player dies and scene reloads
-        hasPlayedThisSession = true;
-
         // Try auto-assigning if left empty
-        if (playerController == null) playerController = FindObjectOfType<PlayerController>();
+        if (playerController == null) playerController = FindAnyObjectByType<PlayerController>();
         if (playerStats == null && playerController != null) playerStats = playerController.GetComponent<PlayerStats>();
         if (playerCamera == null && playerController != null) playerCamera = playerController.GetComponentInChildren<Camera>();
 
@@ -59,6 +56,11 @@ public class IntroCinematicManager : MonoBehaviour
         // BUG FIX: Wait 1 frame to ensure PlayerController's Start() method runs first!
         // Otherwise playerCamera remains null in PlayerController!
         yield return null;
+
+        // The intro is now running. From here on, ANY reload of this scene in the same session
+        // (death respawn, restart, etc.) must skip the intro + projector video.
+        // Set a frame later so every Start() of this load has already read the flag.
+        IntroState.skipIntro = true;
 
         isCinematicActive = true;
         
