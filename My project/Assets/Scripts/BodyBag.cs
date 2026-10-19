@@ -81,10 +81,14 @@ public class BodyBag : MonoBehaviour, IInteractable
             
             if (player != null && jumpscareZombie != null)
             {
-                // Player ki chhati (chest) ki taraf bhage ga
-                Vector3 targetPos = player.transform.position + Vector3.up * 1.2f;
+                // Player ke chehre ke SAAMNE aa kar rukta hai (pehle seedha player ke andar ghus jata tha)
+                Camera cam = player.GetComponentInChildren<Camera>();
+                Vector3 targetPos = cam != null
+                    ? cam.transform.position + cam.transform.forward * 0.9f - Vector3.up * 0.3f
+                    : player.transform.position + player.transform.forward * 0.9f + Vector3.up * 1.2f;
                 jumpscareZombie.transform.position = Vector3.Lerp(startPos, targetPos, t);
-                jumpscareZombie.transform.LookAt(targetPos);
+                Vector3 lookAt = cam != null ? cam.transform.position : player.transform.position + Vector3.up * 1.5f;
+                jumpscareZombie.transform.LookAt(new Vector3(lookAt.x, jumpscareZombie.transform.position.y, lookAt.z));
             }
             yield return null;
         }

@@ -91,7 +91,7 @@ public class TaserGun : MonoBehaviour, IInteractable
 
     private bool CanFire()
     {
-        if (Cursor.lockState != CursorLockMode.Locked || Time.timeScale <= 0f) return false;
+        if (KeypadController.IsAnyKeypadOpen || Time.timeScale <= 0f) return false;
         if (owner == null) return true;
         return owner.enabled && !owner.isDead && !owner.isCinematicPlaying && !owner.isHidden;
     }

@@ -94,17 +94,82 @@ public class EnemyAI : MonoBehaviour
     public float BaseChaseSpeed { get; private set; }
     public float BaseDetectionRange { get; private set; }
 
+    public AIState State => currentState;
+
+    [Header("Horror Behaviour")]
+    [Tooltip("Patrol ke doran kabhi kabhi ruk kar player ki taraf ghoorta aur hansta hai")]
+    [SerializeField] private bool stalkPauses = true;
+    [Tooltip("Chase mein player se itna faasla rakhta hai (warna model camera ke andar ghus jata tha)")]
+    [SerializeField] private float chaseStandOffDistance = 1.1f;
+
+    private float nextStalkPauseTime = 0f;
+    private float stalkPauseUntil = 0f;
+    private float nextSpottedLineTime = 0f;
+    private float chaseYellUntil = 0f;
+
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
         BaseChaseSpeed = chaseSpeed;
         BaseDetectionRange = detectionRange;
 
+        LoadDefaultAudio();
+        if (GetComponent<EnemyHorrorFX>() == null) gameObject.AddComponent<EnemyHorrorFX>();
+
         // Failsafe: Agar user enemy ko disable karna bhool jaye, to game shuru hote hi ye khud chupp jayega!
         // (Lekin agar kisi script ne isay jagane ke liye EnsureActive() call kiya hai to wapas band na ho)
         if (currentState == AIState.Dormant && !externallyActivated)
         {
             gameObject.SetActive(false);
+        }
+    }
+
+    /// <summary>
+    /// Scene mein enemy ki cheekh / hansi wali lists khali thin (is liye woh bilkul chup tha).
+    /// Agar Inspector mein kuch nahi dala gaya to Resources/HorrorAudio se khud bhar lo.
+    /// </summary>
+    private void LoadDefaultAudio()
+    {
+        if (teaseVoiceLines == null || teaseVoiceLines.Length == 0)
+        {
+            teaseVoiceLines = LoadClips("HorrorAudio/Peek_a_boo_I_finally_found", "HorrorAudio/sound_should_be_like_heath_ledg");
+        }
+        if (patrolVoiceLines == null || patrolVoiceLines.Length == 0)
+        {
+            patrolVoiceLines = LoadClips("HorrorAudio/oliper18-scary-laugh-377526", "HorrorAudio/joker-2008-laugh");
+        }
+        if (enemyAudioSource != null)
+        {
+            // 3D voice so the player can tell WHERE he is in the dark
+            enemyAudioSource.spatialBlend = Mathf.Max(enemyAudioSource.spatialBlend, 0.85f);
+            enemyAudioSource.rolloffMode = AudioRolloffMode.Linear;
+            enemyAudioSource.minDistance = 2f;
+            enemyAudioSource.maxDistance = Mathf.Max(enemyAudioSource.maxDistance, 35f);
+        }
+    }
+
+    private static AudioClip[] LoadClips(params string[] paths)
+    {
+        System.Collections.Generic.List<AudioClip> clips = new System.Collections.Generic.List<AudioClip>();
+        foreach (string p in paths)
+        {
+            AudioClip c = Resources.Load<AudioClip>(p);
+            if (c != null) clips.Add(c);
+        }
+        return clips.ToArray();
+    }
+
+    /// <summary>He spotted the player: start the chase with a "Peek-a-boo... I finally found you!" (not every few seconds).</summary>
+    private void BeginChase()
+    {
+        currentState = AIState.Chase;
+        stalkPauseUntil = 0f;
+        if (Time.time >= nextSpottedLineTime && teaseVoiceLines != null && teaseVoiceLines.Length > 0 && enemyAudioSource != null)
+        {
+            enemyAudioSource.PlayOneShot(teaseVoiceLines[0]);
+            nextSpottedLineTime = Time.time + 20f;
+            if (enemyAnimator != null) enemyAnimator.SetTrigger("Tease");
+            chaseYellUntil = Time.time + 1.3f; // stops for a moment and screams before running at the player
         }
     }
 
@@ -134,8 +199,7 @@ public class EnemyAI : MonoBehaviour
         // If disabled mid-stun the coroutine dies - never leave him frozen/lying down
         if (currentState == AIState.Stunned)
         {
-            if (enemyAnimator != null) enemyAnimator.speed = 1f;
-            transform.localEulerAngles = new Vector3(stunOriginalXRotation, transform.localEulerAngles.y, transform.localEulerAngles.z);
+            StandUpFromStun();
             currentState = AIState.Patrol;
         }
         if (agent != null) agent.updateRotation = true;
@@ -251,6 +315,10 @@ public class EnemyAI : MonoBehaviour
         {
             agent.updateRotation = true;
         }
+        if (currentState != AIState.Chase && agent.stoppingDistance != 0f)
+        {
+            agent.stoppingDistance = 0f; // stand-off distance is only for the chase
+        }
 
         // Animator ki speed update karein (taake walk/run automatically ho)
         if (enemyAnimator != null)
@@ -342,7 +410,20 @@ public class EnemyAI : MonoBehaviour
 
     public void PlayCinematicEscape(Transform runTarget, Transform retreatTarget, string animationName)
     {
+        // If he was lying on the floor from the taser, stand him up first (otherwise he "runs" frozen and sideways)
+        if (currentState == AIState.Stunned) StandUpFromStun();
+        StopAllCoroutines(); // no stun / vanish routine may interfere with the ending
+
+        // Chase music must not blare over the ending
+        if (enemyAudioSource != null && enemyAudioSource.clip == chaseMusic)
+        {
+            enemyAudioSource.Stop();
+            enemyAudioSource.clip = null;
+        }
+
         currentState = AIState.CinematicEscape;
+        cinematicDestinationSet = false;
+        cinematicHolding = false;
         cinematicRunTarget = runTarget;
         cinematicRetreatTarget = retreatTarget;
         cinematicAnimationName = animationName;
@@ -352,18 +433,99 @@ public class EnemyAI : MonoBehaviour
         {
             agent.isStopped = false;
             agent.speed = chaseSpeed * cinematicRunSpeedMultiplier; // Fast aggressive run towards the door!
-            agent.SetDestination(cinematicRunTarget.position);
+            agent.updateRotation = true;
+            cinematicDestinationSet = agent.SetDestination(cinematicRunTarget.position);
         }
+    }
+
+    private bool cinematicDestinationSet = false;
+    private bool cinematicHolding = false;
+    private Vector3 cinematicLookPoint;
+
+    /// <summary>
+    /// Ending cinematic, part 1: he stands still in the dark, stares at the player and (optionally) screams.
+    /// Call PlayCinematicEscape afterwards to make him charge.
+    /// </summary>
+    public void HoldForCinematic(Vector3 lookPoint, string animTrigger, bool scream)
+    {
+        if (currentState == AIState.Stunned) StandUpFromStun();
+        StopAllCoroutines();
+
+        if (enemyAudioSource != null && enemyAudioSource.clip == chaseMusic)
+        {
+            enemyAudioSource.Stop();
+            enemyAudioSource.clip = null;
+        }
+
+        currentState = AIState.CinematicEscape;
+        cinematicHolding = true;
+        hasFlinched = false;
+        cinematicLookPoint = lookPoint;
+
+        if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+        }
+
+        if (enemyAnimator != null && !string.IsNullOrEmpty(animTrigger)) enemyAnimator.SetTrigger(animTrigger);
+        if (scream) PlayScream();
+    }
+
+    /// <summary>Plays one of his tease/scream voice lines.</summary>
+    public void PlayScream()
+    {
+        if (enemyAudioSource != null && teaseVoiceLines != null && teaseVoiceLines.Length > 0)
+        {
+            AudioClip clip = teaseVoiceLines[Random.Range(0, teaseVoiceLines.Length)];
+            if (clip != null) enemyAudioSource.PlayOneShot(clip);
+        }
+    }
+
+    private void StandUpFromStun()
+    {
+        if (enemyAnimator != null) enemyAnimator.speed = 1f;
+        transform.localEulerAngles = new Vector3(stunOriginalXRotation, transform.localEulerAngles.y, transform.localEulerAngles.z);
+        if (agent != null) agent.updateRotation = true;
     }
 
     private void CinematicEscapeBehavior()
     {
+        // 0. Standing in the dark, staring at the player
+        if (cinematicHolding)
+        {
+            Vector3 dir = cinematicLookPoint - transform.position;
+            dir.y = 0f;
+            if (dir.sqrMagnitude > 0.01f)
+            {
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dir), Time.deltaTime * 4f);
+            }
+            return;
+        }
+
+        if (cinematicRunTarget == null) return;
+
         // 1. Running towards the light
         if (!hasFlinched)
         {
+            // BUG FIX: agar shuru mein agent NavMesh par nahi tha to destination kabhi set nahi hoti thi
+            // aur "remainingDistance = 0" ki wajah se wo spawn par hi khara ho kar cheekhne lagta tha.
+            if (!cinematicDestinationSet || (!agent.hasPath && !agent.pathPending))
+            {
+                agent.isStopped = false;
+                agent.speed = chaseSpeed * cinematicRunSpeedMultiplier;
+                cinematicDestinationSet = agent.SetDestination(cinematicRunTarget.position);
+            }
+
             HandleFootsteps(0.2f); // fast footsteps
-            if (Vector3.Distance(transform.position, cinematicRunTarget.position) < cinematicStopDistance || 
-               (!agent.pathPending && agent.remainingDistance < cinematicStopDistance))
+
+            Vector3 flat = cinematicRunTarget.position - transform.position;
+            flat.y = 0f;
+            float arriveDistance = Mathf.Max(cinematicStopDistance, agent.stoppingDistance + 0.1f);
+            bool reached = flat.magnitude < arriveDistance ||
+                           (cinematicDestinationSet && agent.hasPath && !agent.pathPending && agent.remainingDistance < arriveDistance);
+
+            if (reached)
             {
                 // Reached the door, trigger the flinch/scream!
                 hasFlinched = true;
@@ -494,7 +656,7 @@ public class EnemyAI : MonoBehaviour
         
         if (CanSeePlayer())
         {
-            currentState = AIState.Chase;
+            BeginChase();
             return;
         }
 
@@ -561,6 +723,9 @@ public class EnemyAI : MonoBehaviour
             enemyAnimator.speed = 1f; // Unfreeze animation
         }
         
+        // Something else (e.g. the ending cinematic) took over while he was stunned - don't overwrite that state
+        if (currentState != AIState.Stunned) yield break;
+
         // After stun, the enemy is angry and immediately chases the player if possible
         if (playerTransform != null)
         {
@@ -599,9 +764,12 @@ public class EnemyAI : MonoBehaviour
         if (CanSeePlayer())
         {
             Debug.Log("EnemyAI: Player nazar aa gaya, ab Chase karega!");
-            currentState = AIState.Chase;
+            BeginChase();
             return;
         }
+
+        // --- STALKING PAUSE: kabhi kabhi ruk kar player ki disha mein ghoorta hai aur hansta hai ---
+        if (StalkPause()) return;
 
         // --- GRANNY-LIKE WANDER ---
         // Enemy ab har waqt player ke peeche nahi bhagega. Ye randomly patrol karega.
@@ -629,9 +797,62 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
+    /// <summary>Returns true while he is standing still, staring towards where the player is.</summary>
+    private bool StalkPause()
+    {
+        if (!stalkPauses || playerTransform == null) return false;
+
+        if (Time.time < stalkPauseUntil)
+        {
+            agent.isStopped = true;
+            Vector3 dir = playerTransform.position - transform.position;
+            dir.y = 0f;
+            if (dir.sqrMagnitude > 0.01f)
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dir), Time.deltaTime * 2f);
+            return true;
+        }
+
+        if (stalkPauseUntil > 0f)
+        {
+            // pause just ended
+            stalkPauseUntil = 0f;
+            agent.isStopped = false;
+        }
+
+        if (nextStalkPauseTime <= 0f) nextStalkPauseTime = Time.time + Random.Range(15f, 30f);
+
+        // Only when the player is somewhere nearby (he "senses" them) - never across the whole map
+        if (Time.time >= nextStalkPauseTime && Vector3.Distance(transform.position, playerTransform.position) < 22f)
+        {
+            nextStalkPauseTime = Time.time + Random.Range(20f, 40f);
+            stalkPauseUntil = Time.time + Random.Range(2.5f, 4f);
+            if (patrolVoiceLines != null && patrolVoiceLines.Length > 0 && enemyAudioSource != null)
+            {
+                enemyAudioSource.PlayOneShot(patrolVoiceLines[Random.Range(0, patrolVoiceLines.Length)]);
+                nextVoiceTime = Time.time + Random.Range(minVoiceDelay, maxVoiceDelay);
+            }
+            return true;
+        }
+        return false;
+    }
+
     private void ChaseBehavior()
     {
         agent.speed = chaseSpeed;
+        // Stop a little in front of the player instead of walking INTO them (the model used to fill the camera)
+        agent.stoppingDistance = chaseStandOffDistance;
+
+        // Just spotted the player: stands still and screams first (gives a split second to run)
+        if (Time.time < chaseYellUntil && playerTransform != null)
+        {
+            agent.isStopped = true;
+            Vector3 toPlayer = playerTransform.position - transform.position;
+            toPlayer.y = 0f;
+            if (toPlayer.sqrMagnitude > 0.01f)
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(toPlayer), Time.deltaTime * 8f);
+            lastKnownPosition = playerTransform.position;
+            return;
+        }
         HandleFootsteps(0.3f); // Faster footsteps during chase
 
         if (enemyAudioSource != null && chaseMusic != null && enemyAudioSource.clip != chaseMusic)
@@ -724,7 +945,7 @@ public class EnemyAI : MonoBehaviour
 
         if (CanSeePlayer())
         {
-            currentState = AIState.Chase;
+            BeginChase();
             return;
         }
 

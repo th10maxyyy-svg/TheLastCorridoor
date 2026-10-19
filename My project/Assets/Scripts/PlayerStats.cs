@@ -166,9 +166,12 @@ public class PlayerStats : MonoBehaviour
         return currentStamina > 0.5f; 
     }
 
+    /// <summary>True during the ending cinematic - nothing may kill the player while the story wraps up.</summary>
+    [HideInInspector] public bool isInvulnerable = false;
+
     public void TakeDamage(float amount)
     {
-        if (isDead) return;
+        if (isDead || isInvulnerable) return;
 
         currentHealth -= amount;
         currentHealth = Mathf.Max(currentHealth, 0f);

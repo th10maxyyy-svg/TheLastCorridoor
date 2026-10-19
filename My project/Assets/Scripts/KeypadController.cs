@@ -17,6 +17,13 @@ public class KeypadController : MonoBehaviour, IInteractable
     private bool isUnlocked = false;
     private float autoCloseTime = -1f;
 
+    /// <summary>True while any keypad UI is on screen (other scripts use this to ignore G / mouse clicks).</summary>
+    public static bool IsAnyKeypadOpen => openKeypadCount > 0;
+    private static int openKeypadCount = 0;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStatics() { openKeypadCount = 0; }
+
     private PlayerStats activePlayer;
     private float healthWhenOpened;
     private string saveFlag;
@@ -55,6 +62,7 @@ public class KeypadController : MonoBehaviour, IInteractable
     private void OpenKeypad(PlayerStats playerStats)
     {
         isKeypadOpen = true;
+        openKeypadCount++;
         activePlayer = playerStats;
         healthWhenOpened = playerStats != null ? playerStats.GetHealth() : 0f;
         autoCloseTime = -1f;
@@ -74,6 +82,7 @@ public class KeypadController : MonoBehaviour, IInteractable
     {
         if (!isKeypadOpen) return;
         isKeypadOpen = false;
+        openKeypadCount = Mathf.Max(0, openKeypadCount - 1);
         autoCloseTime = -1f;
 
         bool playerDead = activePlayer == null || activePlayer.IsDead();

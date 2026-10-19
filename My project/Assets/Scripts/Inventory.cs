@@ -88,18 +88,35 @@ public class Inventory : MonoBehaviour
     void Update()
     {
         // Drop item on pressing G
-        if (Input.GetKeyDown(KeyCode.G) && currentItem != null && CanUseInventory())
+        if (Input.GetKeyDown(KeyCode.G))
         {
-            DropCurrentItem();
+            if (currentItem == null)
+            {
+                InteractionRaycast.Notify(this, "Haath mein kuch nahi hai.", 1.5f);
+            }
+            else
+            {
+                string blockedReason = GetDropBlockedReason();
+                if (blockedReason == null)
+                {
+                    DropCurrentItem();
+                }
+                else
+                {
+                    Debug.Log("[Inventory] G pressed but drop blocked: " + blockedReason);
+                }
+            }
         }
     }
 
-    /// <summary>No dropping while dead, hidden, in a cinematic or while a UI (keypad) has the cursor.</summary>
-    private bool CanUseInventory()
+    /// <summary>Null when dropping is allowed. Only blocked while dead or while the keypad UI is open.</summary>
+    private string GetDropBlockedReason()
     {
-        if (Cursor.lockState != CursorLockMode.Locked) return false;
-        if (playerController == null) return true;
-        return playerController.enabled && !playerController.isDead && !playerController.isCinematicPlaying && !playerController.isHidden;
+        // NOTE: Cursor.lockState / cinematic flags are NOT checked - in the Unity Editor the cursor unlocks after ESC,
+        // and a stale flag must never make the G key silently stop working.
+        if (KeypadController.IsAnyKeypadOpen) return "keypad open";
+        if (playerController != null && playerController.isDead) return "player dead";
+        return null;
     }
 
     public void PickUpItem(GameObject item) => PickUpItem(item, false);

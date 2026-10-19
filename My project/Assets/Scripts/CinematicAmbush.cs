@@ -159,8 +159,16 @@ public class CinematicAmbush : MonoBehaviour
         // 0. PSYCHO JOKER EFFECT: Teleport enemy directly into the player's face!
         NavMeshAgent agent = enemy.GetComponent<NavMeshAgent>();
 
-        // Player ke bilkul aagay (0.45 units away)
-        Vector3 psychoPosition = playerTransform.position + playerTransform.forward * 0.45f;
+        // Player ke saamne - itna qareeb ke dil dehal jaye, lekin itna nahi ke model camera ke andar ghus jaye
+        // (pehle 0.45m tha: enemy ka jism camera mein ghus jata tha)
+        float psychoDistance = 1.35f;
+        // If the player stands facing a wall, don't put him inside / behind it
+        if (Physics.Raycast(playerTransform.position + Vector3.up * 0.5f, playerTransform.forward, out RaycastHit wallHit, psychoDistance + 0.4f, ~0, QueryTriggerInteraction.Ignore)
+            && !wallHit.transform.IsChildOf(playerTransform) && !wallHit.transform.IsChildOf(enemy.transform))
+        {
+            psychoDistance = Mathf.Max(0.9f, wallHit.distance - 0.4f);
+        }
+        Vector3 psychoPosition = playerTransform.position + playerTransform.forward * psychoDistance;
         psychoPosition.y = playerTransform.position.y; // Keep it on the ground
         
         if (agent != null)
@@ -219,7 +227,8 @@ public class CinematicAmbush : MonoBehaviour
                 }
 
                 // CAMERA ANGLE FIX: Low-angle psycho shot
-                Vector3 faceFront = targetHeadPos + enemy.transform.forward * 0.4f - Vector3.up * 0.25f;
+                // Camera stays ~0.85m in front of his face (0.4m put it INSIDE his head / raised arms)
+                Vector3 faceFront = targetHeadPos + enemy.transform.forward * 0.85f - Vector3.up * 0.2f;
                 
                 // Target Rotation
                 Quaternion targetRot = Quaternion.LookRotation(targetHeadPos - faceFront);

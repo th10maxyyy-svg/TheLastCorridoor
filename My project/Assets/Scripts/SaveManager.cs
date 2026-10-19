@@ -75,7 +75,54 @@ public class SaveManager : MonoBehaviour
     void OnApplicationQuit()
     {
         // Only autosave while actually inside the game level (not in the menu, not after permadeath/ending)
-        if (!suppressAutoSave && RespawnManager.instance != null) WriteToFile();
+        if (!suppressAutoSave && RespawnManager.instance != null)
+        {
+            if (!TrySavePlayerCheckpoint()) WriteToFile();
+        }
+    }
+
+    // ------------------------------------------------------------------ checkpoint autosave
+    // BUG FIX: player ki position pehle sirf marne par (basement) save hoti thi. Resume karne par player hamesha
+    // shuru wale kamre mein hota tha. Ab har kuch seconds mein (jab mehfooz ho) position save hoti hai.
+    private const float checkpointInterval = 15f;
+    private float nextCheckpointTime = 0f;
+    private PlayerController cachedPlayer;
+
+    void Update()
+    {
+        if (Time.unscaledTime < nextCheckpointTime) return;
+        nextCheckpointTime = Time.unscaledTime + checkpointInterval;
+        TrySavePlayerCheckpoint();
+    }
+
+    /// <summary>Saves where the player stands, but only when it is a SAFE place to resume from.</summary>
+    private bool TrySavePlayerCheckpoint()
+    {
+        if (suppressAutoSave || RespawnManager.instance == null) return false;      // not in the game level
+        if (restoredSceneLoad != sceneLoadCount) return false;                      // world not restored yet
+
+        if (cachedPlayer == null) cachedPlayer = FindAnyObjectByType<PlayerController>();
+        PlayerController pc = cachedPlayer;
+        if (pc == null || !pc.enabled || pc.isDead || pc.isHidden || pc.isCinematicPlaying) return false;
+        if (pc.transform.parent != null) return false;                              // riding the elevator
+
+        PlayerStats stats = pc.GetComponent<PlayerStats>();
+        if (stats != null && stats.IsDead()) return false;
+
+        CharacterController cc = pc.GetComponent<CharacterController>();
+        if (cc != null && (!cc.enabled || !cc.isGrounded)) return false;
+
+        // Never checkpoint in the middle of a chase / cinematic
+        foreach (EnemyAI enemy in FindObjectsByType<EnemyAI>())
+        {
+            EnemyAI.AIState s = enemy.State;
+            if (s == EnemyAI.AIState.Chase || s == EnemyAI.AIState.Tease || s == EnemyAI.AIState.CinematicEscape) return false;
+        }
+
+        // RespawnManager adds +1m on load (for the floor-level basement point) - compensate so we come back where we stood
+        Vector3 pos = pc.transform.position - Vector3.up * 0.9f;
+        SavePlayerTransform(pos, pc.transform.rotation);
+        return true;
     }
 
     // ------------------------------------------------------------------ CSV helpers

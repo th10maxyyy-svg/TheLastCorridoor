@@ -1,25 +1,26 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 
 /// <summary>
-/// THE GRAND ESCAPE - end cinematic.
+/// THE GRAND ESCAPE - first-person horror ending.
 ///
-///  1. The player reaches the last stretch before the main gate. Control is taken away (his body is hidden).
-///  2. Brother Silas bursts out of the darkness and SPRINTS for the gate. The camera runs backwards IN FRONT of his
-///     face, tracking him at head height with a violent handheld shake.
-///  3. Sunlight pours in through the open gate and gets brighter and brighter. The moment he SEES the sun he
-///     freezes, screams, shields his eyes (white-out flash, FOV punch, slow-mo beat) ...
-///  4. ... then he turns and RUNS back into the darkness in panic. The camera stays on him as he disappears.
-///  5. Fade to black -> "THE END".
+///  1. The player reaches the gate. A blink... and he has turned around, back towards the dark hall.
+///  2. Deep in the hall a dying red bulb flickers on: Brother Silas is standing there, staring. He screams.
+///  3. He CHARGES. Camera locked on his face, violent shake, heartbeat, the player stumbles back.
+///  4. Inches away, sunlight explodes through the gate behind the player - white-out, slow motion.
+///     He burns, shrieks and flees back into the darkness while the hall lights die one by one behind him.
+///  5. The player turns towards the light, walks out... white -> black -> THE END.
 ///
-/// Everything is positioned relative to this object (the trigger at the gate) and the enemy teleport point,
-/// so no scene re-wiring is needed. All the old inspector fields are kept.
+/// Uses the points placed in the scene: enemyTeleportPoint (where he appears), enemyDoorPoint (where the sun stops him),
+/// enemyRetreatPoint (where he flees to). Everything else is computed from the gate (this object).
 /// </summary>
 public class EscapeCinematicManager : MonoBehaviour
 {
     [Header("Cinematic Elements")]
+    [Tooltip("(legacy - the ending is now shown through the player's own eyes)")]
     public Camera cinematicCamera;
     public CanvasGroup fadeCanvasGroup;
     public TextMeshProUGUI endingText;
@@ -33,56 +34,70 @@ public class EscapeCinematicManager : MonoBehaviour
 
     [Header("Enemy Control")]
     public EnemyAI enemyAI;
-    public Transform enemyTeleportPoint; // Fallback spawn (inside the hall)
-    public Transform enemyDoorPoint;     // (legacy - the stop point is computed from the gate)
-    public Transform enemyRetreatPoint;  // Where he runs back to in the darkness
+    [Tooltip("Where he appears, deep inside the hall")]
+    public Transform enemyTeleportPoint;
+    [Tooltip("Where the sunlight stops him (close to the gate, inside the building)")]
+    public Transform enemyDoorPoint;
+    [Tooltip("Where he runs back to in the darkness")]
+    public Transform enemyRetreatPoint;
     public string enemyAnimationTriggerName = "Tease";
 
     [Header("Settings")]
-    public string finalMessage = "THE END";   // (the code always shows THE END)
+    [Tooltip("Small line shown under THE END")]
+    public string finalMessage = "The Nightmare is over... for now.";
     public float fadeDuration = 2.5f;
-    public float timeBeforeFade = 6f;
+    public float timeBeforeFade = 6f; // (legacy)
 
-    // ---- Tuning (constants on purpose: scene-serialized values must never override them) ----
-    private const float chaseTriggerDepth   = 5f;    // metres BEFORE the gate where the cinematic starts
-    private const float enemySpawnDepth     = 12.5f; // how far back in the hall he bursts out from
-    private const float enemyRunMultiplier  = 1.5f;  // x his chase speed
-    private const float enemyStopDepth      = 3.0f;  // he freezes this far INSIDE the gate when he sees the sun
-    private const float gateLimitDepth      = 0.6f;  // he can NEVER get closer to the gate line than this
-    private const float enemyScreamDuration = 1.7f;  // how long he stands screaming before fleeing
-    private const float enemyFleeMultiplier = 1.6f;  // flee speed (x chase speed)
-    private const float fleeWatchTime       = 2.6f;  // how long we watch him run away before the fade
-    private const float camLeadDistance     = 2.4f;  // camera runs this far in front of his face
-    private const float camLeadClose        = 1.6f;  // ...and pushes in to this when he freezes
-    private const float camHeight           = 1.5f;
-    private const float runFov              = 58f;
-    private const float punchFov            = 32f;
-    private const float restFov             = 44f;
-    private const float sunMaxBuildUp       = 14f;   // spot light intensity just before he sees it
-    private const float sunBurst            = 55f;   // spot light intensity when he sees it
-    private static readonly Color sunColor  = new Color(1f, 0.95f, 0.8f);
+    [Header("Optional Extra Sounds")]
+    [Tooltip("Sharp horror sting when he appears")]
+    public AudioClip appearSting;
+    [Tooltip("Played when the sunlight bursts in")]
+    public AudioClip sunBurstSound;
+    [Tooltip("Heartbeat loop during the chase")]
+    public AudioClip heartbeatLoop;
+
+    // ---- tuning (constants on purpose: old scene-serialized values must never override them) ----
+    private const float playerStandOutside = 0.8f; // player stands this far OUTSIDE the gate line
+    private const float fallbackSpawnDepth = 9f;   // if no teleport point: metres inside the hall
+    private const float fallbackStopDepth = 2.2f;  // if no door point: where the sun stops him
+    private const float gateLimitDepth = 0.9f;     // he can NEVER get closer to the gate line than this
+    private const float stareTime = 3.4f;          // how long he just stands and stares before charging
+    private const float maxChargeTime = 6f;        // safety timeout for the charge
+    private const float screamTime = 1.8f;         // burning/screaming at the light
+    private const float fleeWatchTime = 2.6f;      // watching him vanish into the dark
+    private const float sunBurst = 60f;
+    private static readonly Color sunColor = new Color(1f, 0.95f, 0.82f);
+    private static readonly Color bulbColor = new Color(1f, 0.28f, 0.18f);
 
     private bool hasTriggered = false;
     private bool running = false;
 
     // geometry
     private Vector3 gatePos, inward, outward;
-    private Transform player;
-    private Camera mainCam;
     private Transform stopPoint;
-    private Light sun;
-    private CanvasGroup flash;
 
-    // state
-    private Vector3 camPos;
-    private bool camInitialised = false;
-    private float leadNow = camLeadDistance;
-    private float fovNow = runFov;
-    private float shakeBoost = 0f;
-    private bool enemyArrived = false;   // = he has seen the sun
-    private bool enemyFleeing = false;
-    private float arrivalTime;
-    private float sunBase = 0f;
+    // player
+    private Transform player;
+    private Camera playerCam;
+    private float baseFov = 60f;
+    private PlayerController playerController;
+    private PlayerStats playerStats;
+
+    // camera state
+    private enum CamMode { None, LookAtEnemy, Free }
+    private CamMode camMode = CamMode.None;
+    private float shake = 0f;          // 0..1 handheld shake strength
+    private float fovTarget;
+    private float lookSharpness = 3f;  // how fast the eyes follow him
+
+    // fx
+    private Light sun;
+    private Light bulb;
+    private float bulbBase = 0f;
+    private CanvasGroup flash;
+    private AudioSource sfx;
+    private AudioSource heartbeat;
+    private readonly List<Light> hallLights = new List<Light>();
 
     // ------------------------------------------------------------------ setup
     private void Start()
@@ -100,6 +115,7 @@ public class EscapeCinematicManager : MonoBehaviour
 
         Vector3 inDir = Vector3.zero;
         if (enemyTeleportPoint != null) inDir = enemyTeleportPoint.position - gatePos;
+        else if (enemyDoorPoint != null) inDir = enemyDoorPoint.position - gatePos;
         else if (enemyAI != null) inDir = enemyAI.transform.position - gatePos;
         inDir.y = 0f;
         if (inDir.sqrMagnitude < 0.01f) inDir = transform.forward;
@@ -108,9 +124,10 @@ public class EscapeCinematicManager : MonoBehaviour
         outward = -inward;
     }
 
-    /// <summary>Add a trigger volume in front of the gate (inside the building) so the cinematic starts a few metres early.</summary>
+    /// <summary>Add a trigger volume in front of the gate (inside the building) so the cinematic starts a little early.</summary>
     private void ExtendTriggerBackwards()
     {
+        const float depth = 3f, width = 3.4f, height = 3f;
         BoxCollider bc = gameObject.AddComponent<BoxCollider>();
         bc.isTrigger = true;
 
@@ -120,28 +137,30 @@ public class EscapeCinematicManager : MonoBehaviour
         float sy = Mathf.Approximately(s.y, 0f) ? 1f : Mathf.Abs(s.y);
         float sz = Mathf.Approximately(s.z, 0f) ? 1f : Mathf.Abs(s.z);
 
-        float width = 3.4f, height = 3f;
         if (Mathf.Abs(localIn.z) >= Mathf.Abs(localIn.x))
         {
             float dir = Mathf.Sign(localIn.z);
-            bc.size = new Vector3(width / sx, height / sy, chaseTriggerDepth / sz);
-            bc.center = new Vector3(0f, 1f / sy, dir * (chaseTriggerDepth * 0.5f) / sz);
+            bc.size = new Vector3(width / sx, height / sy, depth / sz);
+            bc.center = new Vector3(0f, 1f / sy, dir * (depth * 0.5f) / sz);
         }
         else
         {
             float dir = Mathf.Sign(localIn.x);
-            bc.size = new Vector3(chaseTriggerDepth / sx, height / sy, width / sz);
-            bc.center = new Vector3(dir * (chaseTriggerDepth * 0.5f) / sx, 1f / sy, 0f);
+            bc.size = new Vector3(depth / sx, height / sy, width / sz);
+            bc.center = new Vector3(dir * (depth * 0.5f) / sx, 1f / sy, 0f);
         }
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!hasTriggered && other.CompareTag("Player"))
-        {
-            hasTriggered = true;
-            StartCoroutine(PlayCinematicSequence(other.gameObject));
-        }
+        if (hasTriggered) return;
+        if (!(other.CompareTag("Player") || other.GetComponent<PlayerController>() != null)) return;
+
+        PlayerStats ps = other.GetComponent<PlayerStats>();
+        if (ps != null && ps.IsDead()) return;
+
+        hasTriggered = true;
+        StartCoroutine(PlayCinematicSequence(other.gameObject));
     }
 
     // ------------------------------------------------------------------ main sequence
@@ -149,126 +168,252 @@ public class EscapeCinematicManager : MonoBehaviour
     {
         Debug.Log("Starting Grand Escape Cinematic!");
         player = playerObj.transform;
+        playerController = playerObj.GetComponent<PlayerController>();
+        playerStats = playerObj.GetComponent<PlayerStats>();
+        playerCam = playerObj.GetComponentInChildren<Camera>();
+        if (playerCam == null) playerCam = Camera.main;
 
-        // ---- 1. take control away from the player and hide him (first-person body has no head) ----
-        PlayerController pc = playerObj.GetComponent<PlayerController>();
-        if (pc != null) pc.enabled = false;
-
-        mainCam = Camera.main;
-        if (mainCam != null)
+        // ---- 1. lock everything down ----
+        if (playerController != null)
         {
-            InteractionRaycast ir = mainCam.GetComponent<InteractionRaycast>();
+            playerController.isCinematicPlaying = true;
+            playerController.enabled = false;
+        }
+        if (playerStats != null)
+        {
+            playerStats.isInvulnerable = true;
+            playerStats.TriggerHeavyBreathing(30f);
+        }
+        if (playerCam != null)
+        {
+            InteractionRaycast ir = playerCam.GetComponent<InteractionRaycast>();
             if (ir != null) ir.enabled = false;
+            baseFov = playerCam.fieldOfView;
+            fovTarget = baseFov;
         }
 
-        Renderer[] playerRenderers = playerObj.GetComponentsInChildren<Renderer>();
-        foreach (Renderer r in playerRenderers) r.enabled = false;
-
-        PlayerStats ps = playerObj.GetComponent<PlayerStats>();
-        if (ps != null) ps.TriggerHeavyBreathing(10f);
-
-        // ---- 2. hide gameplay HUD ----
-        Canvas[] allCanvases = FindObjectsByType<Canvas>();
-        foreach (Canvas c in allCanvases)
-        {
-            if (fadeCanvasGroup != null && (c.transform.IsChildOf(fadeCanvasGroup.transform) || c.transform == fadeCanvasGroup.transform)) continue;
-            if (c.name == "Canvas" || c.name.Contains("UI")) c.gameObject.SetActive(false);
-        }
-
-        // ---- 3. the sun + white-out overlay ----
-        CreateSun();
-        CreateFlash();
-
-        // ---- 4. enemy bursts out of the darkness and runs for the gate ----
-        PrepareEnemy();
-
-        // ---- 5. camera ----
-        if (cinematicCamera != null)
-        {
-            if (mainCam != null)
-            {
-                AudioListener mainListener = mainCam.GetComponent<AudioListener>();
-                if (mainListener != null) mainListener.enabled = false;
-                cinematicCamera.depth = mainCam.depth + 10f;
-                mainCam.enabled = false;
-            }
-            AudioListener cl = cinematicCamera.GetComponent<AudioListener>();
-            if (cl == null) cl = cinematicCamera.gameObject.AddComponent<AudioListener>();
-            cl.enabled = true;
-
-            cinematicCamera.gameObject.SetActive(true);
-            cinematicCamera.fieldOfView = fovNow;
-        }
+        LoadDefaultSounds();
+        HideGameplayHud();
+        CreateFx();
 
         ProgressionManager pm = FindAnyObjectByType<ProgressionManager>();
         if (pm != null) pm.StartEscapePhase();
 
+        // ---- 2. blink: when the eyes open he has turned round, back towards the dark hall ----
+        yield return FadeFlash(Color.black, 0f, 1f, 0.25f);
+        PlacePlayerAtGate();
+        PrepareEnemy();
+        CollectHallLights();
         running = true;
-        StartCoroutine(MovePlayerOutside());
+        camMode = CamMode.LookAtEnemy;
+        lookSharpness = 2.2f;
+        SnapCameraToEnemy();
+        yield return new WaitForSeconds(0.35f);
+        yield return FadeFlash(Color.black, 1f, 0f, 0.9f);
 
-        // ---- 6. wait until he sees the sun ----
-        float timeout = Time.time + 14f;
-        while (!enemyArrived && Time.time < timeout)
+        // ---- 3. the bulb flickers on - he is standing there, staring ----
+        StartCoroutine(BulbFlicker());
+        if (appearSting != null) sfx.PlayOneShot(appearSting, 1f);
+        fovTarget = baseFov * 0.72f;   // slow dolly-zoom onto him
+        shake = 0.15f;
+        yield return new WaitForSeconds(1.2f);
+
+        if (enemyAI != null)
         {
-            if (enemyAI != null && enemyAI.CinematicHasArrived) OnEnemySeesSun();
+            enemyAI.PlayScream();
+            if (!string.IsNullOrEmpty(enemyAnimationTriggerName) && enemyAI.enemyAnimator != null)
+                enemyAI.enemyAnimator.SetTrigger(enemyAnimationTriggerName);
+        }
+        shake = 0.35f;
+        StartCoroutine(FlickerHallLights(stareTime - 1.2f));
+        yield return new WaitForSeconds(stareTime - 1.2f);
+
+        // ---- 4. he CHARGES ----
+        if (heartbeat != null) heartbeat.Play();
+        fovTarget = baseFov * 0.95f;
+        shake = 0.8f;
+        lookSharpness = 6f;
+        if (enemyAI != null && stopPoint != null)
+        {
+            Transform retreat = enemyRetreatPoint != null ? enemyRetreatPoint : enemyTeleportPoint;
+            enemyAI.cinematicStopDistance = 0.4f;
+            enemyAI.cinematicFlinchDuration = screamTime;
+            enemyAI.cinematicRunSpeedMultiplier = 1.6f;
+            enemyAI.cinematicRetreatSpeedMultiplier = 1.7f;
+            enemyAI.PlayCinematicEscape(stopPoint, retreat, enemyAnimationTriggerName);
+        }
+        StartCoroutine(StumbleBack());
+
+        float timeout = Time.time + maxChargeTime;
+        while (Time.time < timeout)
+        {
+            if (enemyAI == null || enemyAI.CinematicHasArrived) break;
+            // Failsafe: he got close enough even if the agent never "arrived"
+            if (enemyAI != null && Vector3.Distance(Flat(enemyAI.transform.position), Flat(stopPoint.position)) < 0.6f) break;
             yield return null;
         }
-        if (!enemyArrived) OnEnemySeesSun(); // safety
 
-        // ---- 7. he screams, then flees; we watch him disappear ----
-        yield return new WaitForSeconds(enemyScreamDuration);
-        enemyFleeing = true;
+        // ---- 5. SUNLIGHT ----
+        StartCoroutine(SunBurstRoutine());
+        StartCoroutine(SlowMoBeat());
+        if (sunBurstSound != null) sfx.PlayOneShot(sunBurstSound, 1f);
+        if (burnScream != null) sfx.PlayOneShot(burnScream, 0.9f); // he burns in the light
+        else if (enemyAI != null) enemyAI.PlayScream();
+        fovTarget = baseFov * 0.55f; // punch in on his burning face
+        shake = 1f;
+        lookSharpness = 9f;
+        yield return new WaitForSeconds(screamTime);
+
+        // ---- 6. he flees, the darkness swallows him ----
+        fovTarget = baseFov * 0.8f;
+        shake = 0.35f;
+        lookSharpness = 3f;
+        if (heartbeat != null) StartCoroutine(FadeAudio(heartbeat, 0f, 2.5f));
+        StartCoroutine(KillHallLightsBehindHim(fleeWatchTime));
         yield return new WaitForSeconds(fleeWatchTime);
+        if (bulb != null) bulb.enabled = false;
+        if (enemyAI != null) enemyAI.gameObject.SetActive(false); // gone into the dark
 
-        // ---- 8. fade to black ----
-        if (flash != null) StartCoroutine(FadeFlashOut());
+        // ---- 7. turn to the light and walk out ----
+        if (playerCam != null) freeCamLocalRot = playerCam.transform.localRotation * Quaternion.Inverse(lastShake);
+        camMode = CamMode.Free;
+        shake = 0.1f;
+        yield return TurnTowardsLight(2.2f);
+
+        StartCoroutine(WalkOutside(3f));
+        if (flash != null) flash.alpha = 1f;
+        yield return new WaitForSeconds(1.8f); // hold on the white light
+
+        // ---- 8. black + THE END ----
+        float startVolume = AudioListener.volume;
         if (fadeCanvasGroup != null)
         {
             fadeCanvasGroup.gameObject.SetActive(true);
-            float t = 0f;
-            while (t < fadeDuration)
-            {
-                t += Time.unscaledDeltaTime;
-                fadeCanvasGroup.alpha = Mathf.Lerp(0f, 1f, t / fadeDuration);
-                yield return null;
-            }
             fadeCanvasGroup.alpha = 1f;
         }
+        yield return FadeFlash(new Color(1f, 0.97f, 0.9f), 1f, 0f, fadeDuration);
         running = false;
 
-        // ---- 9. THE END ----
         if (endingText != null)
         {
             endingText.gameObject.SetActive(true);
-            endingText.text = "THE END";
             endingText.alignment = TextAlignmentOptions.Center;
             endingText.fontSize = Mathf.Max(endingText.fontSize, 96f);
-            Color tc = endingText.color; tc.a = 1f; endingText.color = tc;
+            endingText.text = string.IsNullOrEmpty(finalMessage)
+                ? "THE END"
+                : "THE END\n<size=35%><alpha=#AA>" + finalMessage + "</size>";
+
+            Color tc = endingText.color;
+            for (float t = 0f; t < 2f; t += Time.unscaledDeltaTime)
+            {
+                tc.a = t / 2f;
+                endingText.color = tc;
+                AudioListener.volume = Mathf.Lerp(startVolume, 0.25f, t / 2f);
+                yield return null;
+            }
+            tc.a = 1f;
+            endingText.color = tc;
         }
         yield return new WaitForSecondsRealtime(5f);
 
-        // ---- 10. game complete: wipe save, back to main menu ----
+        // ---- 9. game complete: wipe save, back to main menu ----
         if (SaveManager.instance != null) SaveManager.instance.DeleteSave();
         IntroState.ResetForNewGame();
 
+        AudioListener.volume = startVolume;
         Time.timeScale = 1f;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
         UnityEngine.SceneManagement.SceneManager.LoadScene(0);
     }
 
-    // ------------------------------------------------------------------ player (invisible, just moved out of the way)
-    private IEnumerator MovePlayerOutside()
+    // ------------------------------------------------------------------ player
+    private void PlacePlayerAtGate()
+    {
+        if (player == null) return;
+
+        CharacterController cc = player.GetComponent<CharacterController>();
+        Vector3 standPos = new Vector3(gatePos.x, player.position.y, gatePos.z) + outward * playerStandOutside;
+        if (cc != null && IsBlocked(standPos, cc))
+        {
+            // A closed gate / wall is there - stand just inside instead
+            standPos = new Vector3(gatePos.x, player.position.y, gatePos.z) + inward * 0.3f;
+        }
+        if (cc != null) cc.enabled = false;
+        player.position = standPos;
+        player.rotation = Quaternion.LookRotation(inward, Vector3.up); // facing back into the hall
+        Physics.SyncTransforms();
+        if (cc != null) cc.enabled = true;
+
+        // Hide the first-person body (the camera turns a lot - it would clip through it)
+        foreach (Renderer r in player.GetComponentsInChildren<Renderer>()) r.enabled = false;
+    }
+
+    private bool IsBlocked(Vector3 pos, CharacterController cc)
+    {
+        float r = cc.radius * 0.95f;
+        Vector3 center = pos + cc.center;
+        Vector3 up = Vector3.up * Mathf.Max(0f, cc.height * 0.5f - r);
+        foreach (Collider c in Physics.OverlapCapsule(center - up + Vector3.up * 0.05f, center + up, r, ~0, QueryTriggerInteraction.Ignore))
+        {
+            if (!c.transform.IsChildOf(player)) return true;
+        }
+        return false;
+    }
+
+    private IEnumerator StumbleBack()
     {
         if (player == null) yield break;
         CharacterController cc = player.GetComponent<CharacterController>();
-        Vector3 target = new Vector3(gatePos.x, player.position.y, gatePos.z) + outward * 4f;
-
-        while (running)
+        yield return new WaitForSeconds(0.5f);
+        for (float t = 0f; t < 0.7f; t += Time.deltaTime)
         {
-            Vector3 flat = target - player.position; flat.y = 0f;
-            if (flat.magnitude < 0.25f) break;
-            Vector3 delta = flat.normalized * 5f * Time.deltaTime;
+            Vector3 delta = outward * (0.9f * Time.deltaTime / 0.7f);
+            if (cc != null && cc.enabled) cc.Move(delta + Vector3.down * 0.01f); else player.position += delta;
+            yield return null;
+        }
+    }
+
+    private IEnumerator TurnTowardsLight(float duration)
+    {
+        if (player == null || playerCam == null) yield break;
+
+        Quaternion rootStart = player.rotation;
+        Quaternion rootEnd = Quaternion.LookRotation(outward, Vector3.up);
+        Quaternion camStart = freeCamLocalRot;
+        Quaternion camEnd = Quaternion.Euler(-6f, 0f, 0f); // look slightly up into the sky
+
+        // There is NOTHING built outside the asylum (black fog, no sky). So as he turns, the world outside becomes
+        // blinding daylight: fog + background fade to warm white and the screen whites out before the void is visible.
+        Color fogStart = RenderSettings.fogColor;
+        float densityStart = RenderSettings.fogDensity;
+        Color daylight = new Color(1f, 0.96f, 0.86f);
+        playerCam.clearFlags = CameraClearFlags.SolidColor;
+        Color bgStart = playerCam.backgroundColor;
+        if (flashImage != null) flashImage.color = daylight;
+
+        for (float t = 0f; t < duration; t += Time.deltaTime)
+        {
+            float k = Mathf.SmoothStep(0f, 1f, t / duration);
+            player.rotation = Quaternion.Slerp(rootStart, rootEnd, k);
+            freeCamLocalRot = Quaternion.Slerp(camStart, camEnd, k);
+            playerCam.fieldOfView = Mathf.Lerp(playerCam.fieldOfView, baseFov, Time.deltaTime * 2f);
+            RenderSettings.fogColor = Color.Lerp(fogStart, daylight, k);
+            RenderSettings.fogDensity = Mathf.Lerp(densityStart, Mathf.Max(densityStart, 0.12f), k);
+            playerCam.backgroundColor = Color.Lerp(bgStart, daylight, k);
+            // fully white before he is facing outside
+            if (flash != null) flash.alpha = Mathf.Lerp(0.15f, 1f, Mathf.Clamp01(k * 1.6f));
+            yield return null;
+        }
+    }
+
+    private IEnumerator WalkOutside(float duration)
+    {
+        if (player == null) yield break;
+        CharacterController cc = player.GetComponent<CharacterController>();
+        for (float t = 0f; t < duration && running; t += Time.deltaTime)
+        {
+            Vector3 delta = outward * (1.6f * Time.deltaTime) + Vector3.down * 0.02f;
             if (cc != null && cc.enabled) cc.Move(delta); else player.position += delta;
             yield return null;
         }
@@ -277,123 +422,132 @@ public class EscapeCinematicManager : MonoBehaviour
     // ------------------------------------------------------------------ enemy
     private void PrepareEnemy()
     {
-        if (enemyAI == null) return;
-
-        // he freezes enemyStopDepth metres inside the gate when he sees the sun
+        // where the sun stops him
         GameObject sp = new GameObject("EscapeEnemyStopPoint");
-        Vector3 stopPos = gatePos + inward * enemyStopDepth;
-        UnityEngine.AI.NavMeshHit nh;
-        if (UnityEngine.AI.NavMesh.SamplePosition(stopPos, out nh, 2f, UnityEngine.AI.NavMesh.AllAreas)) stopPos = nh.position;
+        Vector3 stopPos = enemyDoorPoint != null ? enemyDoorPoint.position : gatePos + inward * fallbackStopDepth;
+        float stopDepth = Vector3.Dot(stopPos - gatePos, inward);
+        if (stopDepth < gateLimitDepth + 0.2f) stopPos += inward * (gateLimitDepth + 0.2f - stopDepth);
+        if (UnityEngine.AI.NavMesh.SamplePosition(stopPos, out UnityEngine.AI.NavMeshHit nh, 2f, UnityEngine.AI.NavMesh.AllAreas)) stopPos = nh.position;
         sp.transform.position = stopPos;
         stopPoint = sp.transform;
 
+        if (enemyAI == null) return;
+
         enemyAI.EnsureActive();
 
-        // burst out of the darkness, far back in the hall (falls back to the old teleport point)
-        Vector3 spawn = gatePos + inward * enemySpawnDepth;
+        // where he appears (the teleport point placed in the scene, deep in the hall)
+        Vector3 spawn = enemyTeleportPoint != null ? enemyTeleportPoint.position : gatePos + inward * fallbackSpawnDepth;
+        if (UnityEngine.AI.NavMesh.SamplePosition(spawn, out UnityEngine.AI.NavMeshHit hit, 3f, UnityEngine.AI.NavMesh.AllAreas)) spawn = hit.position;
+
         UnityEngine.AI.NavMeshAgent agent = enemyAI.GetComponent<UnityEngine.AI.NavMeshAgent>();
-        UnityEngine.AI.NavMeshHit hit;
-        if (UnityEngine.AI.NavMesh.SamplePosition(spawn, out hit, 3f, UnityEngine.AI.NavMesh.AllAreas))
-        {
-            spawn = hit.position;
-        }
-        else if (enemyTeleportPoint != null)
-        {
-            spawn = enemyTeleportPoint.position;
-            if (UnityEngine.AI.NavMesh.SamplePosition(spawn, out hit, 10f, UnityEngine.AI.NavMesh.AllAreas)) spawn = hit.position;
-        }
-        if (agent != null) agent.Warp(spawn); else enemyAI.transform.position = spawn;
+        if (agent != null && agent.enabled) agent.Warp(spawn); else enemyAI.transform.position = spawn;
+        enemyAI.transform.rotation = Quaternion.LookRotation(outward, Vector3.up);
 
-        Vector3 faceDir = outward; faceDir.y = 0f;
-        if (faceDir.sqrMagnitude > 0.01f) enemyAI.transform.rotation = Quaternion.LookRotation(faceDir);
+        Vector3 lookAt = player != null ? player.position : gatePos;
+        enemyAI.HoldForCinematic(lookAt, null, false);
 
-        enemyAI.cinematicStopDistance = 0.35f;
-        enemyAI.cinematicFlinchDuration = enemyScreamDuration;
-        enemyAI.cinematicRunSpeedMultiplier = enemyRunMultiplier;
-        enemyAI.cinematicRetreatSpeedMultiplier = enemyFleeMultiplier;
-        Transform retreat = enemyRetreatPoint != null ? enemyRetreatPoint : stopPoint;
-        enemyAI.PlayCinematicEscape(stopPoint, retreat, enemyAnimationTriggerName);
+        // A dying red bulb right above him, so the player can actually SEE him in the dark
+        GameObject b = new GameObject("EscapeBulb");
+        b.transform.SetParent(enemyAI.transform, false);
+        b.transform.localPosition = new Vector3(0f, 2.6f, 0.9f);
+        bulb = b.AddComponent<Light>();
+        bulb.type = LightType.Point;
+        bulb.color = bulbColor;
+        bulb.range = 5.5f;
+        bulb.intensity = 0f;
+        bulb.shadows = LightShadows.None;
+        bulbBase = 3.2f;
     }
 
-    private void OnEnemySeesSun()
+    private Vector3 EnemyHead()
     {
-        if (enemyArrived) return;
-        enemyArrived = true;
-        arrivalTime = Time.time;
-
-        shakeBoost = 1f;
-        StartCoroutine(FovPunch());
-        StartCoroutine(SlowMoBeat());
-        StartCoroutine(SunBurstRoutine());
+        if (enemyAI == null) return gatePos + inward * 4f + Vector3.up * 1.6f;
+        if (enemyAI.enemyAnimator != null && enemyAI.enemyAnimator.isHuman)
+        {
+            Transform head = enemyAI.enemyAnimator.GetBoneTransform(HumanBodyBones.Head);
+            if (head != null) return head.position;
+        }
+        return enemyAI.transform.position + Vector3.up * 1.6f;
     }
 
-    // ------------------------------------------------------------------ camera (runs backwards in front of his face)
+    private static Vector3 Flat(Vector3 v) { v.y = 0f; return v; }
+
+    // ------------------------------------------------------------------ camera (the player's own eyes)
+    private void SnapCameraToEnemy()
+    {
+        if (playerCam == null) return;
+        Vector3 dir = EnemyHead() - playerCam.transform.position;
+        if (dir.sqrMagnitude > 0.001f) playerCam.transform.rotation = Quaternion.LookRotation(dir.normalized, Vector3.up);
+    }
+
     private void LateUpdate()
     {
-        if (!running || cinematicCamera == null || enemyAI == null) return;
-
-        Vector3 enemyPos = enemyAI.transform.position;
-        float depth = Vector3.Dot(enemyPos - gatePos, inward);
+        if (!running) return;
 
         // ---- he can NEVER get through the gate ----
-        if (depth < gateLimitDepth)
+        if (enemyAI != null && enemyAI.gameObject.activeInHierarchy)
         {
-            Vector3 fixedPos = enemyPos + inward * (gateLimitDepth - depth);
-            UnityEngine.AI.NavMeshAgent a = enemyAI.GetComponent<UnityEngine.AI.NavMeshAgent>();
-            if (a != null && a.isOnNavMesh) a.Warp(fixedPos); else enemyAI.transform.position = fixedPos;
-            enemyPos = fixedPos;
+            Vector3 enemyPos = enemyAI.transform.position;
+            float depth = Vector3.Dot(enemyPos - gatePos, inward);
+            if (depth < gateLimitDepth)
+            {
+                Vector3 fixedPos = enemyPos + inward * (gateLimitDepth - depth);
+                UnityEngine.AI.NavMeshAgent a = enemyAI.GetComponent<UnityEngine.AI.NavMeshAgent>();
+                if (a != null && a.isOnNavMesh) a.Warp(fixedPos); else enemyAI.transform.position = fixedPos;
+            }
         }
 
-        // ---- sun builds up as he approaches the gate ----
-        if (!enemyArrived)
-        {
-            float k = Mathf.InverseLerp(11f, enemyStopDepth, depth);
-            sunBase = Mathf.Lerp(0f, sunMaxBuildUp, k * k);
-            if (sun != null) sun.intensity = sunBase;
-            if (flash != null) flash.alpha = Mathf.Lerp(0f, 0.22f, k * k);
-        }
+        if (playerCam == null) return;
 
-        // ---- when he sees it he squares up to the light; once fleeing the AI turns him around ----
-        if (enemyArrived && !enemyFleeing)
-        {
-            Quaternion face = Quaternion.LookRotation(new Vector3(outward.x, 0f, outward.z));
-            enemyAI.transform.rotation = Quaternion.Slerp(enemyAI.transform.rotation, face, 8f * Time.deltaTime);
-        }
-
-        // ---- camera: ahead of his face (towards the gate), at head height ----
-        if (enemyArrived) leadNow = Mathf.MoveTowards(leadNow, camLeadClose, 0.5f * Time.deltaTime);
-        Vector3 target = enemyPos + outward * leadNow;
-        target.y = enemyPos.y + camHeight;
-
-        if (!camInitialised) { camPos = target; camInitialised = true; }
-        else camPos = Vector3.Lerp(camPos, target, 1f - Mathf.Exp(-14f * Time.deltaTime));
-
-        // handheld shake: violent while he runs, shudder when he sees the sun
-        shakeBoost = Mathf.MoveTowards(shakeBoost, 0f, Time.deltaTime * 0.6f);
-        float intensity = (enemyArrived ? cameraShakeAmount : cameraShakeAmount * 2.2f) + shakeBoost * 0.12f;
+        // ---- eyes locked on his face, with a frightened handheld shake ----
         float t = Time.time * cameraShakeSpeed;
-        float ox = (Mathf.PerlinNoise(t, 0f) - 0.5f) * intensity;
-        float oy = (Mathf.PerlinNoise(0f, t) - 0.5f) * intensity;
-        float roll = (Mathf.PerlinNoise(t * 0.5f, 7.3f) - 0.5f) * ((enemyArrived ? 2f : 5f) + shakeBoost * 6f);
-        Vector3 bob = new Vector3(ox, oy + (enemyArrived ? 0f : Mathf.Sin(Time.time * 13f) * 0.04f), 0f);
-        cinematicCamera.transform.position = camPos + bob;
+        float amp = Mathf.Max(cameraShakeAmount, 0.02f) * 40f * shake; // degrees
+        Quaternion shakeRot = Quaternion.Euler(
+            (Mathf.PerlinNoise(t, 0.3f) - 0.5f) * amp,
+            (Mathf.PerlinNoise(0.7f, t) - 0.5f) * amp,
+            (Mathf.PerlinNoise(t * 0.5f, 5.1f) - 0.5f) * amp * 0.8f);
 
-        // look at his face
-        Vector3 lookTarget = enemyPos + Vector3.up * 1.65f;
-        Vector3 lookDir = lookTarget - cinematicCamera.transform.position;
-        if (lookDir.sqrMagnitude > 0.001f)
+        if (camMode == CamMode.LookAtEnemy && enemyAI != null && enemyAI.gameObject.activeInHierarchy)
         {
-            Quaternion want = Quaternion.LookRotation(lookDir.normalized, Vector3.up) * Quaternion.Euler(0f, 0f, roll);
-            cinematicCamera.transform.rotation = Quaternion.Slerp(cinematicCamera.transform.rotation, want, 1f - Mathf.Exp(-12f * Time.deltaTime));
+            Vector3 dir = EnemyHead() - playerCam.transform.position;
+            if (dir.sqrMagnitude > 0.001f)
+            {
+                Quaternion want = Quaternion.LookRotation(dir.normalized, Vector3.up);
+                Quaternion smooth = Quaternion.Slerp(playerCam.transform.rotation * Quaternion.Inverse(lastShake), want, 1f - Mathf.Exp(-lookSharpness * Time.deltaTime));
+                playerCam.transform.rotation = smooth * shakeRot;
+                lastShake = shakeRot;
+            }
+        }
+        else if (camMode == CamMode.Free)
+        {
+            playerCam.transform.localRotation = freeCamLocalRot * shakeRot;
+            lastShake = Quaternion.identity;
         }
 
-        cinematicCamera.fieldOfView = fovNow;
+        playerCam.fieldOfView = Mathf.Lerp(playerCam.fieldOfView, fovTarget, 1f - Mathf.Exp(-3f * Time.unscaledDeltaTime));
     }
 
+    private Quaternion lastShake = Quaternion.identity;
+    private Quaternion freeCamLocalRot = Quaternion.identity; // camera rotation without shake (Free mode)
+
     // ------------------------------------------------------------------ effects
-    private void CreateSun()
+    private void CreateFx()
     {
-        // sunlight pouring in through the open gate (comes from outside, shines into the hall)
+        sfx = gameObject.AddComponent<AudioSource>();
+        sfx.spatialBlend = 0f;
+        sfx.playOnAwake = false;
+
+        if (heartbeatLoop != null)
+        {
+            heartbeat = gameObject.AddComponent<AudioSource>();
+            heartbeat.clip = heartbeatLoop;
+            heartbeat.loop = true;
+            heartbeat.spatialBlend = 0f;
+            heartbeat.volume = 0.9f;
+            heartbeat.playOnAwake = false;
+        }
+
+        // sunlight waiting outside the gate (behind the player), shining into the hall
         GameObject g = new GameObject("EscapeSun");
         g.transform.position = gatePos + outward * 3f + Vector3.up * 2.4f;
         Vector3 dir = inward + Vector3.down * 0.12f;
@@ -406,11 +560,9 @@ public class EscapeCinematicManager : MonoBehaviour
         sun.innerSpotAngle = 45f;
         sun.intensity = 0f;
         sun.shadows = LightShadows.None;
-    }
 
-    private void CreateFlash()
-    {
-        GameObject go = new GameObject("EscapeSunFlash");
+        // full-screen overlay used for blinks, the white-out and the walk into the light
+        GameObject go = new GameObject("EscapeFlash");
         Canvas cv = go.AddComponent<Canvas>();
         cv.renderMode = RenderMode.ScreenSpaceOverlay;
         cv.sortingOrder = 400;
@@ -419,37 +571,110 @@ public class EscapeCinematicManager : MonoBehaviour
         flash.blocksRaycasts = false;
         flash.interactable = false;
 
-        GameObject img = new GameObject("White");
+        GameObject img = new GameObject("Overlay");
         img.transform.SetParent(go.transform, false);
-        Image im = img.AddComponent<Image>();
-        im.color = new Color(1f, 0.97f, 0.88f, 1f);
-        im.raycastTarget = false;
-        RectTransform rt = im.rectTransform;
+        flashImage = img.AddComponent<Image>();
+        flashImage.color = Color.black;
+        flashImage.raycastTarget = false;
+        RectTransform rt = flashImage.rectTransform;
         rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
         rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
     }
 
+    private Image flashImage;
+
+    private IEnumerator FadeFlash(Color color, float from, float to, float duration)
+    {
+        if (flash == null) yield break;
+        if (flashImage != null) flashImage.color = color;
+        for (float t = 0f; t < duration; t += Time.unscaledDeltaTime)
+        {
+            flash.alpha = Mathf.Lerp(from, to, t / duration);
+            yield return null;
+        }
+        flash.alpha = to;
+    }
+
+    private IEnumerator BulbFlicker()
+    {
+        // stutters on like a broken bulb, then keeps flickering
+        float[] pattern = { 0.6f, 0f, 0.9f, 0.1f, 0f, 1f };
+        foreach (float p in pattern)
+        {
+            if (bulb != null) bulb.intensity = bulbBase * p;
+            yield return new WaitForSeconds(Random.Range(0.05f, 0.14f));
+        }
+        while (bulb != null && bulb.enabled)
+        {
+            float n = Mathf.PerlinNoise(Time.time * 9f, 1.7f);
+            bulb.intensity = bulbBase * (n < 0.18f ? 0.05f : 0.7f + n * 0.5f);
+            yield return null;
+        }
+    }
+
+    private void CollectHallLights()
+    {
+        hallLights.Clear();
+        foreach (Light l in FindObjectsByType<Light>())
+        {
+            if (l == null || l == sun || l == bulb || !l.enabled) continue;
+            if (l.type != LightType.Point && l.type != LightType.Spot) continue;
+            Vector3 rel = l.transform.position - gatePos;
+            float depth = Vector3.Dot(rel, inward);
+            float side = Vector3.Cross(inward, Flat(rel)).magnitude;
+            if (depth > 0.5f && depth < 18f && side < 5f) hallLights.Add(l);
+        }
+    }
+
+    private IEnumerator FlickerHallLights(float duration)
+    {
+        Dictionary<Light, float> baseIntensity = new Dictionary<Light, float>();
+        foreach (Light l in hallLights) if (l != null) baseIntensity[l] = l.intensity;
+
+        for (float t = 0f; t < duration; t += Time.deltaTime)
+        {
+            for (int i = 0; i < hallLights.Count; i++)
+            {
+                Light l = hallLights[i];
+                if (l == null || !baseIntensity.ContainsKey(l)) continue;
+                float n = Mathf.PerlinNoise(Time.time * 12f, i * 1.37f);
+                l.intensity = baseIntensity[l] * (n < 0.35f ? 0.1f : 1f);
+            }
+            yield return null;
+        }
+        foreach (Light l in hallLights) if (l != null && baseIntensity.ContainsKey(l)) l.intensity = baseIntensity[l];
+    }
+
+    private IEnumerator KillHallLightsBehindHim(float duration)
+    {
+        // nearest lights die first, so the blackness rolls down the hall after him
+        hallLights.Sort((a, b) => Vector3.Dot(a.transform.position - gatePos, inward).CompareTo(Vector3.Dot(b.transform.position - gatePos, inward)));
+        if (hallLights.Count == 0) yield break;
+
+        float step = duration / (hallLights.Count + 1);
+        foreach (Light l in hallLights)
+        {
+            yield return new WaitForSeconds(step);
+            if (l != null) l.enabled = false;
+        }
+    }
+
     private IEnumerator SunBurstRoutine()
     {
-        // he SEES the sun: blinding white-out, then it settles to a bright glare
-        float t = 0f;
-        while (t < 0.08f)
+        // blinding white-out, then it settles to a hard glare that keeps him back
+        if (flashImage != null) flashImage.color = new Color(1f, 0.97f, 0.88f);
+        for (float t = 0f; t < 0.08f; t += Time.unscaledDeltaTime)
         {
-            t += Time.unscaledDeltaTime;
             float k = t / 0.08f;
-            if (sun != null) sun.intensity = Mathf.Lerp(sunBase, sunBurst * 1.5f, k);
-            if (flash != null) flash.alpha = Mathf.Lerp(flash.alpha, 0.95f, k);
+            if (sun != null) sun.intensity = Mathf.Lerp(0f, sunBurst * 1.5f, k);
+            if (flash != null) flash.alpha = Mathf.Lerp(0f, 0.95f, k);
             yield return null;
         }
-        t = 0f;
-        while (t < 0.9f)
+        for (float t = 0f; t < 1f; t += Time.unscaledDeltaTime)
         {
-            t += Time.unscaledDeltaTime;
-            float k = t / 0.9f;
-            if (flash != null) flash.alpha = Mathf.Lerp(0.95f, 0.14f, k);
+            if (flash != null) flash.alpha = Mathf.Lerp(0.95f, 0.15f, t);
             yield return null;
         }
-        // nervous flicker of the sun while he screams and flees
         while (running)
         {
             if (sun != null) sun.intensity = sunBurst * (0.85f + Mathf.PerlinNoise(Time.time * 14f, 3.1f) * 0.3f);
@@ -457,44 +682,85 @@ public class EscapeCinematicManager : MonoBehaviour
         }
     }
 
-    private IEnumerator FadeFlashOut()
-    {
-        float start = flash != null ? flash.alpha : 0f;
-        float t = 0f;
-        while (t < 1f && flash != null)
-        {
-            t += Time.unscaledDeltaTime;
-            flash.alpha = Mathf.Lerp(start, 0f, t);
-            yield return null;
-        }
-    }
-
-    private IEnumerator FovPunch()
-    {
-        // vertigo zoom: snap in hard on his terrified face, then slowly widen out as he flees
-        float start = fovNow;
-        float t = 0f;
-        while (t < 0.2f) { t += Time.unscaledDeltaTime; fovNow = Mathf.Lerp(start, punchFov, t / 0.2f); yield return null; }
-        t = 0f;
-        while (t < 4f) { t += Time.unscaledDeltaTime; fovNow = Mathf.Lerp(punchFov, restFov, Mathf.SmoothStep(0f, 1f, t / 4f)); yield return null; }
-    }
-
     private IEnumerator SlowMoBeat()
     {
         float oldFixed = Time.fixedDeltaTime;
-        Time.timeScale = 0.25f;
-        Time.fixedDeltaTime = oldFixed * 0.25f;
-        yield return new WaitForSecondsRealtime(0.5f);
-        float t = 0f;
-        while (t < 0.4f)
+        Time.timeScale = 0.3f;
+        Time.fixedDeltaTime = oldFixed * 0.3f;
+        yield return new WaitForSecondsRealtime(0.6f);
+        for (float t = 0f; t < 0.5f; t += Time.unscaledDeltaTime)
         {
-            t += Time.unscaledDeltaTime;
-            Time.timeScale = Mathf.Lerp(0.25f, 1f, t / 0.4f);
+            Time.timeScale = Mathf.Lerp(0.3f, 1f, t / 0.5f);
             Time.fixedDeltaTime = oldFixed * Time.timeScale;
             yield return null;
         }
         Time.timeScale = 1f;
         Time.fixedDeltaTime = oldFixed;
+    }
+
+    private IEnumerator FadeAudio(AudioSource src, float to, float duration)
+    {
+        float from = src.volume;
+        for (float t = 0f; t < duration && src != null; t += Time.deltaTime)
+        {
+            src.volume = Mathf.Lerp(from, to, t / duration);
+            yield return null;
+        }
+        if (src != null) src.volume = to;
+    }
+
+    /// <summary>
+    /// The fade screen and "THE END" text live INSIDE the HUD canvas (Canvas > blackdeathscreen > death text).
+    /// Only the HUD parts are hidden; the branch holding the fade/ending text stays on.
+    /// </summary>
+    private AudioClip burnScream;
+
+    /// <summary>Use the horror sounds that ship with the project when nothing is assigned in the Inspector.</summary>
+    private void LoadDefaultSounds()
+    {
+        if (appearSting == null) appearSting = Resources.Load<AudioClip>("HorrorAudio/freesound_community-horror-piano-hits-73998");
+        if (sunBurstSound == null) sunBurstSound = Resources.Load<AudioClip>("HorrorAudio/biww-fire-burst-flame-sound-effect-561958");
+        burnScream = Resources.Load<AudioClip>("HorrorAudio/dragon-studio-female-zombie-screams-324744");
+        if (playerStats != null) playerStats.TriggerHeavyBreathing(30f);
+    }
+
+    private void HideGameplayHud()
+    {
+        Transform keepA = fadeCanvasGroup != null ? fadeCanvasGroup.transform : null;
+        Transform keepB = endingText != null ? endingText.transform : null;
+
+        foreach (Canvas c in FindObjectsByType<Canvas>())
+        {
+            if (c == null || !c.isRootCanvas) continue;
+            if (!(c.name == "Canvas" || c.name.Contains("UI"))) continue;
+
+            bool holdsEnding = (keepA != null && keepA.IsChildOf(c.transform)) || (keepB != null && keepB.IsChildOf(c.transform));
+            if (!holdsEnding)
+            {
+                c.gameObject.SetActive(false);
+                continue;
+            }
+
+            foreach (Transform child in c.transform)
+            {
+                bool keep = (keepA != null && keepA.IsChildOf(child)) || (keepB != null && keepB.IsChildOf(child));
+                if (!keep) child.gameObject.SetActive(false);
+            }
+        }
+
+        // The death picture shares the black screen - it must never pop up during the ending
+        if (RespawnManager.instance != null && RespawnManager.instance.deathImage != null)
+        {
+            RespawnManager.instance.deathImage.gameObject.SetActive(false);
+        }
+
+        if (fadeCanvasGroup != null)
+        {
+            fadeCanvasGroup.gameObject.SetActive(true);
+            fadeCanvasGroup.alpha = 0f;
+            fadeCanvasGroup.blocksRaycasts = false;
+        }
+        if (endingText != null) endingText.text = "";
     }
 
     private void OnDisable()
