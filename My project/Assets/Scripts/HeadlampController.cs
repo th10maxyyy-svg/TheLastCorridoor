@@ -28,6 +28,14 @@ public class HeadlampController : MonoBehaviour
         {
             headlampLight.enabled = isOn;
         }
+
+        // WORLD STATE: respawn ke baad bhi headlamp player ke paas rahe
+        if (SaveManager.instance != null && SaveManager.instance.HasFlag(HeadlampPickup.SaveFlag))
+        {
+            hasHeadlamp = true;
+            isOn = true;
+            if (headlampLight != null) headlampLight.enabled = true;
+        }
     }
 
     void Update()
@@ -58,6 +66,7 @@ public class HeadlampController : MonoBehaviour
     public void PickupHeadlamp()
     {
         hasHeadlamp = true;
+        if (SaveManager.instance != null) SaveManager.instance.SetFlag(HeadlampPickup.SaveFlag);
         
         // Optionally turn it on immediately when picked up
         if (!isOn)

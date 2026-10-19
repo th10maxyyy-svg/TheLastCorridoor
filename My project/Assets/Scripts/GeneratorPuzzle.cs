@@ -34,19 +34,11 @@ public class GeneratorPuzzle : MonoBehaviour, IInteractable
             StartGenerator();
             
             // Show notification
-            InteractionRaycast ir = Camera.main.GetComponent<InteractionRaycast>();
-            if (ir != null)
-            {
-                ir.ShowNotification("Power Restored!");
-            }
+            InteractionRaycast.Notify(playerStats, "Power Restored!");
         }
         else
         {
-            InteractionRaycast ir = Camera.main.GetComponent<InteractionRaycast>();
-            if (ir != null)
-            {
-                ir.ShowNotification("You need a " + requiredItem + " to start this.");
-            }
+            InteractionRaycast.Notify(playerStats, "You need a " + requiredItem + " to start this.");
         }
     }
 
@@ -66,6 +58,7 @@ public class GeneratorPuzzle : MonoBehaviour, IInteractable
             }
         }
 
+        if (generatorLights != null)
         foreach (GameObject light in generatorLights)
         {
             if (light != null) light.SetActive(true);

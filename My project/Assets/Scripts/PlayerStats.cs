@@ -218,9 +218,6 @@ public class PlayerStats : MonoBehaviour
         currentHealth = Mathf.Min(currentHealth, maxHealth);
     }
 
-    [HideInInspector] public bool isScriptedDeath = false;
-    [HideInInspector] public Transform basementSpawnPoint;
-
     private void Die()
     {
         isDead = true;
@@ -234,17 +231,7 @@ public class PlayerStats : MonoBehaviour
         PlayerController pc = GetComponent<PlayerController>();
         if (pc != null)
         {
-            if (isScriptedDeath)
-            {
-                // NAYA: Scripted Death - Drag to basement sequence!
-                pc.TriggerDragToBasementCinematic(basementSpawnPoint);
-                return; // Do NOT call GameOver
-            }
-            else
-            {
-                // Normal Death
-                pc.TriggerDeathCinematic();
-            }
+            pc.TriggerDeathCinematic();
         }
         
         GameManager gameManager = FindAnyObjectByType<GameManager>();

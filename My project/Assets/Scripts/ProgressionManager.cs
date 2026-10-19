@@ -12,6 +12,10 @@ public class ProgressionManager : MonoBehaviour
     [SerializeField] private EnemyAI enemyAI;
     [SerializeField] private GameObject startRoomDoor; // The door locking the player in
 
+    [Header("Respawn")]
+    [Tooltip("Respawn ke baad kitne seconds tak enemy player ko nahi dekh sakta (taake player ko sambhalne ka mauqa mile)")]
+    [SerializeField] private float respawnGraceSeconds = 10f;
+
     [Header("Events")]
     public UnityEvent OnNightmarePhaseStarted;
 
@@ -23,10 +27,8 @@ public class ProgressionManager : MonoBehaviour
             currentPhase = GamePhase.Nightmare;
             if (enemyAI != null)
             {
-                enemyAI.gameObject.SetActive(true);
-                PlayerController player = FindAnyObjectByType<PlayerController>();
-                Vector3 targetPos = player != null ? player.transform.position : transform.position;
-                enemyAI.ForceAwaken(targetPos);
+                // Pehle enemy foran player ke peeche teleport ho kar chase karta tha - ab thori mohlat milti hai
+                enemyAI.ResumeHuntAfterRespawn(respawnGraceSeconds);
             }
             Debug.Log("[Progression] World State: Nightmare Resumed!");
         }
@@ -48,7 +50,7 @@ public class ProgressionManager : MonoBehaviour
             // Enemy ko awake karein (dormant se nikalein)
             if (enemyAI != null)
             {
-                enemyAI.gameObject.SetActive(true);
+                enemyAI.EnsureActive();
                 
                 // Naya logic: EnemyAI ko force awaken karo!
                 PlayerController player = FindAnyObjectByType<PlayerController>();

@@ -14,17 +14,15 @@ public class KeyItem : MonoBehaviour, IInteractable
     [Tooltip("Add things here that should happen when this key is picked up (e.g. Turn off lights, Spawn enemies)")]
     public UnityEngine.Events.UnityEvent onPickUpEvent;
 
+    private bool hasFiredPickupEvent = false;
+
     void Start()
     {
-        // WORLD STATE CHECK: Agar ye key pehle hi uthai ja chuki hai, to isay hamesha ke liye delete kar do!
-        if (SaveManager.instance != null && SaveManager.instance.IsItemCollected(gameObject.name))
+        // WORLD STATE CHECK: Agar ye key pehle hi uthai ja chuki hai (aur na zameen par giri hai na haath mein hai) to delete kar do
+        if (SaveManager.instance != null && !SaveManager.instance.ShouldItemExistInWorld(SaveManager.instance.GetItemId(gameObject)))
         {
-            // Lekin agar ye wo key hai jo marte waqt player ne girai thi, to ise delete mat karo (kyun ke RespawnManager ise sahi jagah move karega)
-            if (SaveManager.instance.currentSaveData.droppedItemName != gameObject.name)
-            {
-                Destroy(gameObject);
-                Debug.Log("[WorldState] KeyItem deleted because it was already collected: " + keyName);
-            }
+            Destroy(gameObject);
+            Debug.Log("[WorldState] KeyItem deleted because it was already collected: " + keyName);
         }
     }
 
@@ -46,18 +44,15 @@ public class KeyItem : MonoBehaviour, IInteractable
             // Instead of destroying, pick up the physical object
             inventory.PickUpItem(this.gameObject);
 
-            // Trigger any custom events
-            if (onPickUpEvent != null)
+            // Trigger custom events only the FIRST time (not every time the key is dropped and picked up again)
+            if (!hasFiredPickupEvent)
             {
-                onPickUpEvent.Invoke();
+                hasFiredPickupEvent = true;
+                onPickUpEvent?.Invoke();
             }
 
             // Show notification on screen
-            InteractionRaycast ir = Camera.main.GetComponent<InteractionRaycast>();
-            if (ir != null)
-            {
-                ir.ShowNotification("Picked up: " + keyName);
-            }
+            InteractionRaycast.Notify(playerStats, "Picked up: " + keyName);
 
             // Wake up enemy if this key triggers the nightmare phase
             if (wakesUpEnemy || keyName == "Staff Key")

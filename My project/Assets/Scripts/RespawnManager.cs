@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 
 public class RespawnManager : MonoBehaviour
@@ -21,6 +22,11 @@ public class RespawnManager : MonoBehaviour
         instance = this;
     }
 
+    private void OnDestroy()
+    {
+        if (instance == this) instance = null;
+    }
+
     private void Start()
     {
         // 1. Setup UI
@@ -35,10 +41,11 @@ public class RespawnManager : MonoBehaviour
         // 2. Load Save Data and Position Player & Items
         if (SaveManager.instance != null)
         {
-            ApplySaveData();
+            PlacePlayer();
+            StartCoroutine(RestoreWorldState());
         }
 
-        // After a death-respawn reload make sure the player is never left frozen
+        // After a death-respawn reload (or Resume) make sure the player is never left frozen
         if (IntroState.skipIntro) StartCoroutine(EnsurePlayerFree());
     }
 
@@ -64,70 +71,89 @@ public class RespawnManager : MonoBehaviour
         }
     }
 
-    private void ApplySaveData()
+    private void PlacePlayer()
     {
         SaveData data = SaveManager.instance.currentSaveData;
-
-        // Place Player
         GameObject player = GameObject.FindGameObjectWithTag("Player");
-        if (player != null && data.playerPosition != null && data.playerPosition.Length >= 3)
-        {
-            Vector3 savedPos = SaveManager.instance.GetVector3(data.playerPosition);
-            if (savedPos != Vector3.zero)
-            {
-                // Zameen se thora sa oopar rakhein taake floor ke andar spawn na ho
-                savedPos.y += 1.0f; 
+        if (player == null) return;
 
-                CharacterController cc = player.GetComponent<CharacterController>();
-                if (cc != null) cc.enabled = false;
-                
-                player.transform.position = savedPos;
-                
-                // CRITICAL FIX: Unity Physics engine ko foran update karo warna player neechay gir jata hai
-                Physics.SyncTransforms();
-                
-                if (cc != null) cc.enabled = true;
-                Debug.Log("Player respawned safely at: " + savedPos);
+        Vector3 savedPos = SaveManager.instance.GetVector3(data.playerPosition);
+        if (savedPos == Vector3.zero) return;
+
+        // Zameen se thora sa oopar rakhein taake floor ke andar spawn na ho
+        savedPos.y += 1.0f;
+
+        CharacterController cc = player.GetComponent<CharacterController>();
+        if (cc != null) cc.enabled = false;
+
+        player.transform.position = savedPos;
+        if (SaveManager.instance.TryGetPlayerRotation(out Quaternion rot))
+        {
+            player.transform.rotation = Quaternion.Euler(0f, rot.eulerAngles.y, 0f);
+        }
+
+        // CRITICAL FIX: Unity Physics engine ko foran update karo warna player neechay gir jata hai
+        Physics.SyncTransforms();
+
+        if (cc != null) cc.enabled = true;
+        Debug.Log("Player respawned safely at: " + savedPos);
+    }
+
+    private IEnumerator RestoreWorldState()
+    {
+        // Wait one frame so every puzzle's Start() (which hides its reward items) has already run
+        yield return null;
+
+        SaveManager sm = SaveManager.instance;
+        if (sm == null) yield break;
+        SaveData data = sm.currentSaveData;
+
+        // 1. Items lying on the floor (dropped by the player, or released from a smashed jar)
+        foreach (KeyValuePair<string, Vector3> entry in sm.GetDroppedItems())
+        {
+            GameObject item = sm.FindItem(entry.Key);
+            if (item == null) continue;
+
+            item.transform.SetParent(null);
+            item.SetActive(true);
+            item.transform.position = entry.Value;
+
+            foreach (Collider c in item.GetComponentsInChildren<Collider>()) c.enabled = true;
+
+            Rigidbody rb = item.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = false;
+                rb.useGravity = true;
             }
         }
 
-        // WORLD STATE: Remove items that were already picked up or used!
+        // 2. Item that was in the player's hand when the game was closed
+        string heldId = data.heldItemName;
+        GameObject heldItem = string.IsNullOrEmpty(heldId) ? null : sm.FindItem(heldId);
+
+        sm.MarkWorldRestored();
+
+        if (heldItem != null)
+        {
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            Inventory inv = player != null ? player.GetComponent<Inventory>() : null;
+            if (inv != null) inv.PickUpItem(heldItem, true);
+        }
+
+        // 3. Remove items that were already picked up / used (after steps 1 & 2, so items inside a jar are rescued first)
         if (!string.IsNullOrEmpty(data.collectedItemsCSV))
         {
-            string[] itemsToDestroy = data.collectedItemsCSV.Split(new char[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries);
-            foreach (string itemName in itemsToDestroy)
+            foreach (string itemId in data.collectedItemsCSV.Split(new char[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries))
             {
-                if (itemName == data.droppedItemName) continue; // Drop hui cheez ko delete nahi karna!
-                
-                GameObject oldItem = GameObject.Find(itemName);
+                if (sm.ShouldItemExistInWorld(itemId)) continue;
+
+                GameObject oldItem = sm.FindItem(itemId);
                 if (oldItem != null)
                 {
                     Destroy(oldItem);
-                    Debug.Log("[WorldState] Destroyed already collected item: " + itemName);
+                    Debug.Log("[WorldState] Destroyed already collected item: " + itemId);
                 }
-            }
-        }
-
-        // Place Dropped Item
-        if (!string.IsNullOrEmpty(data.droppedItemName))
-        {
-            GameObject droppedItem = GameObject.Find(data.droppedItemName);
-            if (droppedItem != null)
-            {
-                Vector3 dropPos = SaveManager.instance.GetVector3(data.droppedItemPosition);
-                droppedItem.transform.position = dropPos;
-                
-                // Enable colliders so it can be picked up
-                Collider[] cols = droppedItem.GetComponentsInChildren<Collider>();
-                foreach (Collider c in cols) c.enabled = true;
-
-                Rigidbody rb = droppedItem.GetComponent<Rigidbody>();
-                if (rb != null)
-                {
-                    rb.isKinematic = false;
-                    rb.useGravity = true;
-                }
-                Debug.Log("Dropped item placed at death location: " + data.droppedItemName);
             }
         }
     }
@@ -169,14 +195,14 @@ public class RespawnManager : MonoBehaviour
         if (deathImage != null)
         {
             deathImage.gameObject.SetActive(true);
-            
+
             // Start transparent and fade the image in for cinematic effect
             Color c = deathImage.color;
             c.a = 0f;
             deathImage.color = c;
-            
+
             float imageFade = 0f;
-            while(imageFade < 1f)
+            while (imageFade < 1f)
             {
                 imageFade += Time.deltaTime * 0.5f; // Slow fade
                 c.a = imageFade;
@@ -189,23 +215,18 @@ public class RespawnManager : MonoBehaviour
 
         // USER REQUEST: Sirf basement mein hi spawn karna hai dayroom mein nahi!
         Transform chosenRespawn = basementRespawn;
-        
-        // Save the new respawn position to the SaveManager
-        if (chosenRespawn != null && SaveManager.instance != null)
+
+        // Save the new respawn position (this also stores where the dropped items ended up)
+        if (SaveManager.instance != null)
         {
-            SaveManager.instance.currentSaveData.playerPosition[0] = chosenRespawn.position.x;
-            SaveManager.instance.currentSaveData.playerPosition[1] = chosenRespawn.position.y;
-            SaveManager.instance.currentSaveData.playerPosition[2] = chosenRespawn.position.z;
-            
-            // Save immediately
-            string json = JsonUtility.ToJson(SaveManager.instance.currentSaveData, true);
-            System.IO.File.WriteAllText(Application.persistentDataPath + "/AsylumSave.json", json);
+            if (chosenRespawn != null) SaveManager.instance.SavePlayerTransform(chosenRespawn.position, chosenRespawn.rotation);
+            else SaveManager.instance.SaveWorldState();
         }
 
         // Respawn reload: intro cinematic/projector must NOT play again
         IntroState.skipIntro = true;
 
-        // Reload Scene (It will auto-place the player and dropped item in Start)
+        // Reload Scene (It will auto-place the player and dropped items in Start)
         UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
     }
 }

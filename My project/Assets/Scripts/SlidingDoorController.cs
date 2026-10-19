@@ -73,7 +73,7 @@ public class SlidingDoorController : MonoBehaviour, IInteractable
                 onDoorUnlocked?.Invoke();
                 Debug.Log("Sliding Door unlocked and opened!");
                 
-                inventory.RemoveItem(requiredKey);
+                inventory.RemoveItem(requiredKey, false); // door stays unlocked, so the key never comes back
                 SaveDoorState();
             }
             else

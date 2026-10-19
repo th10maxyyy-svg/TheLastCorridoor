@@ -22,6 +22,8 @@ public class IntroCinematicManager : MonoBehaviour
     private float currentRotY = 0f;
     private Quaternion startCamRot;
     private Vector3 startCamPos;
+    private Coroutine blinkRoutine;
+    private bool endRequested = false;
 
     void Start()
     {
@@ -48,7 +50,7 @@ public class IntroCinematicManager : MonoBehaviour
         if (playerCamera == null && playerController != null) playerCamera = playerController.GetComponentInChildren<Camera>();
 
         // Start the cinematic immediately when the scene loads
-        StartCoroutine(StartCinematicRoutine());
+        blinkRoutine = StartCoroutine(StartCinematicRoutine());
     }
 
     IEnumerator StartCinematicRoutine()
@@ -76,6 +78,13 @@ public class IntroCinematicManager : MonoBehaviour
         {
             startCamRot = playerCamera.transform.localRotation;
             startCamPos = playerCamera.transform.localPosition;
+        }
+
+        // Video already finished (empty playlist / skipped) before we got here - end right away instead of waiting forever
+        if (endRequested)
+        {
+            StartCoroutine(FaintAndWakeUpRoutine());
+            yield break;
         }
         
         // --- REALISTIC WAKE UP BLINKING ---
@@ -138,8 +147,13 @@ public class IntroCinematicManager : MonoBehaviour
     // Call this from the VideoPlaylist's OnPlaylistFinished event!
     public void EndCinematicAndFaint()
     {
+        if (endRequested) return;
+        endRequested = true;
+
         if (isCinematicActive)
         {
+            // Stop the blinking routine so two coroutines don't fight over the black overlay
+            if (blinkRoutine != null) StopCoroutine(blinkRoutine);
             StartCoroutine(FaintAndWakeUpRoutine());
         }
     }

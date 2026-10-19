@@ -57420,7 +57420,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d240eea6538f94489b93dd0c1498a74, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::KeyItem
-  keyName: surgery room
+  keyName: surgery key
   promptMessage: Press E to pick up Key
   wakesUpEnemy: 0
   onPickUpEvent:

@@ -32,7 +32,13 @@ public class CinematicAmbush : MonoBehaviour
     {
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
+
+        // WORLD STATE: respawn ke baad wahi jumpscare / basement drag dobara na chale
+        saveFlag = "Ambush_" + SaveManager.GetSceneObjectId(transform);
+        if (SaveManager.instance != null && SaveManager.instance.HasFlag(saveFlag)) hasAmbushed = true;
     }
+
+    private string saveFlag;
 
     [Header("Trigger Settings")]
     [Tooltip("Agar true hai, to player iske qareeb jayega to ye trigger ho jayega (like hallway jumpscare). Agar false hai to sirf Door khulne par chalega!")]
@@ -57,6 +63,7 @@ public class CinematicAmbush : MonoBehaviour
             return; // Only ambush once, unless forced!
         }
         hasAmbushed = true;
+        if (SaveManager.instance != null && !string.IsNullOrEmpty(saveFlag)) SaveManager.instance.SetFlag(saveFlag);
 
         // Play the sudden scream!
         if (ambushScream != null)
@@ -72,7 +79,7 @@ public class CinematicAmbush : MonoBehaviour
             if (agent != null) agent.enabled = false;
             
             enemy.transform.position = ambushSpawnPoint.position;
-            enemy.gameObject.SetActive(true);
+            enemy.EnsureActive();
             
             if (agent != null) 
             {

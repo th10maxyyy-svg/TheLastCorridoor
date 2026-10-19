@@ -85,7 +85,9 @@ public class CorridorGenerator : MonoBehaviour
             Debug.LogWarning("No 'ExitPoint' found in " + selectedPrefab.name + ". Using default spacing.");
         }
 
-        if (activeSegments.Count > maxSegmentsOnScreen)
+        // Purana hissa sirf tab delete karo jab player us se kaafi door ho (warna player ke pairon ke neeche se farsh gayab ho jata tha)
+        if (activeSegments.Count > maxSegmentsOnScreen &&
+            (playerTransform == null || Vector3.Distance(playerTransform.position, activeSegments[0].transform.position) > spawnDistanceThreshold * 2f))
         {
             GameObject oldSegment = activeSegments[0];
             activeSegments.RemoveAt(0);

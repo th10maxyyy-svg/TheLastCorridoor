@@ -287,7 +287,7 @@ public class EscapeCinematicManager : MonoBehaviour
         sp.transform.position = stopPos;
         stopPoint = sp.transform;
 
-        enemyAI.gameObject.SetActive(true);
+        enemyAI.EnsureActive();
 
         // burst out of the darkness, far back in the hall (falls back to the old teleport point)
         Vector3 spawn = gatePos + inward * enemySpawnDepth;

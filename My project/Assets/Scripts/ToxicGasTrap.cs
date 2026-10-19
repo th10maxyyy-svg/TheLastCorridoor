@@ -30,8 +30,21 @@ public class ToxicGasTrap : MonoBehaviour
     private PlayerStats playerStats;
     private Camera mainCam;
     private ParticleSystem.EmissionModule gasEmission;
+    private bool hasGasEmission = false;
     private float originalEmissionRate = 0f;
     private AudioSource myAudioSource;
+    private string saveFlag;
+
+    private void Start()
+    {
+        // WORLD STATE: agar player pehle hi gas saaf kar chuka hai to trap dobara na chale
+        saveFlag = "GasTrapCleared_" + SaveManager.GetSceneObjectId(transform);
+        if (SaveManager.instance != null && SaveManager.instance.HasFlag(saveFlag))
+        {
+            Collider col = GetComponent<Collider>();
+            if (col != null) col.enabled = false;
+        }
+    }
 
     private void OnTriggerEnter(Collider other)
     {
@@ -47,33 +60,10 @@ public class ToxicGasTrap : MonoBehaviour
         playerStats = player.GetComponent<PlayerStats>();
         mainCam = player.GetComponentInChildren<Camera>();
 
-        // Lock the door behind them
+        // Lock the door behind them (public API instead of reflection on private fields)
         if (entranceDoor != null)
         {
-            var type = entranceDoor.GetType();
-            
-            // Force it closed
-            var isOpenField = type.GetField("isOpen", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (isOpenField != null) isOpenField.SetValue(entranceDoor, false);
-
-            // Force it locked
-            var isLockedField = type.GetField("isLocked", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (isLockedField != null) isLockedField.SetValue(entranceDoor, true);
-
-            // Set required key to something impossible so they can't open it normally
-            var keyField = type.GetField("requiredKey", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (keyField != null) keyField.SetValue(entranceDoor, "TRAP_LOCKED_KEY");
-
-            // Play the closing sound manually if possible
-            var audioSourceField = type.GetField("audioSource", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var closeSoundField = type.GetField("closeSound", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            
-            if (audioSourceField != null && closeSoundField != null)
-            {
-                AudioSource src = (AudioSource)audioSourceField.GetValue(entranceDoor);
-                AudioClip clip = (AudioClip)closeSoundField.GetValue(entranceDoor);
-                if (src != null && clip != null) src.PlayOneShot(clip);
-            }
+            entranceDoor.TrapLock();
         }
 
         // --- NEW: Lights Explode! ---
@@ -82,13 +72,16 @@ public class ToxicGasTrap : MonoBehaviour
         if (explosionSound != null) myAudioSource.PlayOneShot(explosionSound);
         if (sparksParticle != null) sparksParticle.Play();
 
-        foreach (Light l in roomLights)
+        if (roomLights != null)
         {
-            if (l != null) l.enabled = false;
+            foreach (Light l in roomLights)
+            {
+                if (l != null) l.enabled = false;
+            }
         }
 
         // Start visuals and audio
-        if (gasParticleSystem != null) 
+        if (gasParticleSystem != null)
         {
             gasParticleSystem.SetActive(true);
             ParticleSystem ps = gasParticleSystem.GetComponent<ParticleSystem>();
@@ -96,10 +89,11 @@ public class ToxicGasTrap : MonoBehaviour
             {
                 gasEmission = ps.emission;
                 originalEmissionRate = gasEmission.rateOverTimeMultiplier;
+                hasGasEmission = true;
             }
         }
 
-        if (gasHissingSound != null) 
+        if (gasHissingSound != null)
         {
             myAudioSource.clip = gasHissingSound;
             myAudioSource.loop = true;
@@ -109,19 +103,25 @@ public class ToxicGasTrap : MonoBehaviour
         // Start the death sequence
         StartCoroutine(GasTrapRoutine());
         StartCoroutine(HallucinationRoutine());
-        
+
         // Hide the trigger so it doesn't trigger twice
-        GetComponent<Collider>().enabled = false;
+        Collider trigger = GetComponent<Collider>();
+        if (trigger != null) trigger.enabled = false;
     }
 
     public void StopTrap()
     {
         if (!isTrapActive) return;
         isTrapActive = false;
-        
+
         Debug.Log("ToxicGasTrap: Gas is clearing! Fans turned on.");
 
         if (myAudioSource != null && myAudioSource.isPlaying) myAudioSource.Stop();
+
+        // Player ab bahar ja sakta hai
+        if (entranceDoor != null) entranceDoor.ReleaseTrapLock();
+
+        if (SaveManager.instance != null) SaveManager.instance.SetFlag(saveFlag);
 
         // NAYA: Gas fauran (instantly) gayab nahi hogi, ahista ahista clear hogi!
         StartCoroutine(ClearGasRoutine());
@@ -129,19 +129,22 @@ public class ToxicGasTrap : MonoBehaviour
 
     private IEnumerator ClearGasRoutine()
     {
-        float fadeTime = 5f;
-        float currentRate = originalEmissionRate;
-
-        // Ahista ahista emission kam karein
-        while (fadeTime > 0)
+        if (hasGasEmission)
         {
-            fadeTime -= Time.deltaTime;
-            currentRate = Mathf.Lerp(currentRate, 0f, Time.deltaTime * 2f);
-            gasEmission.rateOverTimeMultiplier = currentRate;
-            yield return null;
-        }
+            float fadeTime = 5f;
+            float currentRate = originalEmissionRate;
 
-        gasEmission.rateOverTimeMultiplier = 0f;
+            // Ahista ahista emission kam karein
+            while (fadeTime > 0)
+            {
+                fadeTime -= Time.deltaTime;
+                currentRate = Mathf.Lerp(currentRate, 0f, Time.deltaTime * 2f);
+                gasEmission.rateOverTimeMultiplier = currentRate;
+                yield return null;
+            }
+
+            gasEmission.rateOverTimeMultiplier = 0f;
+        }
 
         // Thora wait karein taake hawa mein jo gas bachi hai wo khatam ho jaye
         yield return new WaitForSeconds(6f);
@@ -197,14 +200,14 @@ public class ToxicGasTrap : MonoBehaviour
 
     private void SpawnHallucination()
     {
-        if (fakeJokerPrefab == null) return;
+        if (fakeJokerPrefab == null || mainCam == null) return;
 
         // Spawn right in front of the camera, but slightly to the side or directly ahead
         Vector3 spawnPos = mainCam.transform.position + mainCam.transform.forward * spawnDistance;
         spawnPos.y = mainCam.transform.position.y - 1f; // Adjust height slightly down
 
         GameObject fakeJoker = Instantiate(fakeJokerPrefab, spawnPos, Quaternion.LookRotation(mainCam.transform.position - spawnPos));
-        
+
         if (hallucinationSound != null && myAudioSource != null)
         {
             myAudioSource.PlayOneShot(hallucinationSound);

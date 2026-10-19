@@ -9,6 +9,8 @@ public class DeadBodyPuzzle : MonoBehaviour, IInteractable
     public bool isCorrectBody = false;
     [Tooltip("How long it takes to cut open the body.")]
     public float cutDuration = 4.0f;
+    [Tooltip("Player is se zyada door chala jaye to kaatna ruk jata hai (meters)")]
+    public float cancelDistance = 3.5f;
 
     [Header("Items to Spawn (If Correct)")]
     public GameObject rustyCrank;
@@ -67,17 +69,10 @@ public class DeadBodyPuzzle : MonoBehaviour, IInteractable
     private IEnumerator CutBodyRoutine(PlayerStats player)
     {
         isCutting = true;
-        
-        // Paralyze the player to build tension!
-        PlayerController pc = player.GetComponent<PlayerController>();
-        if (pc != null) pc.isCinematicPlaying = true; // Prevents movement
 
-        // Show a message
-        InteractionRaycast raycast = player.GetComponentInChildren<InteractionRaycast>();
-        if (raycast != null)
-        {
-            raycast.ShowNotification("Cutting open the stomach...", cutDuration);
-        }
+        // BUG FIX: pehle player 4 second ke liye jama ho jata tha jab ke enemy ko usi jagah bulaya jata tha (pakki maut).
+        // Ab player hil sakta hai - lekin agar body se door gaya ya chhup gaya to kaatna beech mein ruk jayega.
+        InteractionRaycast.Notify(player, "Cutting open the stomach... (stay close)", cutDuration);
 
         // Play the gross sound
         if (squelchingSound != null)
@@ -96,14 +91,30 @@ public class DeadBodyPuzzle : MonoBehaviour, IInteractable
             Debug.LogWarning("DeadBodyPuzzle: EnemyAI not assigned, enemy will not investigate!");
         }
 
+        PlayerController pc = player.GetComponent<PlayerController>();
+
         // Wait while the cutting happens
-        yield return new WaitForSeconds(cutDuration);
+        float elapsed = 0f;
+        while (elapsed < cutDuration)
+        {
+            Collider bodyCol = GetComponent<Collider>();
+            Vector3 bodyPoint = bodyCol != null ? bodyCol.ClosestPoint(player.transform.position) : transform.position;
+            bool walkedAway = Vector3.Distance(player.transform.position, bodyPoint) > cancelDistance;
+            bool hidden = pc != null && pc.isHidden;
+            if (player.IsDead() || walkedAway || hidden)
+            {
+                isCutting = false;
+                if (audioSource != null) audioSource.Stop();
+                if (!player.IsDead()) InteractionRaycast.Notify(player, "Cutting interrupted...", 2f);
+                yield break;
+            }
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
 
         isCutting = false;
         isCutOpen = true;
-
-        // Release the player
-        if (pc != null) pc.isCinematicPlaying = false;
 
         // BUG FIX: Disable the dead body's collider so it doesn't block you from clicking the Crank/Key!
         Collider myCollider = GetComponent<Collider>();
@@ -115,17 +126,11 @@ public class DeadBodyPuzzle : MonoBehaviour, IInteractable
             if (rustyCrank != null) rustyCrank.SetActive(true);
             if (examRoomKey != null) examRoomKey.SetActive(true);
 
-            if (raycast != null)
-            {
-                raycast.ShowNotification("Found something inside!", 3f);
-            }
+            InteractionRaycast.Notify(player, "Found something inside!", 3f);
         }
         else
         {
-            if (raycast != null)
-            {
-                raycast.ShowNotification("Nothing but organs here...", 3f);
-            }
+            InteractionRaycast.Notify(player, "Nothing but organs here...", 3f);
         }
     }
 }

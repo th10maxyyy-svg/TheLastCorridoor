@@ -73,15 +73,72 @@ public class EnemyAI : MonoBehaviour
     
     private float navMeshCheckCooldown = 0f;
 
+    [Header("Chase Settings")]
+    [Tooltip("Player nazar se ojhal ho jaye to kitne seconds baad enemy chase chhor kar dhoondna shuru kare")]
+    [SerializeField] private float loseSightTime = 3f;
+    [Tooltip("Attack sirf tab jab player itni height ke farq ke andar ho (warna farsh/chhat ke aar paar maarta tha)")]
+    [SerializeField] private float maxAttackHeightDifference = 1.8f;
+
+    [Header("Debug")]
+    [Tooltip("Screen par enemy ki debug info dikhaye (sirf testing ke liye)")]
+    [SerializeField] private bool showDebugOverlay = false;
+
+    private PlayerController playerController;
+    private float lostSightTimer = 0f;
+    private float stunEndTime = 0f;
+    private float stunOriginalXRotation = 0f;
+    private bool externallyActivated = false;
+    private float playerMissingWarnTime = 0f;
+
+    /// <summary>Inspector values, so the DDA system adjusts around them instead of hard-coded numbers.</summary>
+    public float BaseChaseSpeed { get; private set; }
+    public float BaseDetectionRange { get; private set; }
+
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
-        
+        BaseChaseSpeed = chaseSpeed;
+        BaseDetectionRange = detectionRange;
+
         // Failsafe: Agar user enemy ko disable karna bhool jaye, to game shuru hote hi ye khud chupp jayega!
-        if (currentState == AIState.Dormant)
+        // (Lekin agar kisi script ne isay jagane ke liye EnsureActive() call kiya hai to wapas band na ho)
+        if (currentState == AIState.Dormant && !externallyActivated)
         {
             gameObject.SetActive(false);
         }
+    }
+
+    /// <summary>Use this instead of gameObject.SetActive(true) to wake the enemy up.</summary>
+    public void EnsureActive()
+    {
+        externallyActivated = true;
+        if (!gameObject.activeSelf) gameObject.SetActive(true);
+    }
+
+    /// <summary>After a death-respawn: back on the hunt, but gives the player a few seconds before it can spot them.</summary>
+    public void ResumeHuntAfterRespawn(float graceSeconds)
+    {
+        EnsureActive();
+        currentState = AIState.Patrol;
+        ignorePlayerTimer = graceSeconds;
+        if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = false;
+            agent.speed = patrolSpeed;
+        }
+        hasInitializedPatrol = false; // picks a fresh patrol target once on the NavMesh
+    }
+
+    void OnDisable()
+    {
+        // If disabled mid-stun the coroutine dies - never leave him frozen/lying down
+        if (currentState == AIState.Stunned)
+        {
+            if (enemyAnimator != null) enemyAnimator.speed = 1f;
+            transform.localEulerAngles = new Vector3(stunOriginalXRotation, transform.localEulerAngles.y, transform.localEulerAngles.z);
+            currentState = AIState.Patrol;
+        }
+        if (agent != null) agent.updateRotation = true;
     }
 
     void Start()
@@ -107,6 +164,7 @@ public class EnemyAI : MonoBehaviour
         if (playerTransform != null)
         {
             playerStats = playerTransform.GetComponent<PlayerStats>();
+            playerController = playerTransform.GetComponent<PlayerController>();
         }
 
         if (agent != null) agent.speed = patrolSpeed;
@@ -183,9 +241,15 @@ public class EnemyAI : MonoBehaviour
         }
 
         // Ensure agent is not stopped (unless dormant, teasing or stunned)
-        if (agent.isStopped && currentState != AIState.Dormant && currentState != AIState.Tease && currentState != AIState.LeaveTease && currentState != AIState.Stunned && (playerStats == null || !playerStats.IsDead()))
+        if (agent.isStopped && currentState != AIState.Dormant && currentState != AIState.Tease && currentState != AIState.LeaveTease && currentState != AIState.Stunned && currentState != AIState.VanishAfterKill && currentState != AIState.CinematicEscape && (playerStats == null || !playerStats.IsDead()))
         {
             agent.isStopped = false;
+        }
+
+        // Attack ke waqt rotation band hoti hai - chase ke ilawa har state mein NavMesh ko wapas rotation do (warna enemy ulta chalta tha)
+        if (currentState != AIState.Chase && currentState != AIState.Stunned && !agent.updateRotation)
+        {
+            agent.updateRotation = true;
         }
 
         // Animator ki speed update karein (taake walk/run automatically ho)
@@ -197,15 +261,18 @@ public class EnemyAI : MonoBehaviour
         // Start patrolling once the agent is on the NavMesh
         if (!hasInitializedPatrol)
         {
-            Debug.Log("EnemyAI: Pehli dafa Patrol target dhoond raha hai...");
-            GetNewPatrolTarget();
+            if (currentState == AIState.Patrol) GetNewPatrolTarget();
             hasInitializedPatrol = true;
         }
 
         // Handle game over / player death safely
         if (playerTransform == null)
         {
-            Debug.LogWarning("EnemyAI: Player nahi mila! Enemy isliye nahi chal raha.");
+            if (Time.time >= playerMissingWarnTime)
+            {
+                Debug.LogWarning("EnemyAI: Player nahi mila! Enemy isliye nahi chal raha.");
+                playerMissingWarnTime = Time.time + 5f; // har frame console spam nahi
+            }
             return;
         }
 
@@ -368,11 +435,20 @@ public class EnemyAI : MonoBehaviour
     private float soundInvestigateTimer;
     private float currentInvestigateDuration = 3f;
 
+    /// <summary>
+    /// Sounds may only pull him away from normal roaming. While asleep, stunned, teasing, chasing,
+    /// vanishing or in the ending cinematic a noise must NOT change his state (that used to break the stun & cinematics).
+    /// </summary>
+    private bool CanBeDistractedByNoise()
+    {
+        return currentState == AIState.Patrol || currentState == AIState.Search || currentState == AIState.InvestigateSound;
+    }
+
     public void HearNoise(Vector3 noiseLocation)
     {
-        // Don't get distracted by a sound if already chasing the player
-        if (currentState == AIState.Chase) return;
-        
+        if (!CanBeDistractedByNoise()) return;
+        if (agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh) return;
+
         // Don't hear it if it's too far away
         if (Vector3.Distance(transform.position, noiseLocation) > detectionRange * 2f) return;
 
@@ -380,7 +456,8 @@ public class EnemyAI : MonoBehaviour
         soundInvestigationPoint = noiseLocation;
         currentState = AIState.InvestigateSound;
         currentInvestigateDuration = 3f; // Default search time
-        
+        soundInvestigateTimer = 0f;
+
         NavMeshHit hit;
         if (NavMesh.SamplePosition(noiseLocation, out hit, 5f, NavMesh.AllAreas))
         {
@@ -391,11 +468,14 @@ public class EnemyAI : MonoBehaviour
 
     public void ForceInvestigate(Vector3 noiseLocation, float searchTime = 15f)
     {
+        if (!CanBeDistractedByNoise()) return;
+
         Debug.Log("EnemyAI: FORCED to investigate loud noise!");
         soundInvestigationPoint = noiseLocation;
         currentState = AIState.InvestigateSound;
         currentInvestigateDuration = searchTime; // Custom search time
-        
+        soundInvestigateTimer = 0f;
+
         if (agent == null) agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
         if (agent.isActiveAndEnabled && agent.isOnNavMesh)
         {
@@ -435,34 +515,46 @@ public class EnemyAI : MonoBehaviour
 
     public void TakeStun(float duration)
     {
-        if (currentState == AIState.Dormant || currentState == AIState.VanishAfterKill) return;
-        StartCoroutine(StunRoutine(duration));
+        if (currentState == AIState.Dormant || currentState == AIState.VanishAfterKill || currentState == AIState.CinematicEscape) return;
+        if (!gameObject.activeInHierarchy) return;
+
+        // Already stunned: just extend the stun instead of starting a second, conflicting coroutine
+        if (currentState == AIState.Stunned)
+        {
+            stunEndTime = Mathf.Max(stunEndTime, Time.time + duration);
+            return;
+        }
+
+        stunEndTime = Time.time + duration;
+        StartCoroutine(StunRoutine());
     }
-    
-    private System.Collections.IEnumerator StunRoutine(float duration)
+
+    private System.Collections.IEnumerator StunRoutine()
     {
         AIState previousState = currentState;
         currentState = AIState.Stunned;
-        
+
         if (agent.isActiveAndEnabled && agent.isOnNavMesh)
         {
             agent.isStopped = true;
             agent.velocity = Vector3.zero;
         }
-        
+        agent.updateRotation = false; // NavMesh must not fight the "lying down" rotation
+
         if (enemyAnimator != null)
         {
             enemyAnimator.speed = 0f; // Freeze animation
         }
-        
+
         // Dushman ko zameen par lita dein (Rotate 90 degrees backward)
-        float originalXRotation = transform.localEulerAngles.x;
+        stunOriginalXRotation = transform.localEulerAngles.x;
         transform.localEulerAngles = new Vector3(90f, transform.localEulerAngles.y, transform.localEulerAngles.z);
-        
-        yield return new WaitForSeconds(duration);
-        
+
+        while (Time.time < stunEndTime) yield return null;
+
         // Dushman ko wapas khara karein
-        transform.localEulerAngles = new Vector3(originalXRotation, transform.localEulerAngles.y, transform.localEulerAngles.z);
+        transform.localEulerAngles = new Vector3(stunOriginalXRotation, transform.localEulerAngles.y, transform.localEulerAngles.z);
+        agent.updateRotation = true;
         
         if (enemyAnimator != null)
         {
@@ -540,7 +632,6 @@ public class EnemyAI : MonoBehaviour
     private void ChaseBehavior()
     {
         agent.speed = chaseSpeed;
-        agent.SetDestination(playerTransform.position);
         HandleFootsteps(0.3f); // Faster footsteps during chase
 
         if (enemyAudioSource != null && chaseMusic != null && enemyAudioSource.clip != chaseMusic)
@@ -549,23 +640,43 @@ public class EnemyAI : MonoBehaviour
             enemyAudioSource.Play();
         }
 
-        lastKnownPosition = playerTransform.position;
+        // BUG FIX: pehle enemy chhupe hue player ko bhi seedha dhoond kar maar deta tha, aur deewar ke peeche bhi
+        // hamesha player ki asal position jaanta tha. Ab sirf tab follow karta hai jab player nazar aa raha ho.
+        bool playerHidden = playerController != null && playerController.isHidden;
+        bool playerVisible = !playerHidden && HasLineOfSightToPlayer();
 
-        if (Vector3.Distance(transform.position, playerTransform.position) > detectionRange)
+        if (playerVisible)
+        {
+            lostSightTimer = 0f;
+            lastKnownPosition = playerTransform.position;
+        }
+        else
+        {
+            lostSightTimer += Time.deltaTime;
+        }
+
+        agent.SetDestination(playerVisible ? playerTransform.position : lastKnownPosition);
+
+        float distanceToPlayer = Vector3.Distance(transform.position, playerTransform.position);
+
+        if (playerHidden || distanceToPlayer > detectionRange || lostSightTimer > loseSightTime)
         {
             currentState = AIState.Search;
             searchTimer = searchDuration;
-            
+            lostSightTimer = 0f;
+            agent.updateRotation = true;
+
             // NEW: Player bach nikla! Darr ki wajah se saans phoolay gi
             if (playerStats != null)
             {
                 playerStats.TriggerHeavyBreathing(6f);
             }
-            
+
             return;
         }
 
-        if (Vector3.Distance(transform.position, playerTransform.position) <= attackRange)
+        float heightDifference = Mathf.Abs(playerTransform.position.y - transform.position.y);
+        if (playerVisible && distanceToPlayer <= attackRange && heightDifference <= maxAttackHeightDifference)
         {
             agent.updateRotation = false; // NavMesh ko ghumnay se roko!
             
@@ -649,8 +760,7 @@ public class EnemyAI : MonoBehaviour
         if (playerTransform == null) return false;
         if (ignorePlayerTimer > 0) return false; // Ignore player temporally!
         
-        PlayerController pc = playerTransform.GetComponent<PlayerController>();
-        if (pc != null && pc.isHidden) return false; // Enemy cannot see hidden player
+        if (playerController != null && playerController.isHidden) return false; // Enemy cannot see hidden player
 
         float distanceToPlayer = Vector3.Distance(transform.position, playerTransform.position);
         if (distanceToPlayer > detectionRange) return false;
@@ -658,20 +768,25 @@ public class EnemyAI : MonoBehaviour
         Vector3 directionToPlayer = (playerTransform.position - transform.position).normalized;
         float angleToPlayer = Vector3.Angle(transform.forward, directionToPlayer);
 
-        if (angleToPlayer < fovAngle / 2f)
-        {
-            RaycastHit hit;
-            if (!Physics.Raycast(transform.position + Vector3.up, directionToPlayer, out hit, distanceToPlayer, obstacleMask))
-            {
-                return true; // Raste mein koi deewar nahi
-            }
-            else if (hit.transform == playerTransform || hit.transform.IsChildOf(playerTransform))
-            {
-                return true; // Raycast player se ya player ke kisi hisse se takrai hai
-            }
-        }
+        return angleToPlayer < fovAngle / 2f && HasLineOfSightToPlayer();
+    }
 
-        return false;
+    /// <summary>True when no wall (obstacleMask) is between the enemy's eyes and the player.</summary>
+    private bool HasLineOfSightToPlayer()
+    {
+        if (playerTransform == null) return false;
+
+        Vector3 eye = transform.position + Vector3.up;
+        Vector3 toPlayer = playerTransform.position - eye;
+        float distance = toPlayer.magnitude;
+        if (distance < 0.01f) return true;
+
+        RaycastHit hit;
+        if (!Physics.Raycast(eye, toPlayer / distance, out hit, distance, obstacleMask, QueryTriggerInteraction.Ignore))
+        {
+            return true; // Raste mein koi deewar nahi
+        }
+        return hit.transform == playerTransform || hit.transform.IsChildOf(playerTransform); // Raycast player se takrai hai
     }
 
     private void AttackPlayer()
@@ -776,6 +891,9 @@ public class EnemyAI : MonoBehaviour
             Debug.Log("Enemy is teasing, ignoring ForceAwaken!");
             return; // Don't interrupt the cinematic tease!
         }
+
+        // Don't break a running stun or the ending cinematic either
+        if (currentState == AIState.Stunned || currentState == AIState.CinematicEscape) return;
 
         if (agent == null) agent = GetComponent<NavMeshAgent>();
         if (agent == null) 
@@ -966,7 +1084,7 @@ public class EnemyAI : MonoBehaviour
 
     void OnGUI()
     {
-        if (agent != null && gameObject.activeInHierarchy)
+        if (showDebugOverlay && agent != null && gameObject.activeInHierarchy)
         {
             GUI.color = Color.red;
             GUILayout.Label("--- ENEMY DEBUG ---");

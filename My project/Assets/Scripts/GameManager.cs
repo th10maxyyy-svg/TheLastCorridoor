@@ -84,26 +84,14 @@ public class GameManager : MonoBehaviour
 
         if (SaveManager.instance != null)
         {
-            // HARDCORE MECHANIC: Drop item on death
+            // HARDCORE MECHANIC: Drop item on death (Inventory saves where it lands)
             GameObject player = GameObject.FindGameObjectWithTag("Player");
             if (player != null)
             {
                 Inventory inv = player.GetComponent<Inventory>();
                 if (inv != null && inv.HasItem())
                 {
-                    GameObject item = inv.GetCurrentItem();
-                    string itemName = item.name;
-                    Vector3 dropPos = player.transform.position; // Zameen par wahin girao
-                    
                     inv.DropCurrentItem();
-                    item.transform.position = dropPos;
-                    
-                    // Save to disk
-                    SaveManager.instance.currentSaveData.droppedItemName = itemName;
-                    SaveManager.instance.currentSaveData.droppedItemPosition[0] = dropPos.x;
-                    SaveManager.instance.currentSaveData.droppedItemPosition[1] = dropPos.y;
-                    SaveManager.instance.currentSaveData.droppedItemPosition[2] = dropPos.z;
-                    SaveManager.instance.currentSaveData.heldItemName = ""; // Hath khali
                 }
             }
 
@@ -117,7 +105,12 @@ public class GameManager : MonoBehaviour
                 {
                     RespawnManager.instance.TriggerCinematicDeath(remainingLives, player);
                 }
-                return; // Stop here, RespawnManager will handle reloading
+                else
+                {
+                    // Failsafe: no RespawnManager in the scene - still respawn instead of leaving the player stuck
+                    StartCoroutine(FallbackRespawn());
+                }
+                return; // Stop here, the respawn will reload the scene
             }
             else
             {
@@ -162,10 +155,19 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private System.Collections.IEnumerator FallbackRespawn()
+    {
+        yield return new WaitForSeconds(3f);
+        IntroState.skipIntro = true;
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
     public void RestartGame()
     {
         isGameOver = false;
         Time.timeScale = 1f;
+        IntroState.ResetForNewGame(); // Permadeath = brand new game, so the intro plays again
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 

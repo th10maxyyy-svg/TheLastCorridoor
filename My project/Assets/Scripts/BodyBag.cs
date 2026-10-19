@@ -50,8 +50,7 @@ public class BodyBag : MonoBehaviour, IInteractable
             if (fusesItem != null) fusesItem.SetActive(true);
             
             // Show a simple notification
-            InteractionRaycast ir = Camera.main.GetComponent<InteractionRaycast>();
-            if (ir != null) ir.ShowNotification("You found the Fuses!");
+            InteractionRaycast.Notify(playerStats, "You found the Fuses!");
         }
         else if (containsJumpscare)
         {

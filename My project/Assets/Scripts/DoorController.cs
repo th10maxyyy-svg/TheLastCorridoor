@@ -75,8 +75,12 @@ public class DoorController : MonoBehaviour, IInteractable
 
     public string GetInteractPrompt()
     {
+        if (isTrapLocked) return "The door won't budge!";
+
         if (isLocked)
         {
+            // Puzzle wale darwazon ke liye "Needs ." na likha aaye
+            if (string.IsNullOrEmpty(requiredKey)) return "Door is Locked.";
             return "Door is Locked. Needs " + requiredKey + ".";
         }
         
@@ -85,6 +89,12 @@ public class DoorController : MonoBehaviour, IInteractable
 
     public void Interact(PlayerStats playerStats)
     {
+        if (isTrapLocked)
+        {
+            if (onLockedInteract != null) onLockedInteract.Invoke();
+            return;
+        }
+
         if (isLocked)
         {
             // NAYA FIX: Agar Required Key empty hai, to matlab isay inventory se nahi, kisi Puzzle se khulna hai!
@@ -103,7 +113,7 @@ public class DoorController : MonoBehaviour, IInteractable
                 Debug.Log("Door unlocked and opened!");
                 
                 // NAYA FIX: Key use hone ke baad usay inventory se khatam (consume) kar do!
-                inventory.RemoveItem(requiredKey);
+                inventory.RemoveItem(requiredKey, false); // false = darwaza hamesha ke liye khul gaya, key wapas nahi aayegi
                 
                 SaveDoorState();
 
@@ -115,7 +125,7 @@ public class DoorController : MonoBehaviour, IInteractable
                 else if (!string.IsNullOrEmpty(requiredKey) && requiredKey.ToLower().Contains("guard"))
                 {
                     // FALLBACK: Agar inspector mein assign karna bhool gaye to qareeb tareen ambush khud dhoondo!
-                    CinematicAmbush[] ambushes = FindObjectsByType<CinematicAmbush>(FindObjectsSortMode.None);
+                    CinematicAmbush[] ambushes = FindObjectsByType<CinematicAmbush>();
                     CinematicAmbush closestAmbush = null;
                     float minDistance = Mathf.Infinity;
                     
@@ -184,13 +194,31 @@ public class DoorController : MonoBehaviour, IInteractable
         SaveDoorState();
     }
 
+    // --- TRAP LOCK (used by ToxicGasTrap instead of hacking private fields with reflection) ---
+    private bool isTrapLocked = false;
+
+    /// <summary>Slams the door shut and keeps it shut until ReleaseTrapLock() is called.</summary>
+    public void TrapLock()
+    {
+        if (isTrapLocked) return;
+        isTrapLocked = true;
+
+        if (isOpen)
+        {
+            isOpen = false;
+            if (audioSource != null && closeSound != null) audioSource.PlayOneShot(closeSound);
+        }
+    }
+
+    public void ReleaseTrapLock()
+    {
+        isTrapLocked = false;
+    }
+
     // Helper to make a unique ID for this specific door, in case many doors are named "Door"
     private string GetDoorID()
     {
-        int x = Mathf.RoundToInt(transform.position.x * 10f);
-        int y = Mathf.RoundToInt(transform.position.y * 10f);
-        int z = Mathf.RoundToInt(transform.position.z * 10f);
-        return gameObject.name + "_" + x + "_" + y + "_" + z;
+        return SaveManager.GetSceneObjectId(transform);
     }
 
     private void SaveDoorState()

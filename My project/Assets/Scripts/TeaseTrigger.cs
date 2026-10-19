@@ -14,11 +14,16 @@ public class TeaseTrigger : MonoBehaviour
 
     private bool hasTriggered = false;
     private PlayerController player;
+    private string saveFlag;
 
     void Start()
     {
         GetComponent<BoxCollider>().isTrigger = true;
         player = FindAnyObjectByType<PlayerController>();
+
+        // WORLD STATE: respawn ke baad ye tease dobara na chale
+        saveFlag = "Tease_" + SaveManager.GetSceneObjectId(transform);
+        if (SaveManager.instance != null && SaveManager.instance.HasFlag(saveFlag)) hasTriggered = true;
     }
 
     void OnTriggerEnter(Collider other)
@@ -27,6 +32,7 @@ public class TeaseTrigger : MonoBehaviour
         if (!hasTriggered && (other.CompareTag("Player") || other.GetComponent<PlayerController>() != null))
         {
             hasTriggered = true;
+            if (SaveManager.instance != null) SaveManager.instance.SetFlag(saveFlag);
 
             if (enemy != null && player != null)
             {

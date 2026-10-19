@@ -7,62 +7,111 @@ public class KeypadController : MonoBehaviour, IInteractable
     [SerializeField] private string passcode = "2024";
     [SerializeField] private ElectricTrap trapToDisable;
     public UnityEvent onUnlock;
-    
+
     [Header("UI Status")]
     private bool isKeypadOpen = false;
     private string currentInput = "";
     private bool isSuccess = false;
     private bool isError = false;
     private float messageTimer = 0f;
-    
+    private bool isUnlocked = false;
+    private float autoCloseTime = -1f;
+
+    private PlayerStats activePlayer;
+    private float healthWhenOpened;
+    private string saveFlag;
+
+    void Start()
+    {
+        // WORLD STATE: code pehle sahi daala ja chuka hai to keypad dobara na maange
+        saveFlag = "Keypad_" + SaveManager.GetSceneObjectId(transform);
+        if (SaveManager.instance != null && SaveManager.instance.HasFlag(saveFlag))
+        {
+            isUnlocked = true;
+            if (trapToDisable != null) trapToDisable.DisableTrap();
+            // Re-apply what the keypad unlocked (drawers, revealed objects...) since those aren't saved on their own
+            onUnlock?.Invoke();
+        }
+    }
+
     public string GetInteractPrompt()
     {
+        if (isUnlocked && !isKeypadOpen) return "Keypad: ACCESS GRANTED";
         return "Press E to use Keypad";
     }
 
     public void Interact(PlayerStats playerStats)
     {
-        isKeypadOpen = !isKeypadOpen;
-        
         if (isKeypadOpen)
         {
-            // Lock player movement and camera
-            PlayerController pc = playerStats.GetComponent<PlayerController>();
-            if (pc != null) pc.enabled = false;
-            
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-            currentInput = "";
-            isSuccess = false;
-            isError = false;
+            CloseKeypad();
+            return;
         }
-        else
-        {
-            CloseKeypad(playerStats.gameObject);
-        }
+
+        if (isUnlocked) return;
+        OpenKeypad(playerStats);
     }
-    
-    private void CloseKeypad(GameObject player)
+
+    private void OpenKeypad(PlayerStats playerStats)
     {
+        isKeypadOpen = true;
+        activePlayer = playerStats;
+        healthWhenOpened = playerStats != null ? playerStats.GetHealth() : 0f;
+        autoCloseTime = -1f;
+
+        // Lock player movement and camera
+        PlayerController pc = playerStats != null ? playerStats.GetComponent<PlayerController>() : null;
+        if (pc != null) pc.enabled = false;
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+        currentInput = "";
+        isSuccess = false;
+        isError = false;
+    }
+
+    private void CloseKeypad()
+    {
+        if (!isKeypadOpen) return;
         isKeypadOpen = false;
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-        
-        PlayerController pc = player.GetComponent<PlayerController>();
-        if (pc != null) pc.enabled = true;
+        autoCloseTime = -1f;
+
+        bool playerDead = activePlayer == null || activePlayer.IsDead();
+        if (!playerDead)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+
+            PlayerController pc = activePlayer.GetComponent<PlayerController>();
+            if (pc != null && !pc.isDead) pc.enabled = true;
+        }
+        activePlayer = null;
     }
 
     private void Update()
     {
         if (!isKeypadOpen) return;
-        
+
+        // Enemy ne maara ya player mar gaya -> keypad foran band, taake player bhaag sake
+        if (activePlayer == null || activePlayer.IsDead() || activePlayer.GetHealth() < healthWhenOpened)
+        {
+            CloseKeypad();
+            return;
+        }
+
         // Allow exiting with Escape
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            PlayerStats stats = FindAnyObjectByType<PlayerStats>();
-            if (stats != null) CloseKeypad(stats.gameObject);
+            CloseKeypad();
+            return;
         }
-        
+
+        if (autoCloseTime > 0f && Time.time >= autoCloseTime)
+        {
+            CloseKeypad();
+            return;
+        }
+
         if (messageTimer > 0)
         {
             messageTimer -= Time.deltaTime;
@@ -73,6 +122,11 @@ public class KeypadController : MonoBehaviour, IInteractable
                 currentInput = "";
             }
         }
+    }
+
+    private void OnDisable()
+    {
+        CloseKeypad();
     }
 
     private void OnGUI()
@@ -91,7 +145,7 @@ public class KeypadController : MonoBehaviour, IInteractable
         GUIStyle displayStyle = new GUIStyle(GUI.skin.box);
         displayStyle.fontSize = 32;
         displayStyle.alignment = TextAnchor.MiddleCenter;
-        
+
         if (isSuccess)
         {
             displayStyle.normal.textColor = Color.green;
@@ -119,7 +173,7 @@ public class KeypadController : MonoBehaviour, IInteractable
         {
             int row = (i - 1) / 3;
             int col = (i - 1) % 3;
-            
+
             float btnX = startX + 25 + (col * (btnWidth + spacing));
             float btnY = startY + 120 + (row * (btnHeight + spacing));
 
@@ -131,34 +185,33 @@ public class KeypadController : MonoBehaviour, IInteractable
 
         // Zero, Clear, Enter buttons
         float bottomRowY = startY + 120 + (3 * (btnHeight + spacing));
-        
+
         if (GUI.Button(new Rect(startX + 25, bottomRowY, btnWidth, btnHeight), "C"))
         {
             currentInput = "";
         }
-        
+
         if (GUI.Button(new Rect(startX + 25 + btnWidth + spacing, bottomRowY, btnWidth, btnHeight), "0"))
         {
             AddDigit("0");
         }
-        
+
         if (GUI.Button(new Rect(startX + 25 + (2 * (btnWidth + spacing)), bottomRowY, btnWidth, btnHeight), "ENT"))
         {
             CheckPasscode();
         }
-        
+
         // Exit button
         if (GUI.Button(new Rect(startX + 25, startY + boxHeight - 40, 250, 30), "EXIT"))
         {
-            PlayerStats stats = FindAnyObjectByType<PlayerStats>();
-            if (stats != null) CloseKeypad(stats.gameObject);
+            CloseKeypad();
         }
     }
 
     private void AddDigit(string digit)
     {
         if (isSuccess || isError) return;
-        
+
         if (currentInput.Length < 4)
         {
             currentInput += digit;
@@ -172,31 +225,27 @@ public class KeypadController : MonoBehaviour, IInteractable
         if (currentInput == passcode)
         {
             isSuccess = true;
+            isUnlocked = true;
             messageTimer = 2f;
-            
+            if (SaveManager.instance != null) SaveManager.instance.SetFlag(saveFlag);
+
             if (trapToDisable != null)
             {
                 trapToDisable.DisableTrap();
             }
-            
+
             if (onUnlock != null)
             {
                 onUnlock.Invoke();
             }
-            
-            // Close keypad after success
-            Invoke("AutoClose", 2f);
+
+            // Close keypad after success (only this opening of it - no stray Invoke any more)
+            autoCloseTime = Time.time + 2f;
         }
         else
         {
             isError = true;
             messageTimer = 1f;
         }
-    }
-    
-    private void AutoClose()
-    {
-        PlayerStats stats = FindAnyObjectByType<PlayerStats>();
-        if (stats != null) CloseKeypad(stats.gameObject);
     }
 }

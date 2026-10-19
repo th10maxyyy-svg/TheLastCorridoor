@@ -12,6 +12,7 @@ public class AudioManager : MonoBehaviour
 
     private Transform playerTransform;
     private Transform enemyTransform;
+    private float nextEnemySearchTime = 0f;
 
     void Start()
     {
@@ -34,8 +35,10 @@ public class AudioManager : MonoBehaviour
 
     void Update()
     {
-        if (enemyTransform == null)
+        // Enemy dhoondna mehnga hai - har frame nahi, second mein ek dafa
+        if (enemyTransform == null && Time.time >= nextEnemySearchTime)
         {
+            nextEnemySearchTime = Time.time + 1f;
             EnemyAI enemy = FindAnyObjectByType<EnemyAI>();
             if (enemy != null) enemyTransform = enemy.transform;
         }

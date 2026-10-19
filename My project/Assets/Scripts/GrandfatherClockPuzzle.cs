@@ -59,6 +59,7 @@ public class GrandfatherClockPuzzle : MonoBehaviour, IInteractable
         if (isSolved || isShifting) return;
 
         Inventory inventory = playerStats.GetComponent<Inventory>();
+        if (inventory == null) return;
 
         // 1. Missing parts lagayen
         if (!hasPendulum)
@@ -122,8 +123,9 @@ public class GrandfatherClockPuzzle : MonoBehaviour, IInteractable
         }
 
         Color originalColor = Color.white;
-        if (roomLights.Length > 0 && roomLights[0] != null) originalColor = roomLights[0].color;
+        if (roomLights != null && roomLights.Length > 0 && roomLights[0] != null) originalColor = roomLights[0].color;
 
+        if (roomLights != null)
         foreach(Light l in roomLights)
         {
             if (l != null) l.color = Color.red;
@@ -149,6 +151,7 @@ public class GrandfatherClockPuzzle : MonoBehaviour, IInteractable
         yield return new WaitForSeconds(10f);
 
         // 5. Restore Room
+        if (roomLights != null)
         foreach(Light l in roomLights)
         {
             if (l != null) l.color = originalColor;

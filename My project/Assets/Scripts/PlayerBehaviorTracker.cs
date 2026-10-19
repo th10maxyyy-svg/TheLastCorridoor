@@ -61,8 +61,9 @@ public class PlayerBehaviorTracker : MonoBehaviour
         sprintTime = 0f;
         crouchTime = 0f;
 
-        float targetChaseSpeed = 3.5f; // Kam kar diya taake easy ho
-        float targetDetectionRange = 15f; 
+        // Inspector wali values ko base banao (pehle 3.5 / 15 hard-coded the aur Inspector ki setting overwrite ho jati thi)
+        float targetChaseSpeed = enemyAI.BaseChaseSpeed;
+        float targetDetectionRange = enemyAI.BaseDetectionRange;
 
         if (sprintRatio > 0.4f)
         {
@@ -82,8 +83,8 @@ public class PlayerBehaviorTracker : MonoBehaviour
             targetDetectionRange -= 5.0f;
         }
 
-        targetChaseSpeed = Mathf.Clamp(targetChaseSpeed, 2.5f, 5.5f); // Max speed ab sirf 5.5 hogi (pehle 7.5 thi)
-        targetDetectionRange = Mathf.Clamp(targetDetectionRange, 10f, 25f); 
+        targetChaseSpeed = Mathf.Clamp(targetChaseSpeed, enemyAI.BaseChaseSpeed - 1f, enemyAI.BaseChaseSpeed + 2f);
+        targetDetectionRange = Mathf.Clamp(targetDetectionRange, enemyAI.BaseDetectionRange - 5f, enemyAI.BaseDetectionRange + 10f);
 
         enemyAI.SetChaseSpeed(targetChaseSpeed);
         enemyAI.SetDetectionRange(targetDetectionRange);

@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -13,9 +14,16 @@ public class Inventory : MonoBehaviour
     [SerializeField] private AudioClip dropSound;
 
     private GameObject currentItem;
+    // Exactly the colliders we switched off on pickup, so drop turns the same ones back on
+    private readonly List<Collider> disabledColliders = new List<Collider>();
+    private PlayerController playerController;
+    private CharacterController characterController;
 
     void Start()
     {
+        playerController = GetComponent<PlayerController>();
+        characterController = GetComponent<CharacterController>();
+
         if (inventoryAudioSource == null)
         {
             inventoryAudioSource = gameObject.AddComponent<AudioSource>();
@@ -25,7 +33,7 @@ public class Inventory : MonoBehaviour
         // Is se cheez hamesha haath mein rahegi. Agar aap oopar dekhenge, to cheez aur haath dono neechay rahenge.
         Animator anim = transform.root.GetComponentInChildren<Animator>();
         Transform rHand = null;
-        
+
         if (anim != null && anim.isHuman)
         {
             // Ungliyon ke darmiyan laane ke liye seedha Middle Finger par attach karo!
@@ -68,11 +76,11 @@ public class Inventory : MonoBehaviour
             // Naya hold position direct ungliyon (fingers) ke andar banao
             GameObject newHp = new GameObject("Hand_HoldPosition");
             newHp.transform.SetParent(rHand);
-            
+
             // Hold position ko bilkul zero par rakho, hum cheez par direct apply karenge offset!
-            newHp.transform.localPosition = Vector3.zero; 
+            newHp.transform.localPosition = Vector3.zero;
             newHp.transform.localRotation = Quaternion.identity;
-            
+
             holdPosition = newHp.transform;
         }
     }
@@ -80,14 +88,26 @@ public class Inventory : MonoBehaviour
     void Update()
     {
         // Drop item on pressing G
-        if (Input.GetKeyDown(KeyCode.G) && currentItem != null)
+        if (Input.GetKeyDown(KeyCode.G) && currentItem != null && CanUseInventory())
         {
             DropCurrentItem();
         }
     }
 
-    public void PickUpItem(GameObject item)
+    /// <summary>No dropping while dead, hidden, in a cinematic or while a UI (keypad) has the cursor.</summary>
+    private bool CanUseInventory()
     {
+        if (Cursor.lockState != CursorLockMode.Locked) return false;
+        if (playerController == null) return true;
+        return playerController.enabled && !playerController.isDead && !playerController.isCinematicPlaying && !playerController.isHidden;
+    }
+
+    public void PickUpItem(GameObject item) => PickUpItem(item, false);
+
+    public void PickUpItem(GameObject item, bool silent)
+    {
+        if (item == null || item == currentItem) return;
+
         // If already holding an item, drop it first
         if (currentItem != null)
         {
@@ -95,9 +115,10 @@ public class Inventory : MonoBehaviour
         }
 
         currentItem = item;
-        
+        if (!item.activeSelf) item.SetActive(true);
+
         // Play pickup sound
-        if (inventoryAudioSource != null && pickupSound != null)
+        if (!silent && inventoryAudioSource != null && pickupSound != null)
         {
             inventoryAudioSource.PlayOneShot(pickupSound);
         }
@@ -111,17 +132,21 @@ public class Inventory : MonoBehaviour
         }
 
         // Disable ALL colliders (even in children) to prevent getting stuck in doors
-        Collider[] colliders = currentItem.GetComponentsInChildren<Collider>();
-        foreach (Collider col in colliders)
+        disabledColliders.Clear();
+        foreach (Collider col in currentItem.GetComponentsInChildren<Collider>())
         {
-            col.enabled = false;
+            if (col.enabled)
+            {
+                col.enabled = false;
+                disabledColliders.Add(col);
+            }
         }
 
         // Attach to hold position
         if (holdPosition != null)
         {
             currentItem.transform.SetParent(holdPosition);
-            
+
             // Aapne jo exact Inspector mein dekha hai, wohi direct CHEEZ par apply ho raha hai!
             currentItem.transform.localPosition = new Vector3(-0.03f, 0.24f, 0.15f);
             currentItem.transform.localRotation = Quaternion.identity;
@@ -138,10 +163,10 @@ public class Inventory : MonoBehaviour
             }
         }
 
-        // WORLD STATE CHECK: Jab koi cheez uthai jaye, to usay save kar lo taake reload par wahan wapas na aaye!
+        // WORLD STATE: picked up -> not on the floor any more, now in the hand
         if (SaveManager.instance != null)
         {
-            SaveManager.instance.CollectItem(item.name);
+            SaveManager.instance.OnItemPickedUp(item);
         }
 
         Debug.Log("Picked up " + item.name);
@@ -151,31 +176,73 @@ public class Inventory : MonoBehaviour
     {
         if (currentItem == null) return;
 
+        GameObject item = currentItem;
+        currentItem = null;
+
         // Play drop sound
         if (inventoryAudioSource != null && dropSound != null)
         {
             inventoryAudioSource.PlayOneShot(dropSound);
         }
 
-        currentItem.transform.SetParent(null);
-        
-        Rigidbody rb = currentItem.GetComponent<Rigidbody>();
+        item.transform.SetParent(null);
+
+        // Make sure the item is not inside a wall: if a wall is between the camera and the hand, pull it back
+        Camera cam = GetComponentInChildren<Camera>();
+        Vector3 throwDir = cam != null ? cam.transform.forward : transform.forward;
+        if (cam != null)
+        {
+            Vector3 from = cam.transform.position;
+            Vector3 to = item.transform.position;
+            if (Physics.Linecast(from, to, out RaycastHit wallHit, ~0, QueryTriggerInteraction.Ignore) && !wallHit.transform.IsChildOf(transform))
+            {
+                item.transform.position = wallHit.point + wallHit.normal * 0.15f;
+            }
+        }
+
+        // BUG FIX: colliders wapas ON karo, warna item farsh ke aar paar gir jata tha
+        foreach (Collider col in disabledColliders)
+        {
+            if (col == null) continue;
+            col.enabled = true;
+            if (characterController != null) StartCoroutine(IgnorePlayerCollisionBriefly(col));
+        }
+        disabledColliders.Clear();
+
+        Rigidbody rb = item.GetComponent<Rigidbody>();
         if (rb != null)
         {
             rb.isKinematic = false;
             rb.useGravity = true;
             // Throw it slightly forward
-            rb.AddForce(transform.forward * throwForce, ForceMode.Impulse);
+            rb.AddForce(throwDir * throwForce, ForceMode.Impulse);
+        }
+        else if (Physics.Raycast(item.transform.position, Vector3.down, out RaycastHit floorHit, 10f, ~0, QueryTriggerInteraction.Ignore))
+        {
+            // No physics on this item: put it on the floor instead of leaving it floating in the air
+            item.transform.position = floorHit.point + Vector3.up * 0.05f;
         }
 
-        ThrowableItem throwable = currentItem.GetComponent<ThrowableItem>();
+        ThrowableItem throwable = item.GetComponent<ThrowableItem>();
         if (throwable != null)
         {
             throwable.MarkAsDropped();
         }
 
-        Debug.Log("Dropped " + currentItem.name);
-        currentItem = null;
+        if (SaveManager.instance != null)
+        {
+            SaveManager.instance.OnItemDropped(item);
+        }
+
+        Debug.Log("Dropped " + item.name);
+    }
+
+    // The item starts right next to the player - don't let it shove the CharacterController around
+    private IEnumerator IgnorePlayerCollisionBriefly(Collider col)
+    {
+        Physics.IgnoreCollision(col, characterController, true);
+        yield return new WaitForSeconds(0.75f);
+        if (col != null && characterController != null) Physics.IgnoreCollision(col, characterController, false);
     }
 
     public bool HasItem()
@@ -183,52 +250,51 @@ public class Inventory : MonoBehaviour
         return currentItem != null;
     }
 
+    /// <summary>Exact (case-insensitive) match on the KeyItem's keyName, or on the object name for items without a KeyItem.</summary>
     public bool HasItem(string itemName)
     {
-        if (currentItem != null)
+        if (currentItem == null || string.IsNullOrEmpty(itemName)) return false;
+
+        KeyItem key = currentItem.GetComponent<KeyItem>();
+        if (key != null)
         {
-            KeyItem key = currentItem.GetComponent<KeyItem>();
-            if (key != null && key.GetKeyName() == itemName)
-            {
-                return true;
-            }
-            return currentItem.name.Contains(itemName);
+            return string.Equals(key.GetKeyName().Trim(), itemName.Trim(), System.StringComparison.OrdinalIgnoreCase);
         }
-        return false;
+        return string.Equals(StripCloneSuffix(currentItem.name), StripCloneSuffix(itemName), System.StringComparison.OrdinalIgnoreCase);
     }
 
-    public void RemoveItem(string itemName)
+    // "Fuse (1)" -> "Fuse"
+    private static string StripCloneSuffix(string name)
     {
-        if (HasItem(itemName) && currentItem != null)
+        name = name.Trim();
+        if (name.EndsWith(")"))
         {
-            Destroy(currentItem);
-            currentItem = null;
-            Debug.Log("Removed and destroyed item: " + itemName);
+            int open = name.LastIndexOf(" (");
+            if (open > 0) name = name.Substring(0, open);
         }
+        return name.Trim();
+    }
+
+    /// <param name="respawnOnReload">True for puzzle items (puzzles reset on death, so the item must come back). False for door keys (the door stays unlocked).</param>
+    public void RemoveItem(string itemName, bool respawnOnReload = true)
+    {
+        if (!HasItem(itemName)) return;
+
+        GameObject item = currentItem;
+        currentItem = null;
+        disabledColliders.Clear();
+
+        if (SaveManager.instance != null)
+        {
+            SaveManager.instance.OnItemConsumed(item, respawnOnReload);
+        }
+
+        Destroy(item);
+        Debug.Log("Removed and destroyed item: " + itemName);
     }
 
     public GameObject GetCurrentItem()
     {
         return currentItem;
-    }
-
-    public System.Collections.Generic.List<string> GetAllItems()
-    {
-        System.Collections.Generic.List<string> list = new System.Collections.Generic.List<string>();
-        if (currentItem != null)
-        {
-            KeyItem key = currentItem.GetComponent<KeyItem>();
-            list.Add(key != null ? key.GetKeyName() : currentItem.name);
-        }
-        return list;
-    }
-
-    public void LoadInventory(System.Collections.Generic.List<string> savedItems)
-    {
-        // TODO: Implement physical item spawning from a prefab manager based on saved string names
-        if (savedItems != null && savedItems.Count > 0)
-        {
-            Debug.LogWarning("Inventory Load requested for: " + savedItems[0] + ". Physical spawning system needs prefab references to restore the item.");
-        }
     }
 }

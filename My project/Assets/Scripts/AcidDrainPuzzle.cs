@@ -55,25 +55,8 @@ public class AcidDrainPuzzle : MonoBehaviour, IInteractable
             return;
         }
 
-        Debug.Log("Player is interacting with Acid Drain. Required item: " + requiredValveItem);
-        Debug.Log("Is holding an item? " + inventory.HasItem());
-        if (inventory.HasItem())
-        {
-            Debug.Log("Currently holding item name: " + inventory.GetCurrentItem().name);
-            KeyItem heldKey = inventory.GetCurrentItem().GetComponent<KeyItem>();
-            if (heldKey != null)
-            {
-                Debug.Log("Held item KeyName is: '" + heldKey.GetKeyName() + "'");
-            }
-            else
-            {
-                Debug.Log("Held item does not have a KeyItem script.");
-            }
-        }
-
         if (inventory.HasItem(requiredValveItem))
         {
-            Debug.Log("SUCCESS! Valve found in inventory. Draining acid...");
             isSolved = true;
             inventory.RemoveItem(requiredValveItem); // Hath se nikal lo
             
@@ -84,24 +67,19 @@ public class AcidDrainPuzzle : MonoBehaviour, IInteractable
         }
         else
         {
-            Debug.LogWarning("FAILED: Player does not have the exact required item: '" + requiredValveItem + "'");
             // Agar Valve nahi hai to Hint do
-            InteractionRaycast ir = Camera.main.GetComponent<InteractionRaycast>();
-            if (ir != null) ir.ShowNotification("The acid needs to be drained... I need a Valve handle.");
+            InteractionRaycast.Notify(playerStats, "The acid needs to be drained... I need a Valve handle.");
         }
     }
 
     private IEnumerator DrainRoutine()
     {
-        Debug.Log("DrainRoutine Started!");
         // 1. Valve ghumane ki awaz
         if (valveTurnSound != null && audioSource != null) 
         {
             audioSource.PlayOneShot(valveTurnSound);
-            Debug.Log("Played valve sound.");
         }
         
-        Debug.Log("Waiting for 1 second (valve turn delay)...");
         // Valve ghumao (1 second ke liye)
         float elapsed = 0f;
         while (elapsed < 1f)
@@ -115,7 +93,6 @@ public class AcidDrainPuzzle : MonoBehaviour, IInteractable
             yield return null;
         }
 
-        Debug.Log("Valve delay finished! Now playing drain sound.");
         // 2. Tezaab ke neechay jane ki awaz
         if (acidDrainSound != null && audioSource != null) 
         {
@@ -125,7 +102,6 @@ public class AcidDrainPuzzle : MonoBehaviour, IInteractable
         // 3. Tezaab ko aahista aahista neechay le jao (drain karo)
         if (acidMesh != null)
         {
-            Debug.Log("AcidMesh found! Starting to lerp down by " + drainAmountY);
             Vector3 startPos = acidMesh.position;
             Vector3 targetPos = startPos + new Vector3(0, drainAmountY, 0); // Neechay ki taraf offset
             
@@ -138,7 +114,6 @@ public class AcidDrainPuzzle : MonoBehaviour, IInteractable
                 yield return null;
             }
             acidMesh.position = targetPos; // Make sure it reaches exact target
-            Debug.Log("Acid Lerp finished! Final position: " + acidMesh.position);
         }
         else
         {
@@ -148,9 +123,7 @@ public class AcidDrainPuzzle : MonoBehaviour, IInteractable
         // 4. Sab complete hone par Key ko accessible banao!
         if (onDrainComplete != null)
         {
-            Debug.Log("Invoking onDrainComplete event.");
             onDrainComplete.Invoke();
         }
-        Debug.Log("DrainRoutine completely finished!");
     }
 }

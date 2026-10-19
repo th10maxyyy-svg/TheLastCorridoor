@@ -12,8 +12,18 @@ public class ElectricTrap : MonoBehaviour
     [SerializeField] private GameObject electricVisuals; // The bars or lightning objects
     [SerializeField] private Light trapLight; // The flickering point light
 
+    private string saveFlag;
+
     private void Start()
     {
+        // WORLD STATE: keypad se band kiya gaya trap respawn ke baad dobara chalu na ho
+        saveFlag = "TrapDisabled_" + SaveManager.GetSceneObjectId(transform);
+        if (SaveManager.instance != null && SaveManager.instance.HasFlag(saveFlag))
+        {
+            DisableTrap();
+            return;
+        }
+
         if (isActive && electricSound != null && !electricSound.isPlaying)
         {
             electricSound.Play();
@@ -34,7 +44,7 @@ public class ElectricTrap : MonoBehaviour
                 
                 // Add a small pushback effect so the player knows they hit a barrier
                 CharacterController cc = other.GetComponent<CharacterController>();
-                if (cc != null)
+                if (cc != null && cc.enabled)
                 {
                     Vector3 pushDirection = (other.transform.position - transform.position).normalized;
                     pushDirection.y = 0; // Keep push horizontal
@@ -47,6 +57,8 @@ public class ElectricTrap : MonoBehaviour
     public void DisableTrap()
     {
         isActive = false;
+
+        if (SaveManager.instance != null && !string.IsNullOrEmpty(saveFlag)) SaveManager.instance.SetFlag(saveFlag);
         
         if (electricSound != null)
         {

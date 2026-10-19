@@ -17,15 +17,12 @@ public class ThrowableItem : MonoBehaviour
 
     void Start()
     {
-        // WORLD STATE CHECK: Agar ye item pehle hi uthaya ja chuka hai, to isay hamesha ke liye delete kar do!
-        if (SaveManager.instance != null && SaveManager.instance.IsItemCollected(gameObject.name))
+        // WORLD STATE CHECK: Agar ye item pehle hi uthaya ja chuka hai (aur na zameen par para hai na haath mein) to delete kar do
+        if (SaveManager.instance != null && GetComponent<KeyItem>() == null &&
+            !SaveManager.instance.ShouldItemExistInWorld(SaveManager.instance.GetItemId(gameObject)))
         {
-            // Lekin agar ye wo item hai jo marte waqt player ne giraya tha, to ise delete mat karo
-            if (SaveManager.instance.currentSaveData.droppedItemName != gameObject.name)
-            {
-                Destroy(gameObject);
-                Debug.Log("[WorldState] ThrowableItem deleted because it was already collected: " + gameObject.name);
-            }
+            Destroy(gameObject);
+            Debug.Log("[WorldState] ThrowableItem deleted because it was already collected: " + gameObject.name);
         }
     }
 
@@ -39,7 +36,7 @@ public class ThrowableItem : MonoBehaviour
         if (hasDropped && collision.relativeVelocity.magnitude > 1f)
         {
             hasDropped = false; // So it doesn't keep making noise when rolling
-            
+
             if (dropSound != null)
             {
                 audioSource.PlayOneShot(dropSound);

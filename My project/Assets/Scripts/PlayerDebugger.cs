@@ -13,6 +13,9 @@ public class PlayerDebugger : MonoBehaviour
 
     void Update()
     {
+        // Sirf Editor / Development build mein - release game mein P dabane se kuch na ho
+        if (!Debug.isDebugBuild || cc == null || pc == null) return;
+
         if (Input.GetKeyDown(KeyCode.P))
         {
             Debug.Log("--- PLAYER DEBUG INFO ---");

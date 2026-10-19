@@ -175,7 +175,7 @@ public class PlayerController : MonoBehaviour
 
     public void ExitHiding()
     {
-        transform.position = currentExitPos.position;
+        if (currentExitPos != null) transform.position = currentExitPos.position;
         characterController.enabled = true;
         isHidden = false;
         currentExitPos = null;
@@ -186,13 +186,14 @@ public class PlayerController : MonoBehaviour
         float moveDirectionY = moveDirection.y;
         currentInput = new Vector2(Input.GetAxis("Vertical"), Input.GetAxis("Horizontal"));
 
-        isSprinting = Input.GetKey(KeyCode.LeftShift) && !isCrouching && currentInput.x > 0;
+        // Bina stamina ke sprint nahi (warna footsteps/headbob/DDA sab "sprint" samajhte the jab ke player chal raha tha)
+        isSprinting = Input.GetKey(KeyCode.LeftShift) && !isCrouching && currentInput.x > 0 && (playerStats == null || playerStats.HasStamina());
 
         if (isCrouching)
         {
             currentSpeed = crouchSpeed;
         }
-        else if (isSprinting && playerStats != null && playerStats.HasStamina())
+        else if (isSprinting)
         {
             currentSpeed = sprintSpeed;
             playerStats.UseStamina(Time.deltaTime);
@@ -225,9 +226,30 @@ public class PlayerController : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.LeftControl))
         {
+            // Neechi chhat ke neeche khare nahi ho sakte (warna player chhat mein phans jata tha)
+            if (isCrouching && !CanStandUp()) return;
+
             isCrouching = !isCrouching;
-            StartCoroutine(CrouchStandRoutine());
+            // Purana crouch coroutine rok do taake jaldi jaldi Ctrl dabane par do coroutines aapas mein na larein
+            if (crouchRoutine != null) StopCoroutine(crouchRoutine);
+            crouchRoutine = StartCoroutine(CrouchStandRoutine());
         }
+    }
+
+    private Coroutine crouchRoutine;
+
+    private bool CanStandUp()
+    {
+        if (characterController == null) return true;
+        float radius = characterController.radius * 0.9f;
+        Vector3 origin = transform.position + characterController.center;
+        float distance = standingHeight * 0.5f - radius + 0.05f;
+
+        foreach (RaycastHit hit in Physics.SphereCastAll(origin, radius, Vector3.up, distance, ~0, QueryTriggerInteraction.Ignore))
+        {
+            if (!hit.transform.IsChildOf(transform)) return false; // something solid above the head
+        }
+        return true;
     }
 
     private System.Collections.IEnumerator CrouchStandRoutine()
@@ -255,6 +277,7 @@ public class PlayerController : MonoBehaviour
         
         // Update defaultYPos for headbob base calculation
         defaultYPos = targetCamY;
+        crouchRoutine = null;
     }
 
     private void ApplyMovement()
@@ -379,6 +402,7 @@ public class PlayerController : MonoBehaviour
     public void ForceUnlock()
     {
         StopAllCoroutines();
+        crouchRoutine = null;
         isWakingUp = false;
         isCinematicPlaying = false;
         isHidden = false;
@@ -638,7 +662,6 @@ public class PlayerController : MonoBehaviour
         // Reset stats!
         if (playerStats != null)
         {
-            playerStats.isScriptedDeath = false;
             playerStats.LoadStats(100f, 100f);
         }
         isDead = false;

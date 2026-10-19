@@ -10,9 +10,13 @@ public class InteractionRaycast : MonoBehaviour
     [SerializeField] private AudioClip pickupSound;
 
     private PlayerStats playerStats;
+    private PlayerController playerController;
     private string currentPrompt = "";
     private string notificationMessage = "";
     private float notificationTimer = 0f;
+
+    private GUIStyle notifStyle;
+    private GUIStyle promptStyle;
 
     public void ShowNotification(string message, float duration = 3f)
     {
@@ -20,9 +24,19 @@ public class InteractionRaycast : MonoBehaviour
         notificationTimer = duration;
     }
 
+    /// <summary>Shows a message on the player's screen. Safe to call even if Camera.main is missing.</summary>
+    public static void Notify(Component player, string message, float duration = 3f)
+    {
+        InteractionRaycast ir = player != null ? player.GetComponentInChildren<InteractionRaycast>() : null;
+        if (ir == null && Camera.main != null) ir = Camera.main.GetComponent<InteractionRaycast>();
+        if (ir == null) ir = FindAnyObjectByType<InteractionRaycast>();
+        if (ir != null) ir.ShowNotification(message, duration);
+    }
+
     void Start()
     {
         playerStats = GetComponentInParent<PlayerStats>();
+        if (playerStats != null) playerController = playerStats.GetComponent<PlayerController>();
     }
 
     void Update()
@@ -41,79 +55,93 @@ public class InteractionRaycast : MonoBehaviour
 
     private void CheckForInteractable()
     {
-        if (playerStats != null)
+        if (playerController != null)
         {
-            PlayerController pc = playerStats.GetComponent<PlayerController>();
-            if (pc != null && pc.isHidden)
+            // No interacting while dead or during a cinematic
+            if (playerController.isDead || playerController.isCinematicPlaying)
+            {
+                currentPrompt = "";
+                return;
+            }
+
+            if (playerController.isHidden)
             {
                 currentPrompt = "Press E to Exit";
                 return;
             }
         }
 
-        Ray ray = new Ray(transform.position, transform.forward);
-        RaycastHit hit;
-
-        // LayerMask parameter hataya gaya - ab sab objects detect honge
-        if (Physics.Raycast(ray, out hit, rayDistance))
-        {
-            IInteractable interactable = hit.collider.GetComponent<IInteractable>();
-            if (interactable != null)
-            {
-                currentPrompt = interactable.GetInteractPrompt();
-
-                if (Input.GetKeyDown(interactKey))
-                {
-                    if (interactionAudioSource != null && pickupSound != null)
-                    {
-                        interactionAudioSource.PlayOneShot(pickupSound);
-                    }
-                    interactable.Interact(playerStats);
-                }
-            }
-            else
-            {
-                currentPrompt = "";
-            }
-        }
-        else
+        IInteractable interactable = FindInteractable();
+        if (interactable == null)
         {
             currentPrompt = "";
+            return;
         }
+
+        currentPrompt = interactable.GetInteractPrompt();
+
+        if (Input.GetKeyDown(interactKey))
+        {
+            if (interactionAudioSource != null && pickupSound != null)
+            {
+                interactionAudioSource.PlayOneShot(pickupSound);
+            }
+            interactable.Interact(playerStats);
+        }
+    }
+
+    /// <summary>
+    /// Nearest interactable in front of the camera. Invisible trigger volumes don't block the ray any more,
+    /// the player's own colliders are skipped, and clicking a child mesh still finds the script on its parent.
+    /// </summary>
+    private IInteractable FindInteractable()
+    {
+        RaycastHit[] hits = Physics.RaycastAll(new Ray(transform.position, transform.forward), rayDistance, ~0, QueryTriggerInteraction.Collide);
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+        Transform playerRoot = playerStats != null ? playerStats.transform : null;
+
+        foreach (RaycastHit hit in hits)
+        {
+            if (playerRoot != null && hit.transform.IsChildOf(playerRoot)) continue;
+
+            IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
+            if (interactable != null) return interactable;
+
+            // A solid wall/object blocks everything behind it; a plain trigger volume doesn't
+            if (!hit.collider.isTrigger) return null;
+        }
+        return null;
     }
 
     void OnGUI()
     {
+        if (notifStyle == null)
+        {
+            notifStyle = new GUIStyle { alignment = TextAnchor.MiddleCenter, fontSize = 24, fontStyle = FontStyle.Bold, wordWrap = true };
+            promptStyle = new GUIStyle { alignment = TextAnchor.MiddleCenter, fontSize = 22, fontStyle = FontStyle.Bold };
+        }
+
         // Notification Text
         if (!string.IsNullOrEmpty(notificationMessage))
         {
-            GUIStyle notifStyle = new GUIStyle();
-            notifStyle.alignment = TextAnchor.MiddleCenter;
-            notifStyle.fontSize = 24;
-            notifStyle.fontStyle = FontStyle.Bold;
-
             notifStyle.normal.textColor = Color.black;
-            GUI.Label(new Rect(Screen.width / 2 - 199, Screen.height / 2 - 149, 400, 40), notificationMessage, notifStyle);
+            GUI.Label(new Rect(Screen.width / 2 - 299, Screen.height / 2 - 169, 600, 80), notificationMessage, notifStyle);
 
             notifStyle.normal.textColor = Color.yellow;
-            GUI.Label(new Rect(Screen.width / 2 - 200, Screen.height / 2 - 150, 400, 40), notificationMessage, notifStyle);
+            GUI.Label(new Rect(Screen.width / 2 - 300, Screen.height / 2 - 170, 600, 80), notificationMessage, notifStyle);
         }
 
         // Interaction Prompt text
         if (!string.IsNullOrEmpty(currentPrompt))
         {
-            GUIStyle style = new GUIStyle();
-            style.alignment = TextAnchor.MiddleCenter;
-            style.fontSize = 22;
-            style.fontStyle = FontStyle.Bold;
-
             // Shadow effect
-            style.normal.textColor = Color.black;
-            GUI.Label(new Rect(Screen.width / 2 - 149, Screen.height / 2 + 51, 300, 40), currentPrompt, style);
+            promptStyle.normal.textColor = Color.black;
+            GUI.Label(new Rect(Screen.width / 2 - 249, Screen.height / 2 + 51, 500, 40), currentPrompt, promptStyle);
 
             // Main white text
-            style.normal.textColor = Color.white;
-            GUI.Label(new Rect(Screen.width / 2 - 150, Screen.height / 2 + 50, 300, 40), currentPrompt, style);
+            promptStyle.normal.textColor = Color.white;
+            GUI.Label(new Rect(Screen.width / 2 - 250, Screen.height / 2 + 50, 500, 40), currentPrompt, promptStyle);
         }
 
         // Center crosshair dot
