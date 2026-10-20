@@ -25,12 +25,17 @@ public class MorgueBox : MonoBehaviour, IInteractable
     public AudioClip scareSound;
 
     private bool isOpen = false;
+    private bool wasJumpScare = false;
+
+    /// <summary>An empty drawer (no key, no scare) holds a toe tag with hidden lore (FR_64).</summary>
+    public bool HoldsLore => !containsKey && !wasJumpScare;
     private bool isMoving = false;
     private Vector3 trayClosedPosition;
     private Quaternion doorClosedRotation;
 
     void Start()
     {
+        wasJumpScare = isJumpScare;
         if (slidingTray != null) trayClosedPosition = slidingTray.localPosition;
         if (swingingDoor != null) doorClosedRotation = swingingDoor.localRotation;
         
@@ -55,10 +60,10 @@ public class MorgueBox : MonoBehaviour, IInteractable
     {
         if (isMoving) return;
         
-        StartCoroutine(OpenMorgue(!isOpen));
+        StartCoroutine(OpenMorgue(!isOpen, playerStats));
     }
 
-    private IEnumerator OpenMorgue(bool opening)
+    private IEnumerator OpenMorgue(bool opening, PlayerStats playerStats)
     {
         isMoving = true;
         
@@ -102,6 +107,9 @@ public class MorgueBox : MonoBehaviour, IInteractable
                 // Only scare once!
                 isJumpScare = false;
             }
+
+            // HIDDEN LORE: empty drawers hold a toe tag (shown once, then kept in the journal)
+            if (HoldsLore) GameProgress.LoreFound(this, playerStats);
         }
     }
 }

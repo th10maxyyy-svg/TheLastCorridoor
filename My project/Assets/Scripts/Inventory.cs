@@ -185,6 +185,7 @@ public class Inventory : MonoBehaviour
         {
             SaveManager.instance.OnItemPickedUp(item);
         }
+        GameProgress.ItemPickedUp(item); // JOURNAL: list of every item found (inspect it with TAB)
 
         Debug.Log("Picked up " + item.name);
     }
@@ -261,6 +262,9 @@ public class Inventory : MonoBehaviour
         yield return new WaitForSeconds(0.75f);
         if (col != null && characterController != null) Physics.IgnoreCollision(col, characterController, false);
     }
+
+    /// <summary>Name of the item in the player's hand ("" = empty hand) - shown in the journal.</summary>
+    public string GetHeldItemDisplayName() => currentItem != null ? GameProgress.DisplayNameOf(currentItem) : "";
 
     public bool HasItem()
     {

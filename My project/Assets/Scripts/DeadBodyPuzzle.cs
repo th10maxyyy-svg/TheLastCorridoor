@@ -25,6 +25,8 @@ public class DeadBodyPuzzle : MonoBehaviour, IInteractable
     public EnemyAI enemyAI;
 
     private bool isCutOpen = false;
+    /// <summary>Read by the objective / achievement system (GameProgress): the RIGHT body has been cut open.</summary>
+    public bool IsSolved => isCutOpen && isCorrectBody;
     private bool isCutting = false;
 
     void Start()

@@ -319,6 +319,11 @@ public class EscapeCinematicManager : MonoBehaviour
         yield return new WaitForSeconds(1.8f); // hold on the white light
 
         // ---- 8. black + THE END ----
+        // ENDINGS (FR_54 - FR_56): decide which ending this run earned from the player's choices, BEFORE the save is wiped
+        ObjectiveTracker.MarkEscaped();
+        GameProgress.RunSummary runSummary = GameProgress.FinishRun(true);
+        finalMessage = runSummary.title.Replace("ENDING: ", "") + "  -  " + runSummary.tagline;
+
         float startVolume = AudioListener.volume;
         if (fadeCanvasGroup != null)
         {
@@ -349,6 +354,10 @@ public class EscapeCinematicManager : MonoBehaviour
             endingText.color = tc;
         }
         yield return new WaitForSecondsRealtime(5f);
+
+        // ---- 8b. ending summary: which ending, why, and the run statistics (FR_56) ----
+        GameUI.ShowEndingSummary(runSummary);
+        while (GameUI.IsSummaryOpen) yield return null;
 
         // ---- 9. game complete: wipe save, back to main menu ----
         if (SaveManager.instance != null) SaveManager.instance.DeleteSave();

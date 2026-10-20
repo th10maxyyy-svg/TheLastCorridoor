@@ -28,6 +28,8 @@ public class AcidDrainPuzzle : MonoBehaviour, IInteractable
     public UnityEvent onDrainComplete; 
 
     private bool isSolved = false;
+    /// <summary>Read by the objective / achievement system (GameProgress).</summary>
+    public bool IsSolved => isSolved;
 
     void Start()
     {

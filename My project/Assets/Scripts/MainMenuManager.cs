@@ -87,6 +87,7 @@ public class MainMenuManager : MonoBehaviour
 
         // BUG FIX: Resume par intro cinematic / projector video dobara nahi chalna chahiye
         IntroState.skipIntro = true;
+        EnemyRestore.RestoreOnNextLoad = true; // FR_40: the enemy comes back where he was at the last checkpoint
 
         // Make sure the save is (re)read from disk
         if (SaveManager.instance != null) SaveManager.instance.LoadGame();

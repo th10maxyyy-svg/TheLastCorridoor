@@ -9,6 +9,8 @@ public class CrankGeneratorPuzzle : MonoBehaviour, IInteractable
     public int clicksRequired = 12;
     private int currentCharge = 0;
     private bool isPowered = false;
+    /// <summary>Read by the objective / achievement system (GameProgress).</summary>
+    public bool IsSolved => isPowered;
     private bool enemyAlerted = false;
 
     [Header("X-Ray Board Settings")]

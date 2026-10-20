@@ -79,5 +79,8 @@ public class RingingPhone : MonoBehaviour, IInteractable
         
         // Trigger whatever horror event or puzzle completion (like opening the drawer)
         onCallEnded?.Invoke();
+
+        // HIDDEN LORE: the voicemail is written into the journal (FR_64)
+        GameProgress.LoreFound(this, null);
     }
 }

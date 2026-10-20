@@ -9,6 +9,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject gameOverPanel;
 
     private bool isGameOver = false;
+    private GameProgress.RunSummary failureSummary; // ENDING "Consumed" (FR_54, FR_56)
 
     [Header("Audio Settings")]
     public AudioSource gameManagerAudio;
@@ -115,6 +116,8 @@ public class GameManager : MonoBehaviour
             else
             {
                 // Final Death (Permadeath)
+                // ENDINGS: record the failure ending + run statistics BEFORE the save is wiped
+                failureSummary = GameProgress.FinishRun(false);
                 SaveManager.instance.DeleteSave();
             }
         }
@@ -129,6 +132,14 @@ public class GameManager : MonoBehaviour
     {
         // Wait for player to fall down and enemy to vanish
         yield return new WaitForSeconds(2.5f); 
+
+        // ENDING SUMMARY (FR_56): show which ending this was and the run statistics, then the normal game over panel
+        if (failureSummary != null)
+        {
+            GameUI.ShowEndingSummary(failureSummary);
+            failureSummary = null;
+            while (GameUI.IsSummaryOpen) yield return null;
+        }
         
         if (gameOverPanel != null)
         {

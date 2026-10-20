@@ -18,6 +18,8 @@ public class MicrowavePuzzle : MonoBehaviour, IInteractable
 
     private bool isMicrowaveRunning = false;
     private bool isPuzzleCompleted = false;
+    /// <summary>Read by the objective / achievement system (GameProgress).</summary>
+    public bool IsSolved => isPuzzleCompleted;
     private AudioSource audioSource;
 
     void Start()

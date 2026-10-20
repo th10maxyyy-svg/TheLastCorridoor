@@ -16,6 +16,9 @@ public class ReadableNote : MonoBehaviour, IInteractable
             // Show the note text for 6 seconds on screen
             raycast.ShowNotification(noteText, 6f);
         }
+
+        // JOURNAL: remember the note so it can be re-read later (TAB) and counted for the endings / achievements
+        GameProgress.NoteRead(this);
     }
 
     public string GetInteractPrompt()

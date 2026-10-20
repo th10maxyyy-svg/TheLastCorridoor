@@ -30,6 +30,8 @@ public class GrandfatherClockPuzzle : MonoBehaviour, IInteractable
 
     private bool hasPendulum = false;
     private bool isSolved = false;
+    /// <summary>Read by the objective / achievement system (GameProgress).</summary>
+    public bool IsSolved => isSolved;
     private bool isShifting = false;
 
     void Start()

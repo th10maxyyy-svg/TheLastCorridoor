@@ -107,6 +107,7 @@ public class TaserGun : MonoBehaviour, IInteractable
 
         hasFired = true; // Use up the 1 shot!
         if (SaveManager.instance != null) SaveManager.instance.SetFlag(saveId + "_Fired");
+        GameProgress.TaserFired(); // ENDINGS: fighting back is remembered (the "Ghost" ending needs a run without the taser)
 
         if (zapSound != null) audioSource.PlayOneShot(zapSound);
         if (sparkVFX != null) sparkVFX.Play();

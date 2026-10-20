@@ -214,9 +214,10 @@ public class PlayerController : MonoBehaviour
     {
         if (playerCamera == null) return;
 
-        transform.Rotate(Vector3.up * Input.GetAxis("Mouse X") * mouseSensitivity);
+        float sensitivity = mouseSensitivity * GameSettings.MouseSensitivity; // SETTINGS menu multiplier
+        transform.Rotate(Vector3.up * Input.GetAxis("Mouse X") * sensitivity);
 
-        rotationX -= Input.GetAxis("Mouse Y") * mouseSensitivity;
+        rotationX -= Input.GetAxis("Mouse Y") * sensitivity;
         rotationX = Mathf.Clamp(rotationX, upperLookLimit, lowerLookLimit);
         
         playerCamera.transform.localRotation = Quaternion.Euler(rotationX, 0, 0);
@@ -311,7 +312,7 @@ public class PlayerController : MonoBehaviour
             timer += Time.deltaTime * (isCrouching ? crouchBobSpeed : isSprinting ? sprintBobSpeed : walkBobSpeed);
             playerCamera.transform.localPosition = new Vector3(
                 playerCamera.transform.localPosition.x,
-                defaultYPos + Mathf.Sin(timer) * (isCrouching ? crouchBobAmount : isSprinting ? sprintBobAmount : walkBobAmount),
+                defaultYPos + Mathf.Sin(timer) * (isCrouching ? crouchBobAmount : isSprinting ? sprintBobAmount : walkBobAmount) * GameSettings.EffectsIntensity,
                 playerCamera.transform.localPosition.z);
         }
         else

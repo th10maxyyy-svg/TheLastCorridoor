@@ -25,6 +25,8 @@ public class FuseBoxPuzzle : MonoBehaviour, IInteractable
     public AudioClip errorSound;
 
     private bool isComplete = false;
+    /// <summary>Read by the objective / achievement system (GameProgress).</summary>
+    public bool IsSolved => isComplete;
 
     void Start()
     {

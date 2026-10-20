@@ -25,6 +25,8 @@ public class OvenPuzzleManager : MonoBehaviour
     public UnityEvent onPuzzleSolved;
 
     private bool isSolved = false;
+    /// <summary>Read by the objective / achievement system (GameProgress).</summary>
+    public bool IsSolved => isSolved;
 
     void Start()
     {
