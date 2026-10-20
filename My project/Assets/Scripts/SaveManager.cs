@@ -21,6 +21,16 @@ public class SaveData
     public string collectedItemsCSV = "";
     public string flagsCSV = ""; // One-time events (headlamp picked, trap disabled, ambush played...)
     public bool isNightmareActive = false;
+
+    // ADAPTIVE AI (FYP document Section 7.4) - kept across deaths/respawns
+    public int aggressionLevel = 3;          // 1..5
+    public string skillClass = "Balanced";   // Struggling / Balanced / Confident
+    public float comfortScore = 60f;         // last computed comfort score (0..100)
+    public float playTime = 0f;              // total seconds played
+    public float lastProgressTime = 0f;      // playTime when the last puzzle/door/progress happened
+    public float lastPuzzleDuration = -1f;   // seconds the last puzzle/progress step took (-1 = none yet)
+    public int deathsAtLastProgress = 0;     // deaths count when the current section started
+    public string hidingSpotsCSV = "";       // "spotId|count|x|y|z;" how often each hiding spot was used
 }
 
 public class SaveManager : MonoBehaviour
@@ -173,6 +183,7 @@ public class SaveManager : MonoBehaviour
         doorId = Sanitize(doorId);
         if (IsDoorUnlocked(doorId)) return;
         currentSaveData.unlockedDoorsCSV = ListAdd(currentSaveData.unlockedDoorsCSV, doorId);
+        PlayerBehaviorTracker.ReportProgress(); // a door opened = a puzzle/section step was completed
         WriteToFile();
     }
 
@@ -184,6 +195,7 @@ public class SaveManager : MonoBehaviour
         flag = Sanitize(flag);
         if (HasFlag(flag)) return;
         currentSaveData.flagsCSV = ListAdd(currentSaveData.flagsCSV, flag);
+        PlayerBehaviorTracker.ReportProgress();
         WriteToFile();
     }
 

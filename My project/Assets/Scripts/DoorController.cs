@@ -186,6 +186,18 @@ public class DoorController : MonoBehaviour, IInteractable
         }
     }
     
+    public bool IsOpen => isOpen;
+
+    /// <summary>Used by the end cinematic: unlocks and silently swings the door open.</summary>
+    public void OpenForCinematic()
+    {
+        isLocked = false;
+        isTrapLocked = false;
+        if (isOpen) return;
+        isOpen = true;
+        SaveDoorState();
+    }
+
     // External method to unlock the door from puzzles (like a Generator)
     public void ForceUnlock()
     {

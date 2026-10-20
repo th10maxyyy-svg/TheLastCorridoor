@@ -64,6 +64,12 @@ public class EnemyHorrorFX : MonoBehaviour
         if (s == EnemyAI.AIState.Stunned) return;
         if (s == EnemyAI.AIState.CinematicEscape || s == EnemyAI.AIState.Dormant) { anim.speed = 1f; return; }
 
+        // ANIMATION FIX: only the walk and run loops get the uneven speed. The attack / yell clips keep their normal speed,
+        // otherwise their timing drifts (the damage and the scream no longer matched the animation).
+        AnimatorStateInfo info = anim.GetCurrentAnimatorStateInfo(0);
+        bool locomotion = (info.IsName("Walking") || info.IsName("Run")) && !anim.IsInTransition(0);
+        if (!locomotion) { anim.speed = 1f; return; }
+
         float n = Mathf.PerlinNoise(Time.time * 0.9f, seed);
         if (s == EnemyAI.AIState.Chase)
             anim.speed = 1.12f + n * 0.15f;                         // frantic sprint

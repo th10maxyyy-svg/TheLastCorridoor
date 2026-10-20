@@ -22,6 +22,7 @@ public class HidingSpot : MonoBehaviour, IInteractable
             }
             
             pc.EnterHiding(hidePosition, exitPosition);
+            PlayerBehaviorTracker.ReportHide(this); // ADAPTIVE AI: remember where the player likes to hide
         }
     }
 }

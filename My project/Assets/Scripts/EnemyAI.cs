@@ -47,6 +47,12 @@ public class EnemyAI : MonoBehaviour
     [Tooltip("Agar enemy hawa mein hai to isay -1.2 ya -1.3 karein taake paon zameen par aa jayen")]
     public float groundOffset = -1.1f;
 
+    [Header("Attack Animation Timing")]
+    [Tooltip("Attack clip (Hell Slammer A) shuru hone ke itne seconds baad damage lagta hai. Isay clip ke 'slam' wale moment ke mutabiq set karein.")]
+    public float attackHitDelay = 1.4f;
+    [Tooltip("Attack animation ki lambai (seconds). Agla attack isse pehle nahi hota, taake animation beech mein restart na ho.")]
+    public float attackAnimLength = 2.4f;
+
     private float stepTimer = 0f;
     private float teaseTimer = 0f; // Timer for how long the enemy teases
     private float nextVoiceTime = 0f; // NEW: Timer for random patrol voices
@@ -93,6 +99,17 @@ public class EnemyAI : MonoBehaviour
     /// <summary>Inspector values, so the DDA system adjusts around them instead of hard-coded numbers.</summary>
     public float BaseChaseSpeed { get; private set; }
     public float BaseDetectionRange { get; private set; }
+    public float BaseSearchDuration { get; private set; }
+    public float BaseSearchRadius { get; private set; }
+
+    // ---------------- ADAPTIVE AI (set by PlayerBehaviorTracker, see FYP document Section 7.4) ----------------
+    /// <summary>Current aggression level 1 (gentle) to 5 (relentless). 3 = the Inspector values.</summary>
+    public int AggressionLevel { get; private set; } = 3;
+    private bool hasFavouriteSpot = false;
+    private Vector3 favouriteSpot;
+    private int searchPhase = 0;          // 0 = go to last known position, 1 = check favourite hiding spot, 2 = sweep around
+    private float spotLingerTimer = 0f;
+    private bool favouriteChecked = false;
 
     public AIState State => currentState;
 
@@ -110,8 +127,13 @@ public class EnemyAI : MonoBehaviour
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
-        BaseChaseSpeed = chaseSpeed;
-        BaseDetectionRange = detectionRange;
+        if (BaseChaseSpeed <= 0f) // (may already be set if the adaptive AI configured us while inactive)
+        {
+            BaseChaseSpeed = chaseSpeed;
+            BaseDetectionRange = detectionRange;
+            BaseSearchDuration = searchDuration;
+            BaseSearchRadius = searchRadius;
+        }
 
         LoadDefaultAudio();
         if (GetComponent<EnemyHorrorFX>() == null) gameObject.AddComponent<EnemyHorrorFX>();
@@ -291,6 +313,7 @@ public class EnemyAI : MonoBehaviour
                             {
                                 agent.Warp(tp_hit.position);
                                 currentState = AIState.Search;
+                                ResetSearchPlan();
                                 Debug.Log("Enemy safely teleported behind the player.");
                             }
                         }
@@ -323,7 +346,10 @@ public class EnemyAI : MonoBehaviour
         // Animator ki speed update karein (taake walk/run automatically ho)
         if (enemyAnimator != null)
         {
-            enemyAnimator.SetFloat("Speed", agent.velocity.magnitude);
+            float animSpeed = agent.velocity.magnitude;
+            // Ending cinematic: while he stands screaming, leftover agent velocity must not pull him out of the yell pose
+            if (currentState == AIState.CinematicEscape && (cinematicHolding || (hasFlinched && flinchTimer > 0f))) animSpeed = 0f;
+            enemyAnimator.SetFloat("Speed", animSpeed);
         }
 
         // Start patrolling once the agent is on the NavMesh
@@ -399,6 +425,8 @@ public class EnemyAI : MonoBehaviour
     [Header("Escape Cinematic Tuning")]
     [Tooltip("How close (metres) the enemy gets to the run target before he stops and screams")]
     public float cinematicStopDistance = 2f;
+    [Tooltip("When true the ending cinematic plays all enemy voices itself (timed to the animation); he makes no voice of his own")]
+    public bool silentCinematicVoice = false;
     [Tooltip("How long he screams at the gate before walking back into the darkness")]
     public float cinematicFlinchDuration = 3f;
     [Tooltip("Run speed multiplier (x chaseSpeed) during the escape cinematic")]
@@ -410,12 +438,13 @@ public class EnemyAI : MonoBehaviour
 
     public void PlayCinematicEscape(Transform runTarget, Transform retreatTarget, string animationName)
     {
+        ResetAnimTriggers();
         // If he was lying on the floor from the taser, stand him up first (otherwise he "runs" frozen and sideways)
         if (currentState == AIState.Stunned) StandUpFromStun();
         StopAllCoroutines(); // no stun / vanish routine may interfere with the ending
 
-        // Chase music must not blare over the ending
-        if (enemyAudioSource != null && enemyAudioSource.clip == chaseMusic)
+        // Chase music and the ambient loop must not play under the ending
+        if (enemyAudioSource != null && enemyAudioSource.clip != null)
         {
             enemyAudioSource.Stop();
             enemyAudioSource.clip = null;
@@ -448,10 +477,11 @@ public class EnemyAI : MonoBehaviour
     /// </summary>
     public void HoldForCinematic(Vector3 lookPoint, string animTrigger, bool scream)
     {
+        ResetAnimTriggers();
         if (currentState == AIState.Stunned) StandUpFromStun();
         StopAllCoroutines();
 
-        if (enemyAudioSource != null && enemyAudioSource.clip == chaseMusic)
+        if (enemyAudioSource != null && enemyAudioSource.clip != null)
         {
             enemyAudioSource.Stop();
             enemyAudioSource.clip = null;
@@ -517,7 +547,7 @@ public class EnemyAI : MonoBehaviour
                 cinematicDestinationSet = agent.SetDestination(cinematicRunTarget.position);
             }
 
-            HandleFootsteps(0.2f); // fast footsteps
+            HandleFootsteps(0.4f); // SOUND SYNC: one footstep per stride of the Run animation (0.63 s cycle, 2 steps)
 
             Vector3 flat = cinematicRunTarget.position - transform.position;
             flat.y = 0f;
@@ -541,7 +571,7 @@ public class EnemyAI : MonoBehaviour
                     enemyAnimator.SetTrigger(cinematicAnimationName); // Trigger custom user animation
                 }
                 
-                if (enemyAudioSource != null && teaseVoiceLines != null && teaseVoiceLines.Length > 0)
+                if (!silentCinematicVoice && enemyAudioSource != null && teaseVoiceLines != null && teaseVoiceLines.Length > 0)
                 {
                     enemyAudioSource.PlayOneShot(teaseVoiceLines[0]); // Scream sound
                 }
@@ -565,7 +595,7 @@ public class EnemyAI : MonoBehaviour
         // 3. Retreating
         else
         {
-            HandleFootsteps(cinematicRetreatSpeedMultiplier > 0f ? 0.25f : 0.6f); // Slow footsteps (or panicked sprint)
+            HandleFootsteps(cinematicRetreatSpeedMultiplier > 0f ? 0.4f : 0.6f); // Slow footsteps (or panicked sprint)
         }
     }
 
@@ -573,19 +603,18 @@ public class EnemyAI : MonoBehaviour
     {
         if (enemyAnimator != null)
         {
-            // Check if playing the attack animation
-            AnimatorStateInfo stateInfo = enemyAnimator.GetCurrentAnimatorStateInfo(0);
-            
-            if (stateInfo.IsName("Hell Slammer A"))
+            // The attack clip faces sideways, so the model is turned by 'attackRotationOffset' while it plays.
+            // ANIMATION FIX: the turn is now blended together with the Animator transition. Before, it snapped
+            // 90 degrees the instant the state changed, which made him pop sideways at the start and end of every attack.
+            AnimatorStateInfo cur = enemyAnimator.GetCurrentAnimatorStateInfo(0);
+            float weight = cur.IsName("Hell Slammer A") ? 1f : 0f;
+            if (enemyAnimator.IsInTransition(0))
             {
-                // SIRF attack ke doran clown ko 90 degree ghuma do taake terha pan khtam ho jaye!
-                enemyAnimator.transform.localRotation = Quaternion.Euler(0, attackRotationOffset, 0);
+                AnimatorStateInfo next = enemyAnimator.GetNextAnimatorStateInfo(0);
+                float k = Mathf.Clamp01(enemyAnimator.GetAnimatorTransitionInfo(0).normalizedTime);
+                weight = Mathf.Lerp(weight, next.IsName("Hell Slammer A") ? 1f : 0f, k);
             }
-            else
-            {
-                // Normal walk/run ke doran bilkul seedha rakho
-                enemyAnimator.transform.localRotation = Quaternion.identity;
-            }
+            enemyAnimator.transform.localRotation = Quaternion.Euler(0f, attackRotationOffset * weight, 0f);
             
             // Paon ko hawa mein janay se rokne ke liye position bhi lock rakhein
             enemyAnimator.transform.localPosition = new Vector3(0, groundOffset, 0);
@@ -695,6 +724,7 @@ public class EnemyAI : MonoBehaviour
     {
         AIState previousState = currentState;
         currentState = AIState.Stunned;
+        ResetAnimTriggers(); // a queued Attack/Tease must not fire the moment he stands up again
 
         if (agent.isActiveAndEnabled && agent.isOnNavMesh)
         {
@@ -884,6 +914,7 @@ public class EnemyAI : MonoBehaviour
         {
             currentState = AIState.Search;
             searchTimer = searchDuration;
+            ResetSearchPlan();
             lostSightTimer = 0f;
             agent.updateRotation = true;
 
@@ -937,6 +968,19 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
+    private void ResetSearchPlan()
+    {
+        searchPhase = 0;
+        favouriteChecked = false;
+        spotLingerTimer = 0f;
+    }
+
+    /// <summary>
+    /// SEARCH (adaptive): 1) walk to where the player was last seen, 2) at aggression 4+ also check the player's
+    /// favourite hiding spot (the one they used most), 3) sweep random points around the area until the timer runs out.
+    /// At aggression 5 a player hiding in that favourite spot is found and pulled out.
+    /// (Old version set the destination to the last known position every frame, so the random sweep never happened.)
+    /// </summary>
     private void SearchBehavior()
     {
         agent.speed = patrolSpeed;
@@ -949,29 +993,74 @@ public class EnemyAI : MonoBehaviour
             return;
         }
 
-        agent.SetDestination(lastKnownPosition);
+        bool arrived = !agent.pathPending && (agent.remainingDistance < 1f || agent.pathStatus == NavMeshPathStatus.PathInvalid || !agent.hasPath);
 
-        // Agar last location par pahunch gaya ya rasta nahi raha
-        if (!agent.pathPending && (agent.remainingDistance < 1f || agent.pathStatus == NavMeshPathStatus.PathInvalid || !agent.hasPath))
+        if (searchPhase == 0)
         {
-            searchTimer -= Time.deltaTime;
-
-            if (searchTimer <= 0)
+            if (!agent.hasPath || Vector3.Distance(agent.destination, lastKnownPosition) > 0.5f) agent.SetDestination(lastKnownPosition);
+            if (arrived)
             {
-                currentState = AIState.Patrol;
-                GetNewPatrolTarget();
-            }
-            else
-            {
-                if (!agent.hasPath)
+                bool checkSpot = hasFavouriteSpot && !favouriteChecked && AggressionLevel >= 4 &&
+                                 Vector3.Distance(transform.position, favouriteSpot) < 25f;
+                searchPhase = checkSpot ? 1 : 2;
+                if (checkSpot)
                 {
-                    Vector3 randomSearchPoint = lastKnownPosition + Random.insideUnitSphere * searchRadius;
                     NavMeshHit hit;
-                    if (NavMesh.SamplePosition(randomSearchPoint, out hit, searchRadius, NavMesh.AllAreas))
-                    {
-                        agent.SetDestination(hit.position);
-                    }
+                    if (NavMesh.SamplePosition(favouriteSpot, out hit, 2.5f, NavMesh.AllAreas)) agent.SetDestination(hit.position);
+                    else searchPhase = 2;
+                    spotLingerTimer = 2.5f;
                 }
+            }
+            return;
+        }
+
+        if (searchPhase == 1)
+        {
+            float d = Vector3.Distance(transform.position, favouriteSpot);
+            if (arrived || d < 1.8f)
+            {
+                agent.isStopped = true;
+                spotLingerTimer -= Time.deltaTime;
+                Vector3 look = favouriteSpot - transform.position; look.y = 0f;
+                if (look.sqrMagnitude > 0.01f) transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(look), Time.deltaTime * 4f);
+
+                bool playerInSpot = playerController != null && playerController.isHidden && playerTransform != null &&
+                                    Vector3.Distance(playerTransform.position, favouriteSpot) < 2.0f;
+                if (playerInSpot && AggressionLevel >= 5 && spotLingerTimer < 1.2f)
+                {
+                    // He knows this is where the player always hides
+                    agent.isStopped = false;
+                    favouriteChecked = true;
+                    playerController.ExitHiding();
+                    lastKnownPosition = playerTransform.position;
+                    BeginChase();
+                    return;
+                }
+                if (spotLingerTimer <= 0f)
+                {
+                    agent.isStopped = false;
+                    favouriteChecked = true;
+                    searchPhase = 2;
+                }
+            }
+            return;
+        }
+
+        // phase 2: sweep around the last known position
+        searchTimer -= Time.deltaTime;
+        if (searchTimer <= 0)
+        {
+            currentState = AIState.Patrol;
+            GetNewPatrolTarget();
+            return;
+        }
+        if (arrived)
+        {
+            Vector3 randomSearchPoint = lastKnownPosition + Random.insideUnitSphere * searchRadius;
+            NavMeshHit hit;
+            if (NavMesh.SamplePosition(randomSearchPoint, out hit, searchRadius, NavMesh.AllAreas))
+            {
+                agent.SetDestination(hit.position);
             }
         }
     }
@@ -1012,24 +1101,47 @@ public class EnemyAI : MonoBehaviour
 
     private void AttackPlayer()
     {
-        if (Time.time >= nextAttackTime)
-        {
-            // Animation chalayen
-            if (enemyAnimator != null)
-            {
-                enemyAnimator.SetTrigger("Attack");
-            }
+        if (Time.time < nextAttackTime) return;
 
-            if (playerStats != null)
-            {
-                playerStats.TakeDamage(damageAmount);
-                if (playerStats.IsDead() && currentState != AIState.VanishAfterKill)
-                {
-                    StartCoroutine(VanishRoutine());
-                }
-            }
-            nextAttackTime = Time.time + attackRate;
+        // ANIMATION FIX: the attack clip is ~7.5 s long. Re-triggering it every 'attackRate' seconds restarted it over and over
+        // (he never finished a swing), and the damage landed before the swing even started. Now: one full swing per attack,
+        // damage at the moment of the slam, and the next attack only after the swing has ended.
+        if (enemyAnimator != null)
+        {
+            enemyAnimator.ResetTrigger("Tease");
+            enemyAnimator.SetTrigger("Attack");
         }
+
+        nextAttackTime = Time.time + Mathf.Max(attackRate, attackAnimLength);
+        StartCoroutine(AttackHitRoutine());
+    }
+
+    private System.Collections.IEnumerator AttackHitRoutine()
+    {
+        yield return new WaitForSeconds(attackHitDelay);
+
+        // Something else took over (stun, cinematic, he lost the player...) - the swing does nothing
+        if (currentState != AIState.Chase || playerTransform == null || playerStats == null) yield break;
+        if (playerStats.IsDead()) yield break;
+
+        bool playerHidden = playerController != null && playerController.isHidden;
+        float dist = Vector3.Distance(transform.position, playerTransform.position);
+        float height = Mathf.Abs(playerTransform.position.y - transform.position.y);
+        if (playerHidden || dist > attackRange * 1.4f || height > maxAttackHeightDifference) yield break; // player stepped away in time
+
+        playerStats.TakeDamage(damageAmount);
+        if (playerStats.IsDead() && currentState != AIState.VanishAfterKill)
+        {
+            StartCoroutine(VanishRoutine());
+        }
+    }
+
+    /// <summary>Clears queued Attack/Tease triggers so they do not fire later (after a stun or a cinematic).</summary>
+    private void ResetAnimTriggers()
+    {
+        if (enemyAnimator == null) return;
+        enemyAnimator.ResetTrigger("Attack");
+        enemyAnimator.ResetTrigger("Tease");
     }
 
     private System.Collections.IEnumerator VanishRoutine()
@@ -1104,6 +1216,35 @@ public class EnemyAI : MonoBehaviour
     {
         detectionRange = range;
     }
+
+    /// <summary>
+    /// ADAPTIVE AI: applied by PlayerBehaviorTracker after every confirmed evaluation.
+    /// Level 3 = Inspector values. Each level up/down changes chase speed, detection range, search time and search area.
+    /// </summary>
+    public void ApplyAggression(int level, float chaseSpeedBonus, float detectionBonus)
+    {
+        if (BaseChaseSpeed <= 0f) // called before Awake (enemy object still inactive in the scene)
+        {
+            BaseChaseSpeed = chaseSpeed; BaseDetectionRange = detectionRange;
+            BaseSearchDuration = searchDuration; BaseSearchRadius = searchRadius;
+        }
+        AggressionLevel = Mathf.Clamp(level, 1, 5);
+        int step = AggressionLevel - 3;
+        chaseSpeed = Mathf.Max(1.5f, BaseChaseSpeed + step * 0.35f + chaseSpeedBonus);
+        detectionRange = Mathf.Max(5f, BaseDetectionRange + step * 2.5f + detectionBonus);
+        searchDuration = Mathf.Max(2f, BaseSearchDuration * (1f + step * 0.25f));
+        searchRadius = Mathf.Max(2f, BaseSearchRadius * (1f + step * 0.2f));
+    }
+
+    /// <summary>ADAPTIVE AI: the hiding spot the player uses most (the enemy checks it first when aggression is 4 or more).</summary>
+    public void SetFavouriteHidingSpot(bool has, Vector3 spot)
+    {
+        hasFavouriteSpot = has;
+        favouriteSpot = spot;
+    }
+
+    public float CurrentChaseSpeed => chaseSpeed;
+    public float CurrentDetectionRange => detectionRange;
 
     public void ForceAwaken(Vector3 targetLocation)
     {

@@ -57,10 +57,14 @@ public class EscapeCinematicManager : MonoBehaviour
     public AudioClip heartbeatLoop;
 
     // ---- tuning (constants on purpose: old scene-serialized values must never override them) ----
-    private const float playerStandOutside = 0.8f; // player stands this far OUTSIDE the gate line
+    // CAMERA / WORLD FIX: nothing is built outside the asylum (empty world), and the main door may still be closed when the
+    // ending starts. So the player now stands INSIDE, just behind the door, and the camera only ever looks into the hall.
+    // The door is thrown open by the sunlight at the burst; the empty outside is only ever seen through the white-out.
+    private const float playerInsideDepth = 0.9f;  // player stands this far INSIDE the main door
+    private const float enemyStopGap = 2.3f;       // the sun stops him this far in front of the player
+    private const float enemyMinGap = 1.4f;        // he can NEVER get closer to the player than this
     private const float fallbackSpawnDepth = 9f;   // if no teleport point: metres inside the hall
     private const float fallbackStopDepth = 2.2f;  // if no door point: where the sun stops him
-    private const float gateLimitDepth = 0.9f;     // he can NEVER get closer to the gate line than this
     private const float stareTime = 3.4f;          // how long he just stands and stares before charging
     private const float maxChargeTime = 6f;        // safety timeout for the charge
     private const float screamTime = 1.8f;         // burning/screaming at the light
@@ -75,6 +79,13 @@ public class EscapeCinematicManager : MonoBehaviour
     // geometry
     private Vector3 gatePos, inward, outward;
     private Transform stopPoint;
+    private DoorController mainDoor;   // the exit door next to the gate (opened by the sunlight)
+    private float playerDepth;         // metres inside the gate line where the player stands
+
+    // camera tracking (a steady point on his body, not the bouncing head bone)
+    private float headHeight = 1.6f;
+    private Vector3 trackPos, trackVel;
+    private bool trackInit = false;
 
     // player
     private Transform player;
@@ -122,6 +133,16 @@ public class EscapeCinematicManager : MonoBehaviour
 
         inward = inDir.normalized;
         outward = -inward;
+
+        // the exit door sits right at the gate: find it so the player can be placed behind it
+        float best = 3.5f;
+        foreach (DoorController d in FindObjectsByType<DoorController>())
+        {
+            float dist = Vector3.Distance(Flat(d.transform.position), Flat(gatePos));
+            if (dist < best) { best = dist; mainDoor = d; }
+        }
+        float doorDepth = mainDoor != null ? Mathf.Max(0f, Vector3.Dot(mainDoor.transform.position - gatePos, inward)) : 0f;
+        playerDepth = doorDepth + playerInsideDepth;
     }
 
     /// <summary>Add a trigger volume in front of the gate (inside the building) so the cinematic starts a little early.</summary>
@@ -195,6 +216,7 @@ public class EscapeCinematicManager : MonoBehaviour
         LoadDefaultSounds();
         HideGameplayHud();
         CreateFx();
+        StartCoroutine(DuckWorldAudio(0.8f)); // only the ending's own sounds may be heard
 
         ProgressionManager pm = FindAnyObjectByType<ProgressionManager>();
         if (pm != null) pm.StartEscapePhase();
@@ -212,15 +234,19 @@ public class EscapeCinematicManager : MonoBehaviour
         yield return FadeFlash(Color.black, 1f, 0f, 0.9f);
 
         // ---- 3. the bulb flickers on - he is standing there, staring ----
+        CaptureHeadHeight();
         StartCoroutine(BulbFlicker());
-        if (appearSting != null) sfx.PlayOneShot(appearSting, 1f);
+        // SOUND SYNC: the piano clip is 39 s long - only its first hit belongs to this moment
+        PlayCue(appearSting, 1f, 2.8f, 1.4f);
         fovTarget = baseFov * 0.72f;   // slow dolly-zoom onto him
         shake = 0.15f;
         yield return new WaitForSeconds(1.2f);
 
         if (enemyAI != null)
         {
-            enemyAI.PlayScream();
+            // SOUND SYNC: his voice starts as the yell animation opens its mouth (about 0.35 s after the trigger).
+            // One line only - before, a random 11 s line played (and a second one at the gate) on top of everything else.
+            StartCoroutine(PlayCueAfter(0.35f, voiceLine, 0.95f, 3.4f, 0.9f));
             if (!string.IsNullOrEmpty(enemyAnimationTriggerName) && enemyAI.enemyAnimator != null)
                 enemyAI.enemyAnimator.SetTrigger(enemyAnimationTriggerName);
         }
@@ -229,7 +255,12 @@ public class EscapeCinematicManager : MonoBehaviour
         yield return new WaitForSeconds(stareTime - 1.2f);
 
         // ---- 4. he CHARGES ----
-        if (heartbeat != null) heartbeat.Play();
+        if (heartbeat != null)
+        {
+            heartbeat.volume = 0f;
+            heartbeat.Play();
+            StartCoroutine(FadeAudio(heartbeat, 0.9f, 0.8f));
+        }
         fovTarget = baseFov * 0.95f;
         shake = 0.8f;
         lookSharpness = 6f;
@@ -238,7 +269,7 @@ public class EscapeCinematicManager : MonoBehaviour
             Transform retreat = enemyRetreatPoint != null ? enemyRetreatPoint : enemyTeleportPoint;
             enemyAI.cinematicStopDistance = 0.4f;
             enemyAI.cinematicFlinchDuration = screamTime;
-            enemyAI.cinematicRunSpeedMultiplier = 1.6f;
+            enemyAI.cinematicRunSpeedMultiplier = 1.2f;
             enemyAI.cinematicRetreatSpeedMultiplier = 1.7f;
             enemyAI.PlayCinematicEscape(stopPoint, retreat, enemyAnimationTriggerName);
         }
@@ -254,10 +285,13 @@ public class EscapeCinematicManager : MonoBehaviour
         }
 
         // ---- 5. SUNLIGHT ----
+        if (mainDoor != null) mainDoor.OpenForCinematic(); // the sunlight throws the exit door open (silent)
         StartCoroutine(SunBurstRoutine());
         StartCoroutine(SlowMoBeat());
-        if (sunBurstSound != null) sfx.PlayOneShot(sunBurstSound, 1f);
-        if (burnScream != null) sfx.PlayOneShot(burnScream, 0.9f); // he burns in the light
+        // SOUND SYNC: blast first, then his scream rises as the yell animation (slowed by the slow-mo beat) opens up.
+        // The scream clip is 32 s long - only its first 5 s (one scream) is used, faded out as he vanishes.
+        PlayCue(sunBurstSound, 1f, 1.6f, 0.25f);
+        if (burnScream != null) StartCoroutine(PlayCueAfter(0.5f, burnScream, 0.9f, screamTime + fleeWatchTime - 0.2f, 1.3f)); // he burns in the light
         else if (enemyAI != null) enemyAI.PlayScream();
         fovTarget = baseFov * 0.55f; // punch in on his burning face
         shake = 1f;
@@ -333,11 +367,14 @@ public class EscapeCinematicManager : MonoBehaviour
         if (player == null) return;
 
         CharacterController cc = player.GetComponent<CharacterController>();
-        Vector3 standPos = new Vector3(gatePos.x, player.position.y, gatePos.z) + outward * playerStandOutside;
-        if (cc != null && IsBlocked(standPos, cc))
+        // stand inside, behind the door, facing the hall; if something (an open door leaf, furniture) is in the way, step further in
+        Vector3 standPos = Vector3.zero;
+        float[] depths = { playerDepth, playerDepth + 0.4f, playerDepth + 0.8f, playerDepth + 1.2f };
+        foreach (float d in depths)
         {
-            // A closed gate / wall is there - stand just inside instead
-            standPos = new Vector3(gatePos.x, player.position.y, gatePos.z) + inward * 0.3f;
+            standPos = new Vector3(gatePos.x, player.position.y, gatePos.z) + inward * d;
+            playerDepth = d;
+            if (cc == null || !IsBlocked(standPos, cc)) break;
         }
         if (cc != null) cc.enabled = false;
         player.position = standPos;
@@ -368,7 +405,7 @@ public class EscapeCinematicManager : MonoBehaviour
         yield return new WaitForSeconds(0.5f);
         for (float t = 0f; t < 0.7f; t += Time.deltaTime)
         {
-            Vector3 delta = outward * (0.9f * Time.deltaTime / 0.7f);
+            Vector3 delta = outward * (0.6f * Time.deltaTime / 0.7f); // a small step back towards the door
             if (cc != null && cc.enabled) cc.Move(delta + Vector3.down * 0.01f); else player.position += delta;
             yield return null;
         }
@@ -424,9 +461,11 @@ public class EscapeCinematicManager : MonoBehaviour
     {
         // where the sun stops him
         GameObject sp = new GameObject("EscapeEnemyStopPoint");
-        Vector3 stopPos = enemyDoorPoint != null ? enemyDoorPoint.position : gatePos + inward * fallbackStopDepth;
-        float stopDepth = Vector3.Dot(stopPos - gatePos, inward);
-        if (stopDepth < gateLimitDepth + 0.2f) stopPos += inward * (gateLimitDepth + 0.2f - stopDepth);
+        // he stops 'enemyStopGap' metres in front of the player (the scene's door point is only used if it is even further in)
+        float stopDepth = playerDepth + enemyStopGap;
+        if (enemyDoorPoint != null) stopDepth = Mathf.Max(stopDepth, Vector3.Dot(enemyDoorPoint.position - gatePos, inward));
+        Vector3 stopPos = gatePos + inward * stopDepth;
+        stopPos.y = enemyDoorPoint != null ? enemyDoorPoint.position.y : gatePos.y;
         if (UnityEngine.AI.NavMesh.SamplePosition(stopPos, out UnityEngine.AI.NavMeshHit nh, 2f, UnityEngine.AI.NavMesh.AllAreas)) stopPos = nh.position;
         sp.transform.position = stopPos;
         stopPoint = sp.transform;
@@ -434,6 +473,7 @@ public class EscapeCinematicManager : MonoBehaviour
         if (enemyAI == null) return;
 
         enemyAI.EnsureActive();
+        enemyAI.silentCinematicVoice = true; // every sound of the ending is played from here, in time with the animation
 
         // where he appears (the teleport point placed in the scene, deep in the hall)
         Vector3 spawn = enemyTeleportPoint != null ? enemyTeleportPoint.position : gatePos + inward * fallbackSpawnDepth;
@@ -476,22 +516,59 @@ public class EscapeCinematicManager : MonoBehaviour
     private void SnapCameraToEnemy()
     {
         if (playerCam == null) return;
-        Vector3 dir = EnemyHead() - playerCam.transform.position;
-        if (dir.sqrMagnitude > 0.001f) playerCam.transform.rotation = Quaternion.LookRotation(dir.normalized, Vector3.up);
+        trackInit = false;
+        Quaternion want = FramedRotation(TrackPoint());
+        playerCam.transform.rotation = want;
+    }
+
+    /// <summary>Measures how high his head is above his feet while he stands still (used instead of the animated head bone).</summary>
+    private void CaptureHeadHeight()
+    {
+        if (enemyAI == null) return;
+        float h = EnemyHead().y - enemyAI.transform.position.y;
+        if (h > 1.2f && h < 2.2f) headHeight = h;
+    }
+
+    /// <summary>
+    /// CAMERA FIX: the camera used to follow his animated head bone. Now that he really runs, that bone bounces with every stride
+    /// and the camera shook and bobbed. The target is now a steady point (feet + head height), smoothed.
+    /// </summary>
+    private Vector3 TrackPoint()
+    {
+        if (enemyAI == null) return gatePos + inward * 4f + Vector3.up * 1.6f;
+        Vector3 raw = enemyAI.transform.position + Vector3.up * headHeight;
+        if (!trackInit) { trackPos = raw; trackVel = Vector3.zero; trackInit = true; }
+        trackPos = Vector3.SmoothDamp(trackPos, raw, ref trackVel, 0.12f);
+        return trackPos;
+    }
+
+    /// <summary>
+    /// Looks at the target, but never further than a person would turn: at most 55 degrees sideways of the hall direction
+    /// and -20/+25 degrees up and down. So the camera can never swing round to the empty world outside.
+    /// </summary>
+    private Quaternion FramedRotation(Vector3 target)
+    {
+        Vector3 dir = target - playerCam.transform.position;
+        Vector3 flat = new Vector3(dir.x, 0f, dir.z);
+        if (flat.sqrMagnitude < 0.0001f) flat = inward;
+        float yaw = Mathf.Clamp(Vector3.SignedAngle(inward, flat, Vector3.up), -55f, 55f);
+        float pitch = Mathf.Clamp(Mathf.Atan2(dir.y, flat.magnitude) * Mathf.Rad2Deg, -20f, 25f);
+        return Quaternion.AngleAxis(yaw, Vector3.up) * Quaternion.LookRotation(inward, Vector3.up) * Quaternion.Euler(-pitch, 0f, 0f);
     }
 
     private void LateUpdate()
     {
         if (!running) return;
 
-        // ---- he can NEVER get through the gate ----
+        // ---- he can NEVER get close enough to touch the player ----
         if (enemyAI != null && enemyAI.gameObject.activeInHierarchy)
         {
             Vector3 enemyPos = enemyAI.transform.position;
             float depth = Vector3.Dot(enemyPos - gatePos, inward);
-            if (depth < gateLimitDepth)
+            float minDepth = playerDepth + enemyMinGap;
+            if (depth < minDepth)
             {
-                Vector3 fixedPos = enemyPos + inward * (gateLimitDepth - depth);
+                Vector3 fixedPos = enemyPos + inward * (minDepth - depth);
                 UnityEngine.AI.NavMeshAgent a = enemyAI.GetComponent<UnityEngine.AI.NavMeshAgent>();
                 if (a != null && a.isOnNavMesh) a.Warp(fixedPos); else enemyAI.transform.position = fixedPos;
             }
@@ -509,10 +586,8 @@ public class EscapeCinematicManager : MonoBehaviour
 
         if (camMode == CamMode.LookAtEnemy && enemyAI != null && enemyAI.gameObject.activeInHierarchy)
         {
-            Vector3 dir = EnemyHead() - playerCam.transform.position;
-            if (dir.sqrMagnitude > 0.001f)
             {
-                Quaternion want = Quaternion.LookRotation(dir.normalized, Vector3.up);
+                Quaternion want = FramedRotation(TrackPoint());
                 Quaternion smooth = Quaternion.Slerp(playerCam.transform.rotation * Quaternion.Inverse(lastShake), want, 1f - Mathf.Exp(-lookSharpness * Time.deltaTime));
                 playerCam.transform.rotation = smooth * shakeRot;
                 lastShake = shakeRot;
@@ -714,6 +789,72 @@ public class EscapeCinematicManager : MonoBehaviour
     /// Only the HUD parts are hidden; the branch holding the fade/ending text stays on.
     /// </summary>
     private AudioClip burnScream;
+    private AudioClip voiceLine;
+
+    // ------------------------------------------------------------------ sound cues
+    /// <summary>Plays only the first 'seconds' of a clip (then fades it out), on its own AudioSource so cues never cut each other off.</summary>
+    private AudioSource PlayCue(AudioClip clip, float volume, float seconds, float fadeOut, float clipStart = 0f)
+    {
+        if (clip == null) return null;
+        AudioSource src = gameObject.AddComponent<AudioSource>();
+        src.spatialBlend = 0f;
+        src.playOnAwake = false;
+        src.clip = clip;
+        src.volume = volume;
+        src.time = Mathf.Clamp(clipStart, 0f, Mathf.Max(0f, clip.length - 0.05f));
+        src.Play();
+        StartCoroutine(StopCueAfter(src, seconds, fadeOut));
+        return src;
+    }
+
+    private IEnumerator PlayCueAfter(float delay, AudioClip clip, float volume, float seconds, float fadeOut)
+    {
+        yield return new WaitForSecondsRealtime(delay); // real time: the slow-mo beat must not stretch the sound
+        PlayCue(clip, volume, seconds, fadeOut);
+    }
+
+    private IEnumerator StopCueAfter(AudioSource src, float seconds, float fadeOut)
+    {
+        yield return new WaitForSecondsRealtime(Mathf.Max(0f, seconds - fadeOut));
+        float start = src != null ? src.volume : 0f;
+        for (float t = 0f; t < fadeOut && src != null; t += Time.unscaledDeltaTime)
+        {
+            src.volume = Mathf.Lerp(start, 0f, t / fadeOut);
+            yield return null;
+        }
+        if (src != null)
+        {
+            src.Stop();
+            Destroy(src);
+        }
+    }
+
+    /// <summary>Fades out the level's own sounds (ambience, music, loops) so they do not mix with the ending.
+    /// Kept: the player's breathing, the enemy's own source and the distance-based heartbeat of AudioManager (it rises as he charges).</summary>
+    private IEnumerator DuckWorldAudio(float fade)
+    {
+        AudioManager am = FindAnyObjectByType<AudioManager>();
+        AudioSource keep = am != null ? am.HeartbeatSource : null;
+
+        List<AudioSource> targets = new List<AudioSource>();
+        List<float> volumes = new List<float>();
+        foreach (AudioSource a in FindObjectsByType<AudioSource>())
+        {
+            if (a == null || a == keep || !a.isPlaying || a.gameObject == gameObject) continue;
+            if (enemyAI != null && a.transform.IsChildOf(enemyAI.transform)) continue;
+            if (player != null && a.transform.IsChildOf(player)) continue;
+            targets.Add(a);
+            volumes.Add(a.volume);
+        }
+
+        for (float t = 0f; t < fade; t += Time.unscaledDeltaTime)
+        {
+            float k = 1f - Mathf.Clamp01(t / fade);
+            for (int i = 0; i < targets.Count; i++) if (targets[i] != null) targets[i].volume = volumes[i] * k;
+            yield return null;
+        }
+        for (int i = 0; i < targets.Count; i++) if (targets[i] != null) targets[i].volume = 0f;
+    }
 
     /// <summary>Use the horror sounds that ship with the project when nothing is assigned in the Inspector.</summary>
     private void LoadDefaultSounds()
@@ -721,6 +862,7 @@ public class EscapeCinematicManager : MonoBehaviour
         if (appearSting == null) appearSting = Resources.Load<AudioClip>("HorrorAudio/freesound_community-horror-piano-hits-73998");
         if (sunBurstSound == null) sunBurstSound = Resources.Load<AudioClip>("HorrorAudio/biww-fire-burst-flame-sound-effect-561958");
         burnScream = Resources.Load<AudioClip>("HorrorAudio/dragon-studio-female-zombie-screams-324744");
+        voiceLine = Resources.Load<AudioClip>("HorrorAudio/Peek_a_boo_I_finally_found"); // the line is in its first 3 s
         if (playerStats != null) playerStats.TriggerHeavyBreathing(30f);
     }
 

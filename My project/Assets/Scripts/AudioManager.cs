@@ -10,6 +10,9 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private float maxTensionDistance = 20f; 
     [SerializeField] private float minTensionDistance = 3f;  
 
+    /// <summary>The distance-based heartbeat (the ending keeps it: it gets louder and faster as the enemy charges).</summary>
+    public AudioSource HeartbeatSource => heartbeatSource;
+
     private Transform playerTransform;
     private Transform enemyTransform;
     private float nextEnemySearchTime = 0f;
