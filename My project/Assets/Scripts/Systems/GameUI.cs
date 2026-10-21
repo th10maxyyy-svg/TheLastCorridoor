@@ -1,16 +1,17 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 /// <summary>
-/// ONE RUNTIME UI FOR ALL THE NEW SYSTEMS - created automatically, no scene or prefab setup needed.
+/// THE GAME'S MENUS AND HUD LOGIC. The screens themselves are real uGUI objects in the Hierarchy (TLC_UI canvas, see TLCCanvas);
+/// this script decides what is shown and fills in the texts.
 ///   In the game level:
 ///     ESC  - Pause menu: Resume / Save (3 slots) / Load / Journal / Achievements / Settings / Main Menu / Quit   (FR_38, FR_42, FR_47)
 ///     TAB  - Journal: Objectives / Items (inspect) / Notes (re-read) / Statistics                               (FR_34, FR_35, FR_37, FR_49, FR_51)
 ///     HUD  - current objective (top-right) + pop-ups for new objectives, completed objectives and achievements (FR_49, FR_52)
 ///     Ending summary screen after the escape or the final death                                                 (FR_56)
-///   In the main menu: LOAD GAME / ACHIEVEMENTS / OPTIONS buttons (bottom-right)                                 (FR_42, FR_53)
-/// Drawn with Unity's immediate-mode GUI, scaled to a virtual 1920x1080 screen.
+///   In the main menu: LOAD GAME / ACHIEVEMENTS / OPTIONS panels                                                  (FR_42, FR_53)
 /// </summary>
 public class GameUI : MonoBehaviour
 {
@@ -39,17 +40,17 @@ public class GameUI : MonoBehaviour
 
     private Mode mode = Mode.None;
     private Panel panel = Panel.None;
-    private Panel returnPanel = Panel.Pause;  // where "Back" goes (Pause in game, None in the menu)
+    private Panel returnPanel = Panel.Pause;
     private bool paused;
     private float savedTimeScale = 1f;
     private readonly List<Behaviour> disabledWhilePaused = new List<Behaviour>();
     private bool keypadOpenLastFrame;
     private int journalTab;
     private int selectedItem = -1, selectedNote = -1;
-    private Vector2 scrollA, scrollB;
     private string panelMessage = "";
     private float panelMessageTime;
     private PlayerController player;
+    private TLCCanvas ui;
 
     void Awake()
     {
@@ -66,10 +67,7 @@ public class GameUI : MonoBehaviour
         if (instance == this) instance = null;
     }
 
-    private void OnSceneLoaded(Scene scene, LoadSceneMode loadMode)
-    {
-        SetupScene();
-    }
+    private void OnSceneLoaded(Scene scene, LoadSceneMode loadMode) { SetupScene(); }
 
     private void SetupScene()
     {
@@ -85,6 +83,9 @@ public class GameUI : MonoBehaviour
 
         GameSettings.Apply();
 
+        ui = null;
+        if (mode != Mode.None) BindUI();
+
         if (mode == Mode.Menu)
         {
             HookMenuSliders();
@@ -94,13 +95,12 @@ public class GameUI : MonoBehaviour
         if (mode == Mode.Game && ObjectiveTracker.Instance == null)
         {
             GameObject go = new GameObject("TLC_ObjectiveTracker");
-            go.AddComponent<ObjectiveTracker>(); // scene object: rebuilt on every (re)load
-            go.AddComponent<HorrorDirector>();   // unscripted horror events, session variation, enemy restore
-            go.AddComponent<HudBarStyler>();     // slim health / stamina bars
+            go.AddComponent<ObjectiveTracker>();
+            go.AddComponent<HorrorDirector>();
+            go.AddComponent<HudBarStyler>();
         }
     }
 
-    /// <summary>Called by the LOAD GAME / ACHIEVEMENTS / OPTIONS buttons of the main menu scene (0 = load, 1 = achievements, 2 = options).</summary>
     public static void OpenFromMenu(int which)
     {
         if (instance == null) Boot();
@@ -109,54 +109,48 @@ public class GameUI : MonoBehaviour
         instance.OpenPanel(targets[Mathf.Clamp(which, 0, 2)], Panel.None);
     }
 
-    /// <summary>True while the LOAD / ACHIEVEMENTS / OPTIONS panel is open in the main menu.</summary>
     public static bool IsMenuPanelOpen { get { return instance != null && instance.mode == Mode.Menu && instance.panel != Panel.None; } }
 
-    private UnityEngine.UI.GraphicRaycaster[] menuRays;
+    private GraphicRaycaster[] menuRays;
     private float raycastReenableAt;
 
     private void PrepareMenu()
     {
-        menuRays = FindObjectsByType<UnityEngine.UI.GraphicRaycaster>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        List<GraphicRaycaster> list = new List<GraphicRaycaster>();
+        foreach (GraphicRaycaster gr in FindObjectsByType<GraphicRaycaster>(FindObjectsInactive.Include))
+            if (gr.GetComponent<TLCCanvas>() == null) list.Add(gr);    // never switch off our own canvas
+        menuRays = list.ToArray();
         raycastReenableAt = 0f;
     }
 
-    /// <summary>The main menu's own Settings screen has "volume" and "sensitivity" sliders - connect them to GameSettings.</summary>
     private void HookMenuSliders()
     {
-        foreach (UnityEngine.UI.Slider slider in FindObjectsByType<UnityEngine.UI.Slider>(FindObjectsInactive.Include))
+        foreach (Slider slider in FindObjectsByType<Slider>(FindObjectsInactive.Include))
         {
+            if (slider.GetComponentInParent<TLCCanvas>(true) != null) continue;
             string n = slider.gameObject.name.ToLowerInvariant();
-            UnityEngine.UI.Slider sl = slider;
+            Slider sl = slider;
             if (n.Contains("volume"))
             {
                 sl.SetValueWithoutNotify(Mathf.Lerp(sl.minValue, sl.maxValue, GameSettings.MasterVolume));
-                sl.onValueChanged.AddListener(v =>
-                {
-                    GameSettings.SetMasterVolume(Mathf.InverseLerp(sl.minValue, sl.maxValue, v));
-                    GameSettings.Save();
-                });
+                sl.onValueChanged.AddListener(v => { GameSettings.SetMasterVolume(Mathf.InverseLerp(sl.minValue, sl.maxValue, v)); GameSettings.Save(); });
             }
             else if (n.Contains("sensitivity"))
             {
                 sl.SetValueWithoutNotify(Mathf.Lerp(sl.minValue, sl.maxValue, Mathf.InverseLerp(0.3f, 2.5f, GameSettings.MouseSensitivity)));
-                sl.onValueChanged.AddListener(v =>
-                {
-                    GameSettings.SetMouseSensitivity(Mathf.Lerp(0.3f, 2.5f, Mathf.InverseLerp(sl.minValue, sl.maxValue, v)));
-                    GameSettings.Save();
-                });
+                sl.onValueChanged.AddListener(v => { GameSettings.SetMouseSensitivity(Mathf.Lerp(0.3f, 2.5f, Mathf.InverseLerp(sl.minValue, sl.maxValue, v))); GameSettings.Save(); });
             }
         }
     }
 
     // ============================================================================================ toasts
-    private class ToastMsg { public string title, text; public float start; public bool gold; }
+    private class ToastMsg { public string title, text; public float start; public bool gold; public CanvasGroup view; }
     private static readonly List<ToastMsg> toasts = new List<ToastMsg>();
     private const float ToastTime = 4.5f;
 
     public static void Toast(string title, string text, bool gold = false)
     {
-        if (toasts.Count > 6) toasts.RemoveAt(0);
+        if (toasts.Count > 6) { if (toasts[0].view != null) Destroy(toasts[0].view.gameObject); toasts.RemoveAt(0); }
         toasts.Add(new ToastMsg { title = title, text = text, gold = gold, start = -1f });
     }
 
@@ -164,12 +158,11 @@ public class GameUI : MonoBehaviour
     private static GameProgress.RunSummary summary;
     public static bool IsSummaryOpen => summary != null;
 
-    /// <summary>Shows the ending summary. Callers wait with: while (GameUI.IsSummaryOpen) yield return null;</summary>
     public static void ShowEndingSummary(GameProgress.RunSummary s)
     {
         if (instance == null) Boot();
         summary = s;
-        if (instance != null) instance.scrollA = Vector2.zero;
+        if (instance != null) instance.FillSummary();
     }
 
     // ============================================================================================ pause handling
@@ -209,11 +202,7 @@ public class GameUI : MonoBehaviour
 
     private void DisableWhilePaused(Behaviour b)
     {
-        if (b != null && b.enabled)
-        {
-            b.enabled = false;
-            disabledWhilePaused.Add(b);
-        }
+        if (b != null && b.enabled) { b.enabled = false; disabledWhilePaused.Add(b); }
     }
 
     private void Resume()
@@ -235,7 +224,8 @@ public class GameUI : MonoBehaviour
         panel = p;
         returnPanel = back;
         panelMessage = "";
-        scrollA = scrollB = Vector2.zero;
+        confirmOverwrite = -1;
+        FillPanel();
     }
 
     private void Back()
@@ -298,12 +288,11 @@ public class GameUI : MonoBehaviour
             else if (Input.GetKeyDown(KeyCode.Tab) || Input.GetKeyDown(KeyCode.J))
             {
                 if (paused && panel == Panel.Journal && returnPanel == Panel.None) Resume();
-                else if (!paused && CanPause()) { Pause(Panel.Journal); returnPanel = Panel.None; journalTab = 0; }
+                else if (!paused && CanPause()) { journalTab = 0; Pause(Panel.Journal); returnPanel = Panel.None; }
             }
 
             if (paused)
             {
-                // other scripts sometimes lock the cursor - keep it free while a menu is open
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
                 if (Time.timeScale != 0f) Time.timeScale = 0f;
@@ -314,103 +303,22 @@ public class GameUI : MonoBehaviour
         {
             if (Input.GetKeyDown(KeyCode.Escape) && panel != Panel.None) Back();
 
-            // While one of our panels is open the menu's own buttons (START, QUIT...) must not receive the same mouse click
             bool open = panel != Panel.None;
             if (open) raycastReenableAt = Time.unscaledTime + 0.25f;
             bool want = !open && Time.unscaledTime >= raycastReenableAt;
             if (menuRays != null)
-            {
-                foreach (UnityEngine.UI.GraphicRaycaster gr in menuRays)
+                foreach (GraphicRaycaster gr in menuRays)
                     if (gr != null && gr.enabled != want) gr.enabled = want;
-            }
         }
     }
 
-    // ============================================================================================ GUI styles
-    private const float VW = 1920f, VH = 1080f;
-    private float vw;
-    private GUIStyle sTitle, sHeader, sText, sSmall, sButton, sTab, sTabOn, sBox, sToastTitle, sToastText, sCenter, sRight, sBig, sListItem, sListItemOn, sSliderTrack, sSliderThumb;
-    private Texture2D tBlack, tPanel, tRed, tRedDark, tGray, tWhite, tGold, tCard, tCardHi;
-    private GUISkin sSkin;
-    private static readonly Color Blood = new Color(0.78f, 0.34f, 0.16f);   // rust orange (matches the menu sprites)
-    private static readonly Color Bone = new Color(0.88f, 0.84f, 0.78f);
-    private static readonly Color Dim = new Color(0.62f, 0.58f, 0.54f);
-    private static readonly Color Gold = new Color(0.95f, 0.75f, 0.25f);
-
-    private static Texture2D Tex(Color c)
+    void LateUpdate()
     {
-        Texture2D t = new Texture2D(1, 1) { hideFlags = HideFlags.HideAndDontSave };
-        t.SetPixel(0, 0, c);
-        t.Apply();
-        return t;
+        if (mode == Mode.None) return;
+        if (ui == null) BindUI();
+        if (ui == null) return;
+        RefreshUI();
     }
-
-    private void BuildStyles()
-    {
-        if (sTitle != null && tBlack != null) return;
-        tBlack = Tex(new Color(0f, 0f, 0f, 0.82f));
-        tPanel = Tex(new Color(0.045f, 0.038f, 0.036f, 0.97f));
-        tRed = Tex(new Color(0.50f, 0.17f, 0.08f, 0.97f));
-        tRedDark = Tex(new Color(0.24f, 0.10f, 0.06f, 0.95f));
-        tGray = Tex(new Color(0.13f, 0.105f, 0.095f, 0.95f));
-        tWhite = Tex(Color.white);
-        tGold = Tex(new Color(0.45f, 0.33f, 0.05f, 0.95f));
-        tCard = Tex(new Color(0.080f, 0.066f, 0.060f, 1f));
-        tCardHi = Tex(new Color(0.165f, 0.108f, 0.045f, 1f));
-
-        // a copy of the default skin with a slim rust scrollbar (so the global IMGUI skin is not touched)
-        sSkin = Object.Instantiate(GUI.skin);
-        sSkin.verticalScrollbar.normal.background = Tex(new Color(0.10f, 0.08f, 0.07f, 1f));
-        sSkin.verticalScrollbar.fixedWidth = 12f;
-        sSkin.verticalScrollbarThumb.normal.background = tRed;
-        sSkin.verticalScrollbarThumb.hover.background = Tex(new Color(0.75f, 0.33f, 0.14f, 1f));
-        sSkin.verticalScrollbarThumb.active.background = sSkin.verticalScrollbarThumb.hover.background;
-        sSkin.verticalScrollbarThumb.fixedWidth = 12f;
-        sSkin.verticalScrollbarUpButton.fixedHeight = 0f; sSkin.verticalScrollbarUpButton.fixedWidth = 0f;
-        sSkin.verticalScrollbarDownButton.fixedHeight = 0f; sSkin.verticalScrollbarDownButton.fixedWidth = 0f;
-
-        sTitle = new GUIStyle(GUI.skin.label) { fontSize = 64, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-        sTitle.normal.textColor = Blood;
-        sBig = new GUIStyle(sTitle) { fontSize = 46 };
-        sHeader = new GUIStyle(GUI.skin.label) { fontSize = 30, fontStyle = FontStyle.Bold };
-        sHeader.normal.textColor = Bone;
-        sText = new GUIStyle(GUI.skin.label) { fontSize = 24, wordWrap = true, richText = true };
-        sText.normal.textColor = Bone;
-        sSmall = new GUIStyle(sText) { fontSize = 19 };
-        sSmall.normal.textColor = Dim;
-        sCenter = new GUIStyle(sText) { alignment = TextAnchor.MiddleCenter };
-        sRight = new GUIStyle(sText) { alignment = TextAnchor.MiddleRight };
-
-        sButton = new GUIStyle(GUI.skin.button) { fontSize = 26, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-        sButton.normal.background = tGray; sButton.normal.textColor = new Color(0.82f, 0.66f, 0.54f);
-        sButton.hover.background = tRed; sButton.hover.textColor = new Color(1f, 0.93f, 0.85f);
-        sButton.active.background = tRedDark; sButton.active.textColor = Color.white;
-        sButton.focused.background = tGray; sButton.focused.textColor = Bone;
-
-        sTab = new GUIStyle(sButton) { fontSize = 22 };
-        sTabOn = new GUIStyle(sTab);
-        sTabOn.normal.background = tRed; sTabOn.normal.textColor = Color.white;
-
-        sListItem = new GUIStyle(sButton) { fontSize = 21, alignment = TextAnchor.MiddleLeft, fontStyle = FontStyle.Normal, wordWrap = false, clipping = TextClipping.Clip };
-        sListItem.padding = new RectOffset(14, 10, 4, 4);
-        sListItemOn = new GUIStyle(sListItem);
-        sListItemOn.normal.background = tRedDark; sListItemOn.normal.textColor = Color.white;
-
-        sSliderTrack = new GUIStyle(GUI.skin.horizontalSlider) { fixedHeight = 8f, margin = new RectOffset(0, 0, 11, 11) };
-        sSliderTrack.normal.background = Tex(new Color(0.20f, 0.13f, 0.09f, 1f));
-        sSliderThumb = new GUIStyle(GUI.skin.horizontalSliderThumb) { fixedWidth = 18f, fixedHeight = 30f };
-        sSliderThumb.normal.background = tRed; sSliderThumb.hover.background = Tex(new Color(0.75f, 0.33f, 0.14f, 1f)); sSliderThumb.active.background = sSliderThumb.hover.background;
-
-        sBox = new GUIStyle(GUI.skin.box);
-        sBox.normal.background = tPanel;
-
-        sToastTitle = new GUIStyle(GUI.skin.label) { fontSize = 18, fontStyle = FontStyle.Bold };
-        sToastTitle.normal.textColor = Blood;
-        sToastText = new GUIStyle(GUI.skin.label) { fontSize = 21, wordWrap = true };
-        sToastText.normal.textColor = Bone;
-    }
-
-    private bool Button(Rect r, string text) => GUI.Button(r, text, sButton);
 
     private void Message(string text)
     {
@@ -418,45 +326,108 @@ public class GameUI : MonoBehaviour
         panelMessageTime = Time.unscaledTime;
     }
 
-    // ============================================================================================ OnGUI
-    void OnGUI()
+    // ============================================================================================ wiring the canvas
+    private void BindUI()
     {
-        if (mode == Mode.None) return;
-        BuildStyles();
+        ui = TLCCanvas.Ensure();
+        if (ui == null) return;
 
-        float scale = Screen.height / VH;
-        if (scale <= 0f) return;
-        vw = Screen.width / scale;
-        GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1f));
-        GUI.depth = -1000;
+        for (int i = 0; i < ui.pauseButtons.Length; i++) { int k = i; Listen(ui.pauseButtons[i], () => PauseButton(k)); }
+        for (int i = 0; i < ui.slotRows.Length; i++) { int s = i; Listen(ui.slotRows[i].button, () => SlotClicked(s)); }
+        Listen(ui.slotsBack, Back);
+        Listen(ui.settingsBack, Back);
+        Listen(ui.achBack, Back);
+        Listen(ui.journalBack, Back);
+        Listen(ui.settingsReset, () => { GameSettings.ResetToDefaults(); SyncSettings(); });
+        for (int i = 0; i < ui.journalTabs.Length; i++) { int k = i; Listen(ui.journalTabs[i], () => { journalTab = k; FillJournal(); }); }
+        Listen(ui.confirmYes, () => { if (panel == Panel.ConfirmQuit) QuitGame(); else LeaveToMainMenu(); });
+        Listen(ui.confirmNo, () => OpenPanel(Panel.Pause, Panel.Pause));
+        Listen(ui.sumContinue, () => summary = null);
 
-        if (summary != null) { DrawSummary(); return; }
-
-        if (mode == Mode.Game)
+        float[,] ranges = { { 0f, 1f }, { -1f, 1.5f }, { 0f, 1f }, { 0.3f, 2.5f } };
+        for (int i = 0; i < ui.settingRows.Length && i < 4; i++)
         {
-            if (!paused) DrawHud();
-            else DrawPanel();
+            Slider s = ui.settingRows[i].slider;
+            s.minValue = ranges[i, 0]; s.maxValue = ranges[i, 1];
+            s.onValueChanged.RemoveAllListeners();
+            int k = i;
+            s.onValueChanged.AddListener(v =>
+            {
+                if (k == 0) GameSettings.SetMasterVolume(v);
+                else if (k == 1) GameSettings.SetBrightness(v);
+                else if (k == 2) GameSettings.SetEffectsIntensity(v);
+                else GameSettings.SetMouseSensitivity(v);
+            });
         }
-        else if (mode == Mode.Menu)
-        {
-            if (panel != Panel.None) DrawPanel();   // the three menu buttons are real scene objects now (see MainMenuSetup)
-        }
-        DrawToasts();
+        foreach (ToastMsg t in toasts) t.view = null;
     }
 
-    // ------------------------------------------------------------------------------------ HUD
-    private void DrawHud()
+    private static void Listen(Button b, UnityEngine.Events.UnityAction a)
     {
-        if (player == null || !player.enabled || player.isDead || player.isCinematicPlaying) return;
+        if (b == null) return;
+        b.onClick.RemoveAllListeners();
+        b.onClick.AddListener(a);
+    }
+
+    private void PauseButton(int i)
+    {
+        switch (i)
+        {
+            case 0: Resume(); break;
+            case 1: OpenPanel(Panel.Save, Panel.Pause); break;
+            case 2: OpenPanel(Panel.Load, Panel.Pause); break;
+            case 3: journalTab = 0; OpenPanel(Panel.Journal, Panel.Pause); break;
+            case 4: OpenPanel(Panel.Achievements, Panel.Pause); break;
+            case 5: OpenPanel(Panel.Settings, Panel.Pause); break;
+            case 6: OpenPanel(Panel.ConfirmMenu, Panel.Pause); break;
+            case 7: OpenPanel(Panel.ConfirmQuit, Panel.Pause); break;
+        }
+    }
+
+    // ============================================================================================ every frame
+    private void RefreshUI()
+    {
+        bool game = mode == Mode.Game && !ConsumedEndingCinematic.IsPlaying;
+        bool showPanels = summary == null && ((game && paused) || (mode == Mode.Menu && panel != Panel.None));
+        Panel shown = game && paused && panel == Panel.None ? Panel.Pause : panel;
+
+        TLCCanvas.SetActive(ui.hud, game && !paused && summary == null);
+        TLCCanvas.SetActive(ui.panels, showPanels);
+        TLCCanvas.SetActive(ui.pausePanel, showPanels && shown == Panel.Pause);
+        TLCCanvas.SetActive(ui.slotsPanel, showPanels && (shown == Panel.Save || shown == Panel.Load));
+        TLCCanvas.SetActive(ui.settingsPanel, showPanels && shown == Panel.Settings);
+        TLCCanvas.SetActive(ui.achievementsPanel, showPanels && shown == Panel.Achievements);
+        TLCCanvas.SetActive(ui.journalPanel, showPanels && shown == Panel.Journal);
+        TLCCanvas.SetActive(ui.confirmPanel, showPanels && (shown == Panel.ConfirmMenu || shown == Panel.ConfirmQuit));
+        TLCCanvas.SetActive(ui.summaryPanel, summary != null);
+
+        RefreshObjective(game);
+        RefreshToasts();
+
+        if (showPanels)
+        {
+            if (shown == Panel.Pause)
+            {
+                ObjectiveTracker t = ObjectiveTracker.Instance;
+                ObjectiveTracker.Objective cur = t != null ? t.Current() : null;
+                TLCCanvas.SetText(ui.pauseObjective, cur != null ? "<b>Objective:</b> " + t.TitleWithProgress(cur) : "");
+            }
+            if (shown == Panel.Save || shown == Panel.Load)
+                TLCCanvas.SetText(ui.slotsMessage, Time.unscaledTime - panelMessageTime > 6f ? "" : panelMessage);
+            if (shown == Panel.Settings) RefreshSettingValues();
+        }
+    }
+
+    private void RefreshObjective(bool game)
+    {
+        bool show = game && !paused && summary == null && player != null && player.enabled && !player.isDead && !player.isCinematicPlaying;
         ObjectiveTracker tracker = ObjectiveTracker.Instance;
-        if (tracker == null) return;
+        if (tracker == null) show = false;
+        TLCCanvas.SetActive(ui.objectivePanel, show);
+        if (!show) return;
 
         ObjectiveTracker.Objective cur = tracker.Current();
-        float w = 470f, x = vw - w - 24f, y = 24f;
-
-        // "ESCAPE THE BASEMENT: find the key..." -> the chapter becomes the header, the task the text
-        string header = "OBJECTIVE   " + tracker.DoneCount() + "/" + tracker.Objectives.Count;
-        if (tracker.IsGated) header = "OBJECTIVE";
+        string header = tracker.IsGated ? "OBJECTIVE" : "OBJECTIVE   " + tracker.DoneCount() + "/" + tracker.Objectives.Count;
         string body = cur != null ? tracker.TitleWithProgress(cur) : "Survive.";
         int colon = body.IndexOf(": ");
         if (colon > 0 && body.Substring(0, colon) == body.Substring(0, colon).ToUpper())
@@ -465,376 +436,210 @@ public class GameUI : MonoBehaviour
             body = body.Substring(colon + 2);
             if (body.Length > 0) body = char.ToUpper(body[0]) + body.Substring(1);
         }
-
-        float th = Mathf.Max(28f, sToastText.CalcHeight(new GUIContent(body), w - 24f));
-        float h = 30f + th + 30f;
-        GUI.color = new Color(1f, 1f, 1f, 0.9f);
-        GUI.DrawTexture(new Rect(x, y, w, h), tBlack);
-        GUI.DrawTexture(new Rect(x, y, 4f, h), tRed);
-        GUI.color = Color.white;
-        GUI.Label(new Rect(x + 16f, y + 6f, w - 24f, 26f), header, sToastTitle);
-        GUI.Label(new Rect(x + 16f, y + 30f, w - 24f, th), body, sToastText);
-        GUI.Label(new Rect(x + 16f, y + 32f + th, w - 24f, 24f), "TAB  Journal      ESC  Menu", sSmall);
-        hudBottom = y + h;
+        if (ui.objHeader.text != header) ui.objHeader.text = header;
+        if (ui.objBody.text != body) ui.objBody.text = body;
     }
 
-    private float hudBottom = 122f;
-
-    private void DrawToasts()
+    private void RefreshToasts()
     {
-        if (toasts.Count == 0) return;
-        float w = 470f, x = vw - w - 24f, y = mode == Mode.Game && !paused ? hudBottom + 14f : 24f;
+        if (ui.toastTemplate == null) return;
         for (int i = 0; i < toasts.Count; i++)
         {
             ToastMsg t = toasts[i];
             if (t.start < 0f) t.start = Time.unscaledTime;
             float age = Time.unscaledTime - t.start;
-            if (age > ToastTime) { toasts.RemoveAt(i); i--; continue; }
-            float a = Mathf.Clamp01(Mathf.Min(age * 4f, (ToastTime - age) * 2f));
-            GUI.color = new Color(1f, 1f, 1f, a);
-            float tth = Mathf.Max(44f, sToastText.CalcHeight(new GUIContent(t.text), w - 24f));
-            float tbh = 30f + tth + 4f;
-            GUI.DrawTexture(new Rect(x, y, w, tbh), tPanel);
-            GUI.DrawTexture(new Rect(x, y, 4f, tbh), t.gold ? tGold : tRed);
-            Color old = sToastTitle.normal.textColor;
-            if (t.gold) sToastTitle.normal.textColor = Gold;
-            GUI.Label(new Rect(x + 16f, y + 6f, w - 24f, 24f), t.title, sToastTitle);
-            sToastTitle.normal.textColor = old;
-            GUI.Label(new Rect(x + 16f, y + 28f, w - 24f, tth), t.text, sToastText);
-            GUI.color = Color.white;
-            y += tbh + 8f;
+            if (age > ToastTime)
+            {
+                if (t.view != null) Destroy(t.view.gameObject);
+                toasts.RemoveAt(i); i--;
+                continue;
+            }
+            if (t.view == null)
+            {
+                TLCRefs r = TLCCanvas.Spawn<TLCRefs>(ui.toastTemplate, ui.topRight);
+                r.texts[0].text = t.title;
+                r.texts[0].color = t.gold ? TLCUIFactory.Gold : TLCUIFactory.Blood;
+                r.texts[1].text = t.text;
+                r.images[0].color = t.gold ? new Color(0.45f, 0.33f, 0.05f, 0.95f) : TLCUIFactory.Red;
+                t.view = r.GetComponent<CanvasGroup>();
+            }
+            t.view.alpha = Mathf.Clamp01(Mathf.Min(age * 4f, (ToastTime - age) * 2f));
         }
     }
 
-    // ------------------------------------------------------------------------------------ main menu
-    // ------------------------------------------------------------------------------------ panels
-    private Rect Window(float w, float h)
+    // ============================================================================================ filling panels
+    private void FillPanel()
     {
-        GUI.DrawTexture(new Rect(0, 0, vw, VH), tBlack);
-        Rect r = new Rect((vw - w) * 0.5f, (VH - h) * 0.5f, w, h);
-        GUI.Box(r, GUIContent.none, sBox);
-        // rusty double frame + accent bar on top
-        Color rust = new Color(0.42f, 0.22f, 0.12f, 1f);
-        Color rustDim = new Color(0.25f, 0.13f, 0.08f, 1f);
-        Color old = GUI.color;
-        GUI.color = rust;
-        GUI.DrawTexture(new Rect(r.x, r.y, r.width, 3f), tWhite);
-        GUI.DrawTexture(new Rect(r.x, r.yMax - 3f, r.width, 3f), tWhite);
-        GUI.DrawTexture(new Rect(r.x, r.y, 3f, r.height), tWhite);
-        GUI.DrawTexture(new Rect(r.xMax - 3f, r.y, 3f, r.height), tWhite);
-        GUI.color = rustDim;
-        GUI.DrawTexture(new Rect(r.x + 10f, r.y + 10f, r.width - 20f, 1.5f), tWhite);
-        GUI.DrawTexture(new Rect(r.x + 10f, r.yMax - 11.5f, r.width - 20f, 1.5f), tWhite);
-        GUI.DrawTexture(new Rect(r.x + 10f, r.y + 10f, 1.5f, r.height - 20f), tWhite);
-        GUI.DrawTexture(new Rect(r.xMax - 11.5f, r.y + 10f, 1.5f, r.height - 20f), tWhite);
-        GUI.color = old;
-        return r;
-    }
-
-    // ---- headings: the same rusty 3D lettering as the main menu (falls back to plain text if a sprite is missing)
-    private readonly System.Collections.Generic.Dictionary<string, Texture2D> headTex = new System.Collections.Generic.Dictionary<string, Texture2D>();
-
-    private void Heading(Rect area, string text, GUIStyle fallback)
-    {
-        string key = text.ToLowerInvariant().Replace(' ', '_');
-        if (!headTex.TryGetValue(key, out Texture2D t))
-        {
-            t = Resources.Load<Texture2D>("MenuButtons/title_" + key);
-            headTex[key] = t;
-        }
-        if (t == null) { GUI.Label(area, text, fallback); return; }
-        float h = Mathf.Min(area.height, 78f);
-        float w = h * t.width / t.height;
-        GUI.DrawTexture(new Rect(area.center.x - w * 0.5f, area.center.y - h * 0.5f, w, h), t, ScaleMode.StretchToFill, true);
-    }
-
-    /// <summary>Dark card with a thin rust (or ember-gold when highlighted) outline and a coloured stripe on the left.</summary>
-    private void Card(Rect r, bool hi)
-    {
-        GUI.DrawTexture(r, hi ? tCardHi : tCard);
-        Color old = GUI.color;
-        GUI.color = hi ? new Color(0.90f, 0.62f, 0.20f, 0.55f) : new Color(0.45f, 0.22f, 0.11f, 0.60f);
-        GUI.DrawTexture(new Rect(r.x, r.y, r.width, 1f), tWhite);
-        GUI.DrawTexture(new Rect(r.x, r.yMax - 1f, r.width, 1f), tWhite);
-        GUI.DrawTexture(new Rect(r.xMax - 1f, r.y, 1f, r.height), tWhite);
-        GUI.color = hi ? new Color(1f, 0.70f, 0.22f, 1f) : new Color(0.50f, 0.20f, 0.10f, 1f);
-        GUI.DrawTexture(new Rect(r.x, r.y, 5f, r.height), tWhite);
-        GUI.color = old;
-    }
-
-    private void DrawPanel()
-    {
-        GUISkin oldSkin = GUI.skin;
-        if (sSkin != null) GUI.skin = sSkin;
-        DrawPanelInner();
-        GUI.skin = oldSkin;
-    }
-
-    private void DrawPanelInner()
-    {
+        if (ui == null) BindUI();
+        if (ui == null) return;
         switch (panel)
         {
-            case Panel.Pause: DrawPause(); break;
-            case Panel.Save: DrawSlots(true); break;
-            case Panel.Load: DrawSlots(false); break;
-            case Panel.Settings: DrawSettings(); break;
-            case Panel.Journal: DrawJournal(); break;
-            case Panel.Achievements: DrawAchievements(); break;
-            case Panel.ConfirmMenu: DrawConfirm("Return to the main menu?", "Your progress will be saved at your last safe position.", LeaveToMainMenu); break;
-            case Panel.ConfirmQuit: DrawConfirm("Quit the game?", "Your progress will be saved at your last safe position.", QuitGame); break;
-            default: if (mode == Mode.Game) DrawPause(); break;
+            case Panel.Save: FillSlots(true); break;
+            case Panel.Load: FillSlots(false); break;
+            case Panel.Settings: SyncSettings(); break;
+            case Panel.Achievements: FillAchievements(); break;
+            case Panel.Journal: FillJournal(); break;
+            case Panel.ConfirmMenu:
+                ui.confirmQuestion.text = "Return to the main menu?";
+                ui.confirmInfo.text = "Your progress will be saved at your last safe position.";
+                break;
+            case Panel.ConfirmQuit:
+                ui.confirmQuestion.text = "Quit the game?";
+                ui.confirmInfo.text = "Your progress will be saved at your last safe position.";
+                break;
         }
-    }
-
-    private void DrawPause()
-    {
-        Rect r = Window(560f, 820f);
-        Heading(new Rect(r.x, r.y + 20f, r.width, 80f), "PAUSED", sTitle);
-        string[] labels = { "RESUME", "SAVE GAME", "LOAD GAME", "JOURNAL", "ACHIEVEMENTS", "SETTINGS", "MAIN MENU", "QUIT GAME" };
-        float bx = r.x + 80f, bw = r.width - 160f, by = r.y + 120f, bh = 58f;
-        for (int i = 0; i < labels.Length; i++)
-        {
-            if (!Button(new Rect(bx, by + i * (bh + 10f), bw, bh), labels[i])) continue;
-            switch (i)
-            {
-                case 0: Resume(); break;
-                case 1: OpenPanel(Panel.Save, Panel.Pause); break;
-                case 2: OpenPanel(Panel.Load, Panel.Pause); break;
-                case 3: OpenPanel(Panel.Journal, Panel.Pause); journalTab = 0; break;
-                case 4: OpenPanel(Panel.Achievements, Panel.Pause); break;
-                case 5: OpenPanel(Panel.Settings, Panel.Pause); break;
-                case 6: OpenPanel(Panel.ConfirmMenu, Panel.Pause); break;
-                case 7: OpenPanel(Panel.ConfirmQuit, Panel.Pause); break;
-            }
-        }
-        ObjectiveTracker t = ObjectiveTracker.Instance;
-        ObjectiveTracker.Objective cur = t != null ? t.Current() : null;
-        if (cur != null) GUI.Label(new Rect(r.x + 30f, r.yMax - 66f, r.width - 60f, 56f), "<b>Objective:</b> " + t.TitleWithProgress(cur), sSmall);
-    }
-
-    private void DrawConfirm(string question, string info, System.Action onYes)
-    {
-        Rect r = Window(700f, 300f);
-        GUI.Label(new Rect(r.x, r.y + 30f, r.width, 60f), question, sHeader.Center());
-        GUI.Label(new Rect(r.x + 40f, r.y + 100f, r.width - 80f, 60f), info, sCenter);
-        if (Button(new Rect(r.x + 80f, r.yMax - 100f, 240f, 60f), "YES")) onYes();
-        if (Button(new Rect(r.xMax - 320f, r.yMax - 100f, 240f, 60f), "NO")) OpenPanel(Panel.Pause, Panel.Pause);
-    }
-
-    private void DrawBackButton(Rect r)
-    {
-        if (Button(new Rect(r.x + (r.width - 260f) * 0.5f, r.yMax - 80f, 260f, 56f), "BACK")) Back();
-    }
-
-    private void DrawPanelMessage(Rect r, float y)
-    {
-        if (string.IsNullOrEmpty(panelMessage) || Time.unscaledTime - panelMessageTime > 6f) return;
-        GUI.Label(new Rect(r.x + 30f, y, r.width - 60f, 60f), panelMessage, sCenter);
+        RefreshUI();
     }
 
     // ---- save / load (FR_38, FR_42)
     private int confirmOverwrite = -1;
 
-    private void DrawSlots(bool saving)
+    private void FillSlots(bool saving)
     {
-        Rect r = Window(1000f, 700f);
-        Heading(new Rect(r.x, r.y + 20f, r.width, 70f), saving ? "SAVE GAME" : "LOAD GAME", sBig);
-        float y = r.y + 110f;
-        int first = saving ? 1 : 0;
-        for (int slot = first; slot <= SaveSlots.SlotCount; slot++)
+        TLCCanvas.SetActive(ui.headingSave, saving);
+        TLCCanvas.SetActive(ui.headingLoad, !saving);
+        TLCCanvas.SetActive(ui.slotsNote.gameObject, !saving);
+        for (int slot = 0; slot < ui.slotRows.Length; slot++)
         {
+            TLCCanvas.SlotRow row = ui.slotRows[slot];
+            bool visible = !(saving && slot == 0);
+            TLCCanvas.SetActive(row.root, visible);
+            if (!visible) continue;
             SaveSlots.SlotInfo info = SaveSlots.GetInfo(slot);
-            Rect row = new Rect(r.x + 40f, y, r.width - 80f, 92f);
-            Card(row, info.exists);
-            Rect badge = new Rect(row.x + 22f, row.y + 16f, 60f, 60f);
-            GUI.DrawTexture(badge, tBlack);
-            GUI.Label(badge, slot == 0 ? "A" : slot.ToString(), sBig.Sized(34));
-            GUI.Label(new Rect(row.x + 100f, row.y + 8f, 600f, 36f), info.label, sHeader);
-            GUI.Label(new Rect(row.x + 100f, row.y + 48f, 600f, 36f), info.details, sSmall);
-
-            Rect btn = new Rect(row.xMax - 200f, row.y + 18f, 180f, 56f);
+            row.card.Set(info.exists);
+            row.label.text = info.label;
+            row.details.text = info.details;
             if (saving)
             {
-                string label = confirmOverwrite == slot ? "SURE?" : (info.exists ? "OVERWRITE" : "SAVE");
-                if (Button(btn, label))
-                {
-                    if (info.exists && confirmOverwrite != slot) confirmOverwrite = slot;
-                    else
-                    {
-                        confirmOverwrite = -1;
-                        SaveSlots.SaveToSlot(slot, out string msg);
-                        Message(msg);
-                    }
-                }
+                row.buttonLabel.text = confirmOverwrite == slot ? "SURE?" : (info.exists ? "OVERWRITE" : "SAVE");
+                row.button.interactable = true;
             }
             else
             {
-                GUI.enabled = info.exists && info.valid;
-                if (Button(btn, "LOAD"))
-                {
-                    if (SaveSlots.LoadSlot(slot, out string msg))
-                    {
-                        paused = false;               // the level reloads - nothing to restore
-                        disabledWhilePaused.Clear();
-                    }
-                    else Message(msg);
-                }
-                GUI.enabled = true;
+                row.buttonLabel.text = "LOAD";
+                row.button.interactable = info.exists && info.valid;
             }
-            y += 104f;
         }
-        if (!saving) GUI.Label(new Rect(r.x + 40f, y + 4f, r.width - 80f, 30f), "Loading discards anything you have not saved.", sSmall);
-        DrawPanelMessage(r, r.yMax - 150f);
-        DrawBackButton(r);
+    }
+
+    private void SlotClicked(int slot)
+    {
+        if (panel == Panel.Save)
+        {
+            SaveSlots.SlotInfo info = SaveSlots.GetInfo(slot);
+            if (info.exists && confirmOverwrite != slot) confirmOverwrite = slot;
+            else
+            {
+                confirmOverwrite = -1;
+                SaveSlots.SaveToSlot(slot, out string msg);
+                Message(msg);
+            }
+            FillSlots(true);
+        }
+        else if (panel == Panel.Load)
+        {
+            if (SaveSlots.LoadSlot(slot, out string msg))
+            {
+                paused = false;
+                disabledWhilePaused.Clear();
+            }
+            else Message(msg);
+        }
     }
 
     // ---- settings (FR_47)
-    private void DrawSettings()
+    private void SyncSettings()
     {
-        Rect r = Window(900f, 640f);
-        Heading(new Rect(r.x, r.y + 20f, r.width, 70f), "SETTINGS", sBig);
-        float x = r.x + 60f, y = r.y + 120f, lw = 300f, sw = r.width - 120f - lw - 110f;
-
-        GameSettings.SetMasterVolume(Slider(x, ref y, lw, sw, "Master Volume", GameSettings.MasterVolume, 0f, 1f, Mathf.RoundToInt(GameSettings.MasterVolume * 100f) + "%"));
-        GameSettings.SetBrightness(Slider(x, ref y, lw, sw, "Brightness", GameSettings.Brightness, -1f, 1.5f, (GameSettings.Brightness >= 0 ? "+" : "") + GameSettings.Brightness.ToString("0.0")));
-        GameSettings.SetEffectsIntensity(Slider(x, ref y, lw, sw, "Camera Effects (head-bob)", GameSettings.EffectsIntensity, 0f, 1f, Mathf.RoundToInt(GameSettings.EffectsIntensity * 100f) + "%"));
-        GameSettings.SetMouseSensitivity(Slider(x, ref y, lw, sw, "Mouse Sensitivity", GameSettings.MouseSensitivity, 0.3f, 2.5f, GameSettings.MouseSensitivity.ToString("0.0") + "x"));
-
-        if (Button(new Rect(r.x + (r.width - 300f) * 0.5f, y + 10f, 300f, 52f), "RESET DEFAULTS")) GameSettings.ResetToDefaults();
-        GUI.Label(new Rect(r.x + 40f, y + 72f, r.width - 80f, 30f), "Settings are saved automatically.", sSmall.Center());
-        DrawBackButton(r);
+        float[] v = { GameSettings.MasterVolume, GameSettings.Brightness, GameSettings.EffectsIntensity, GameSettings.MouseSensitivity };
+        for (int i = 0; i < ui.settingRows.Length && i < 4; i++) ui.settingRows[i].slider.SetValueWithoutNotify(v[i]);
+        RefreshSettingValues();
     }
 
-    private float Slider(float x, ref float y, float lw, float sw, string label, float value, float min, float max, string shown)
+    private void RefreshSettingValues()
     {
-        Card(new Rect(x - 20f, y - 8f, lw + sw + 140f, 58f), false);
-        GUI.Label(new Rect(x, y, lw, 40f), label, sText);
-        float v = GUI.HorizontalSlider(new Rect(x + lw, y + 14f, sw, 30f), value, min, max, sSliderTrack, sSliderThumb);
-        GUI.Label(new Rect(x + lw + sw + 20f, y, 100f, 40f), shown, sText);
-        y += 70f;
-        return v;
+        if (ui.settingRows.Length < 4) return;
+        ui.settingRows[0].value.text = Mathf.RoundToInt(GameSettings.MasterVolume * 100f) + "%";
+        ui.settingRows[1].value.text = (GameSettings.Brightness >= 0 ? "+" : "") + GameSettings.Brightness.ToString("0.0");
+        ui.settingRows[2].value.text = Mathf.RoundToInt(GameSettings.EffectsIntensity * 100f) + "%";
+        ui.settingRows[3].value.text = GameSettings.MouseSensitivity.ToString("0.0") + "x";
     }
 
     // ---- achievements (FR_52, FR_53)
-    private void DrawAchievements()
+    private void FillAchievements()
     {
-        Rect r = Window(1240f, 900f);
         IReadOnlyList<GameProgress.AchievementDef> list = GameProgress.Achievements;
-        Heading(new Rect(r.x, r.y + 16f, r.width, 70f), "ACHIEVEMENTS", sBig);
         int unlocked = GameProgress.UnlockedCount();
-        GUI.Label(new Rect(r.x, r.y + 82f, r.width, 30f),
-            unlocked + " / " + list.Count + " unlocked        ·        Endings discovered: " + GameProgress.EndingsSeen() + " / " + GameProgress.EndingCount, sCenter.Sized(21));
-        Rect total = new Rect(r.center.x - 220f, r.y + 118f, 440f, 6f);
-        GUI.DrawTexture(total, tBlack);
-        Color oc = GUI.color; GUI.color = new Color(1f, 0.62f, 0.2f, 1f);
-        GUI.DrawTexture(new Rect(total.x, total.y, total.width * unlocked / Mathf.Max(1, list.Count), total.height), tWhite);
-        GUI.color = oc;
+        ui.achSummary.text = unlocked + " / " + list.Count + " unlocked        ·        Endings discovered: " + GameProgress.EndingsSeen() + " / " + GameProgress.EndingCount;
+        ui.achBarFill.anchorMax = new Vector2((float)unlocked / Mathf.Max(1, list.Count), 1f);
 
+        TLCCanvas.Clear(ui.achContent, ui.achTemplate);
         SaveData save = GameProgress.CurrentSave;
-        Rect view = new Rect(r.x + 30f, r.y + 142f, r.width - 60f, r.height - 242f);
-        float rowH = 92f, colW = (view.width - 34f) * 0.5f;
-        int rows = (list.Count + 1) / 2;
-        Rect content = new Rect(0, 0, view.width - 18f, rows * (rowH + 10f));
-        scrollA = GUI.BeginScrollView(view, scrollA, content);
-        GUIStyle tStyle = sHeader.Sized(23);
-        GUIStyle dStyle = new GUIStyle(sSmall) { fontSize = 18, clipping = TextClipping.Clip };
-        GUIStyle chip = new GUIStyle(sSmall) { fontSize = 14, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleRight };
-        for (int i = 0; i < list.Count; i++)
+        foreach (GameProgress.AchievementDef a in list)
         {
-            GameProgress.AchievementDef a = list[i];
+            TLCRefs c = TLCCanvas.Spawn<TLCRefs>(ui.achTemplate, ui.achContent);
             bool got = GameProgress.IsUnlocked(a.id);
-            Rect cell = new Rect((i % 2) * (colW + 10f), (i / 2) * (rowH + 10f), colW, rowH);
-            Card(cell, got);
             bool secret = !got && a.hidden;
-            string title = secret ? "???" : a.title;
-            string desc = secret ? "Hidden - keep playing to discover this one." : a.description;
-
-            tStyle.normal.textColor = got ? new Color(1f, 0.86f, 0.52f) : new Color(0.80f, 0.74f, 0.68f);
-            GUI.Label(new Rect(cell.x + 22f, cell.y + 8f, cell.width - 150f, 32f), title, tStyle);
-            chip.normal.textColor = got ? new Color(1f, 0.70f, 0.22f) : new Color(0.50f, 0.42f, 0.38f);
-            GUI.Label(new Rect(cell.xMax - 130f, cell.y + 12f, 116f, 22f), got ? "UNLOCKED" : "LOCKED", chip);
-
-            bool side = got || (a.progress != null && save != null);
-            GUI.Label(new Rect(cell.x + 22f, cell.y + 42f, cell.width - 44f - (side ? 150f : 0f), 46f), desc, dStyle);
-
-            if (got)
-            {
-                GUI.Label(new Rect(cell.xMax - 150f, cell.y + 62f, 136f, 24f), GameProgress.UnlockDate(a.id), sSmall.Right().Sized(16));
-            }
-            else if (a.progress != null && save != null)
+            c.card.Set(got);
+            c.texts[0].text = secret ? "???" : a.title;
+            c.texts[0].color = got ? new Color(1f, 0.86f, 0.52f) : new Color(0.80f, 0.74f, 0.68f);
+            c.texts[1].text = got ? "UNLOCKED" : "LOCKED";
+            c.texts[1].color = got ? new Color(1f, 0.70f, 0.22f) : new Color(0.50f, 0.42f, 0.38f);
+            c.texts[2].text = secret ? "Hidden - keep playing to discover this one." : a.description;
+            c.texts[3].text = got ? GameProgress.UnlockDate(a.id) : "";
+            bool bar = !got && a.progress != null && save != null;
+            c.images[0].gameObject.SetActive(bar);
+            c.texts[4].gameObject.SetActive(bar);
+            if (bar)
             {
                 int target = GameProgress.TargetOf(a);
                 int cur = Mathf.Min(target, a.progress(save));
-                Rect bar = new Rect(cell.xMax - 150f, cell.y + 74f, 134f, 8f);
-                GUI.DrawTexture(bar, tBlack);
-                Color pc = GUI.color; GUI.color = new Color(0.78f, 0.30f, 0.12f, 1f);
-                GUI.DrawTexture(new Rect(bar.x, bar.y, bar.width * cur / Mathf.Max(1, target), bar.height), tWhite);
-                GUI.color = pc;
-                GUI.Label(new Rect(bar.x, bar.y - 28f, bar.width, 24f), cur + " / " + target, sSmall.Right().Sized(16));
+                c.rects[0].anchorMax = new Vector2((float)cur / Mathf.Max(1, target), 1f);
+                c.texts[4].text = cur + " / " + target;
             }
         }
-        GUI.EndScrollView();
-        DrawBackButton(r);
     }
 
     // ---- journal (FR_34, FR_35, FR_37, FR_49, FR_51)
-    private void DrawJournal()
+    private void FillJournal()
     {
-        Rect r = Window(1400f, 900f);
-        Heading(new Rect(r.x, r.y + 14f, r.width, 70f), "JOURNAL", sBig);
-        string[] tabs = { "OBJECTIVES", "ITEMS", "NOTES", "STATISTICS" };
-        float tw = 260f, tx = r.x + (r.width - tabs.Length * (tw + 10f)) * 0.5f;
-        for (int i = 0; i < tabs.Length; i++)
-        {
-            if (GUI.Button(new Rect(tx + i * (tw + 10f), r.y + 90f, tw, 48f), tabs[i], journalTab == i ? sTabOn : sTab))
-            {
-                journalTab = i;
-                scrollA = scrollB = Vector2.zero;
-            }
-        }
-
-        Rect body = new Rect(r.x + 40f, r.y + 160f, r.width - 80f, r.height - 260f);
+        for (int i = 0; i < ui.journalTabs.Length; i++) TLCUIFactory.SetButtonColors(ui.journalTabs[i], i == journalTab);
+        for (int i = 0; i < ui.journalPages.Length; i++) TLCCanvas.SetActive(ui.journalPages[i], i == journalTab);
         switch (journalTab)
         {
-            case 0: DrawObjectives(body); break;
-            case 1: DrawItems(body); break;
-            case 2: DrawNotes(body); break;
-            case 3: DrawStats(body); break;
+            case 0: FillObjectives(); break;
+            case 1: FillItems(); break;
+            case 2: FillNotes(); break;
+            case 3: FillStats(); break;
         }
-        GUI.Label(new Rect(r.x + 40f, r.yMax - 70f, 420f, 40f), "TAB  close", sSmall);
-        DrawBackButton(r);
     }
 
-    private void DrawObjectives(Rect body)
+    private void FillObjectives()
     {
+        TLCCanvas.Clear(ui.jObjContent, ui.jObjTemplate, ui.jObjMore.gameObject);
         ObjectiveTracker t = ObjectiveTracker.Instance;
-        if (t == null) { GUI.Label(body, "No objectives yet.", sText); return; }
+        if (t == null) { ui.jObjMore.text = "No objectives yet."; return; }
 
         List<ObjectiveTracker.Objective> shown = new List<ObjectiveTracker.Objective>();
         foreach (ObjectiveTracker.Objective o in t.Objectives) if (o.discovered || o.done) shown.Add(o);
-        // unfinished first, then finished
         shown.Sort((a, b) => a.done == b.done ? a.order.CompareTo(b.order) : (a.done ? 1 : -1));
-
-        Rect content = new Rect(0, 0, body.width - 24f, (shown.Count + 2) * 52f);
-        scrollA = GUI.BeginScrollView(body, scrollA, content);
-        float y = 0f;
         foreach (ObjectiveTracker.Objective o in shown)
         {
-            GUI.DrawTexture(new Rect(0, y, content.width, 46f), o.done ? tRedDark : tGray);
-            GUI.Label(new Rect(16f, y + 6f, 130f, 34f), o.done ? "DONE" : "OPEN", o.done ? sSmall : sToastTitle);
-            GUI.Label(new Rect(130f, y + 4f, content.width - 150f, 38f), o.done ? "<color=#9a9088>" + t.TitleWithProgress(o) + "</color>" : t.TitleWithProgress(o), sText);
-            y += 52f;
+            TLCRefs r = TLCCanvas.Spawn<TLCRefs>(ui.jObjTemplate, ui.jObjContent);
+            r.images[0].color = o.done ? TLCUIFactory.RedDark : TLCUIFactory.Gray;
+            r.texts[0].text = o.done ? "DONE" : "OPEN";
+            r.texts[0].color = o.done ? TLCUIFactory.Dim : TLCUIFactory.Blood;
+            r.texts[1].text = o.done ? "<color=#9a9088>" + t.TitleWithProgress(o) + "</color>" : t.TitleWithProgress(o);
         }
         int hidden = t.UndiscoveredCount();
-        if (hidden > 0) GUI.Label(new Rect(16f, y + 8f, content.width, 34f), "??? " + hidden + " more objective(s) still to discover - explore the asylum.", sSmall);
-        GUI.EndScrollView();
+        ui.jObjMore.text = hidden > 0 ? "??? " + hidden + " more objective(s) still to discover - explore the asylum." : "";
+        ui.jObjMore.transform.SetAsLastSibling();
     }
 
-    private void DrawItems(Rect body)
+    private void FillItems()
     {
         SaveData d = GameProgress.CurrentSave;
         List<string> items = d != null ? SaveManager.SplitList(d.itemsFoundCSV) : new List<string>();
-        items.Sort(System.StringComparer.OrdinalIgnoreCase); // organised alphabetically (FR_37)
+        items.Sort(System.StringComparer.OrdinalIgnoreCase);   // organised alphabetically (FR_37)
 
         string inHand = "";
         if (player != null)
@@ -842,52 +647,51 @@ public class GameUI : MonoBehaviour
             Inventory inv = player.GetComponent<Inventory>();
             if (inv != null) inHand = inv.GetHeldItemDisplayName();
         }
+        ui.jItemsInHand.text = "In your hand:  <b>" + (string.IsNullOrEmpty(inHand) ? "nothing" : inHand) + "</b>      (G to drop)";
 
-        GUI.Label(new Rect(body.x, body.y, body.width, 36f), "In your hand:  <b>" + (string.IsNullOrEmpty(inHand) ? "nothing" : inHand) + "</b>      (G to drop)", sText);
-
-        Rect list = new Rect(body.x, body.y + 50f, 440f, body.height - 50f);
-        Rect detail = new Rect(list.xMax + 30f, list.y, body.width - list.width - 30f, list.height);
-        GUI.DrawTexture(detail, tGray);
-
+        TLCCanvas.Clear(ui.jItemsContent, ui.jItemTemplate);
+        ui.jItemsEmpty.gameObject.SetActive(items.Count == 0);
         if (items.Count == 0)
         {
-            GUI.Label(list, "You have not picked anything up yet.", sSmall);
+            ui.jItemName.text = ""; ui.jItemDesc.text = ""; ui.jItemFoot.text = "";
             return;
         }
         if (selectedItem >= items.Count) selectedItem = -1;
         if (selectedItem < 0 && !string.IsNullOrEmpty(inHand)) selectedItem = items.FindIndex(s => string.Equals(s, inHand, System.StringComparison.OrdinalIgnoreCase));
 
-        Rect content = new Rect(0, 0, list.width - 24f, items.Count * 48f);
-        scrollA = GUI.BeginScrollView(list, scrollA, content);
         for (int i = 0; i < items.Count; i++)
         {
+            Button b = TLCCanvas.Spawn<Button>(ui.jItemTemplate, ui.jItemsContent);
             bool held = string.Equals(items[i], inHand, System.StringComparison.OrdinalIgnoreCase);
-            if (GUI.Button(new Rect(0, i * 48f, content.width, 42f), (held ? "> " : "") + items[i], selectedItem == i ? sListItemOn : sListItem)) selectedItem = i;
+            b.GetComponentInChildren<Text>().text = (held ? "> " : "") + items[i];
+            TLCUIFactory.SetButtonColors(b, i == selectedItem);
+            int k = i;
+            b.onClick.AddListener(() => { selectedItem = k; FillItems(); });
         }
-        GUI.EndScrollView();
 
         if (selectedItem >= 0 && selectedItem < items.Count)
         {
             string name = items[selectedItem];
-            GUI.Label(new Rect(detail.x + 24f, detail.y + 20f, detail.width - 48f, 44f), name.ToUpperInvariant(), sHeader);
-            GUI.Label(new Rect(detail.x + 24f, detail.y + 76f, detail.width - 48f, 200f), GameProgress.DescribeItem(name), sText);
             bool held = string.Equals(name, inHand, System.StringComparison.OrdinalIgnoreCase);
-            GUI.Label(new Rect(detail.x + 24f, detail.yMax - 60f, detail.width - 48f, 40f), held ? "You are holding this." : "You only have one free hand - pick it up again where you left it.", sSmall);
+            ui.jItemName.text = name.ToUpperInvariant();
+            ui.jItemDesc.text = GameProgress.DescribeItem(name);
+            ui.jItemFoot.text = held ? "You are holding this." : "You only have one free hand - pick it up again where you left it.";
         }
-        else GUI.Label(new Rect(detail.x + 24f, detail.y + 20f, detail.width - 48f, 60f), "Select an item to inspect it.", sSmall);
+        else
+        {
+            ui.jItemName.text = "";
+            ui.jItemDesc.text = "<color=#9e948a>Select an item to inspect it.</color>";
+            ui.jItemFoot.text = "";
+        }
     }
 
     private class NoteEntry { public string id, text, title; }
-    private List<NoteEntry> noteCache;
-    private int noteCacheFrame = -1;
 
     private List<NoteEntry> ReadNotes()
     {
-        if (noteCache != null && Time.frameCount - noteCacheFrame < 30) return noteCache;
-        noteCacheFrame = Time.frameCount;
-        noteCache = new List<NoteEntry>();
+        List<NoteEntry> notes = new List<NoteEntry>();
         SaveData d = GameProgress.CurrentSave;
-        if (d == null) return noteCache;
+        if (d == null) return notes;
         Dictionary<string, string> texts = new Dictionary<string, string>();
         foreach (ReadableNote n in FindObjectsByType<ReadableNote>(FindObjectsInactive.Include))
         {
@@ -895,57 +699,47 @@ public class GameUI : MonoBehaviour
             if (!texts.ContainsKey(id)) texts[id] = n.noteText;
         }
         foreach (string id in SaveManager.SplitList(d.notesReadCSV))
-            if (texts.TryGetValue(id, out string text)) noteCache.Add(new NoteEntry { id = id, text = text });
+            if (texts.TryGetValue(id, out string text)) notes.Add(new NoteEntry { id = id, text = text });
 
-        // hidden lore (FR_64) comes after the notes
-        List<GameProgress.LoreEntry> lore = GameProgress.AllLoreInScene();
+        List<GameProgress.LoreEntry> lore = GameProgress.AllLoreInScene();   // hidden lore (FR_64) after the notes
         foreach (string id in SaveManager.SplitList(d.loreFoundCSV))
         {
             GameProgress.LoreEntry e = lore.Find(l => l.id == id);
-            if (e != null) noteCache.Add(new NoteEntry { id = id, text = e.text, title = e.title });
+            if (e != null) notes.Add(new NoteEntry { id = id, text = e.text, title = e.title });
         }
-        return noteCache;
+        return notes;
     }
 
-    private void DrawNotes(Rect body)
+    private void FillNotes()
     {
         List<NoteEntry> notes = ReadNotes();
-        int total = GameProgress.CountNotesInScene();
-        int loreTotal = GameProgress.AllLoreInScene().Count;
-        GUI.Label(new Rect(body.x, body.y, body.width, 36f), "Notes found: " + GameProgress.NotesRead() + " / " + total +
-            "        Hidden lore: " + GameProgress.LoreFoundCount() + " / " + loreTotal, sText);
-
-        Rect list = new Rect(body.x, body.y + 50f, 440f, body.height - 50f);
-        Rect page = new Rect(list.xMax + 30f, list.y, body.width - list.width - 30f, list.height);
-        GUI.DrawTexture(page, tGray);
-
-        if (notes.Count == 0)
-        {
-            GUI.Label(list, "You have not read any notes yet. Look for papers on desks, walls and bodies.", sSmall);
-            return;
-        }
+        ui.jNotesCounts.text = "Notes found: " + GameProgress.NotesRead() + " / " + GameProgress.CountNotesInScene() +
+                               "        Hidden lore: " + GameProgress.LoreFoundCount() + " / " + GameProgress.AllLoreInScene().Count;
+        TLCCanvas.Clear(ui.jNotesContent, ui.jNoteTemplate);
+        ui.jNotesEmpty.gameObject.SetActive(notes.Count == 0);
+        if (notes.Count == 0) { ui.jNoteHeading.text = ""; ui.jNoteText.text = ""; return; }
         if (selectedNote < 0 || selectedNote >= notes.Count) selectedNote = notes.Count - 1;
 
-        Rect content = new Rect(0, 0, list.width - 24f, notes.Count * 48f);
-        scrollA = GUI.BeginScrollView(list, scrollA, content);
         for (int i = 0; i < notes.Count; i++)
         {
             string preview = notes[i].title ?? notes[i].text.Replace("\n", " ");
             if (preview.Length > 30) preview = preview.Substring(0, 30) + "...";
-            string label = notes[i].title != null ? "*  " + preview : (i + 1) + ".  " + preview;
-            if (GUI.Button(new Rect(0, i * 48f, content.width, 42f), label, selectedNote == i ? sListItemOn : sListItem)) selectedNote = i;
+            Button b = TLCCanvas.Spawn<Button>(ui.jNoteTemplate, ui.jNotesContent);
+            b.GetComponentInChildren<Text>().text = notes[i].title != null ? "*  " + preview : (i + 1) + ".  " + preview;
+            TLCUIFactory.SetButtonColors(b, i == selectedNote);
+            int k = i;
+            b.onClick.AddListener(() => { selectedNote = k; FillNotes(); });
         }
-        GUI.EndScrollView();
-
-        string heading = notes[selectedNote].title != null ? "HIDDEN LORE - " + notes[selectedNote].title.ToUpperInvariant() : "NOTE " + (selectedNote + 1);
-        GUI.Label(new Rect(page.x + 24f, page.y + 20f, page.width - 48f, 40f), heading, sHeader);
-        GUI.Label(new Rect(page.x + 24f, page.y + 76f, page.width - 48f, page.height - 100f), "<i>\"" + notes[selectedNote].text + "\"</i>", sText);
+        NoteEntry n = notes[selectedNote];
+        ui.jNoteHeading.text = n.title != null ? "HIDDEN LORE - " + n.title.ToUpperInvariant() : "NOTE " + (selectedNote + 1);
+        ui.jNoteText.text = "<i>\"" + n.text + "\"</i>";
     }
 
-    private void DrawStats(Rect body)
+    private void FillStats()
     {
+        TLCCanvas.Clear(ui.jStatsContent, ui.jStatTemplate);
         SaveData d = GameProgress.CurrentSave;
-        if (d == null) { GUI.Label(body, "No statistics yet.", sText); return; }
+        if (d == null) { AddRow(ui.jStatsContent, ui.jStatTemplate, 0, "No statistics yet.", ""); return; }
         ObjectiveTracker t = ObjectiveTracker.Instance;
         string[,] rows =
         {
@@ -963,28 +757,27 @@ public class GameUI : MonoBehaviour
             { "Adaptive AI - enemy aggression", d.aggressionLevel + " / 5" },
             { "Achievements", GameProgress.UnlockedCount() + " / " + GameProgress.Achievements.Count },
         };
-        float y = body.y;
-        for (int i = 0; i < rows.GetLength(0); i++)
-        {
-            GUI.DrawTexture(new Rect(body.x, y, body.width, 42f), i % 2 == 0 ? tGray : tRedDark);
-            GUI.Label(new Rect(body.x + 20f, y + 2f, 520f, 38f), rows[i, 0], sText);
-            GUI.Label(new Rect(body.x + 540f, y + 2f, body.width - 560f, 38f), "<b>" + rows[i, 1] + "</b>", sText);
-            y += 46f;
-        }
+        for (int i = 0; i < rows.GetLength(0); i++) AddRow(ui.jStatsContent, ui.jStatTemplate, i, rows[i, 0], rows[i, 1]);
+    }
+
+    private static void AddRow(Transform parent, GameObject template, int i, string label, string value)
+    {
+        TLCRefs r = TLCCanvas.Spawn<TLCRefs>(template, parent);
+        r.images[0].color = i % 2 == 0 ? TLCUIFactory.Gray : TLCUIFactory.RedDark;
+        r.texts[0].text = label;
+        r.texts[1].text = value;
     }
 
     // ---- ending summary (FR_56)
-    private void DrawSummary()
+    private void FillSummary()
     {
+        if (ui == null) BindUI();
+        if (ui == null || summary == null) return;
         GameProgress.RunSummary s = summary;
-        GUI.color = Color.white;
-        GUI.DrawTexture(new Rect(0, 0, vw, VH), Tex2Black());
-        float w = Mathf.Min(1300f, vw - 80f), x = (vw - w) * 0.5f;
-
-        GUI.Label(new Rect(x, 50f, w, 80f), s.title, sTitle);
-        GUI.Label(new Rect(x, 130f, w, 40f), "<i>" + s.tagline + "</i>", sCenter);
-        GUI.Label(new Rect(x + 60f, 185f, w - 120f, 110f), s.description, sCenter);
-        GUI.Label(new Rect(x + 60f, 295f, w - 120f, 40f), "<b>Why this ending:</b> " + s.reason, sSmall.Center());
+        ui.sumTitle.text = s.title;
+        ui.sumTagline.text = s.tagline;
+        ui.sumDesc.text = s.description;
+        ui.sumReason.text = "<b>Why this ending:</b> " + s.reason;
 
         string[,] rows =
         {
@@ -1000,40 +793,13 @@ public class GameUI : MonoBehaviour
             { "Achievements", s.achievementsUnlocked + " / " + s.achievementsTotal },
             { "Endings discovered", s.endingsSeen + " / " + GameProgress.EndingCount },
         };
-        float tw = 760f, tx = (vw - tw) * 0.5f, y = 355f;
-        for (int i = 0; i < rows.GetLength(0); i++)
-        {
-            GUI.DrawTexture(new Rect(tx, y, tw, 40f), i % 2 == 0 ? tGray : tRedDark);
-            GUI.Label(new Rect(tx + 20f, y + 2f, 340f, 36f), rows[i, 0], sText);
-            GUI.Label(new Rect(tx + 360f, y + 2f, tw - 380f, 36f), "<b>" + rows[i, 1] + "</b>", sText);
-            y += 43f;
-        }
+        TLCCanvas.Clear(ui.sumRows, ui.sumRowTemplate);
+        for (int i = 0; i < rows.GetLength(0); i++) AddRow(ui.sumRows, ui.sumRowTemplate, i, rows[i, 0], rows[i, 1]);
 
-        if (s.newAchievements.Count > 0)
-        {
-            List<string> names = new List<string>();
-            foreach (string id in s.newAchievements)
-            {
-                foreach (GameProgress.AchievementDef a in GameProgress.Achievements) if (a.id == id) names.Add(a.title);
-            }
-            GUI.Label(new Rect(x, y + 8f, w, 40f), "<color=#f2c040>New achievements: " + string.Join(", ", names.ToArray()) + "</color>", sCenter);
-        }
-
-        if (Button(new Rect((vw - 340f) * 0.5f, VH - 100f, 340f, 62f), "CONTINUE")) summary = null;
+        List<string> names = new List<string>();
+        foreach (string id in s.newAchievements)
+            foreach (GameProgress.AchievementDef a in GameProgress.Achievements) if (a.id == id) names.Add(a.title);
+        ui.sumNewAch.text = names.Count > 0 ? "New achievements: " + string.Join(", ", names.ToArray()) : "";
+        RefreshUI();
     }
-
-    private Texture2D solidBlack;
-    private Texture2D Tex2Black()
-    {
-        if (solidBlack == null) solidBlack = Tex(new Color(0f, 0f, 0f, 0.97f));
-        return solidBlack;
-    }
-}
-
-/// <summary>Small helpers to derive GUIStyles without repeating code.</summary>
-internal static class GUIStyleExt
-{
-    public static GUIStyle Center(this GUIStyle s) => new GUIStyle(s) { alignment = TextAnchor.MiddleCenter };
-    public static GUIStyle Right(this GUIStyle s) => new GUIStyle(s) { alignment = TextAnchor.MiddleRight };
-    public static GUIStyle Sized(this GUIStyle s, int size) => new GUIStyle(s) { fontSize = size };
 }

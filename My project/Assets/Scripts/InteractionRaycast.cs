@@ -15,13 +15,8 @@ public class InteractionRaycast : MonoBehaviour
     private string currentRoom = "";
     private string currentFloor = "";
     [SerializeField] private float roomNameDistance = 7f;
-    private GUIStyle roomStyle;
-    private GUIStyle floorStyle;
     private string notificationMessage = "";
     private float notificationTimer = 0f;
-
-    private GUIStyle notifStyle;
-    private GUIStyle promptStyle;
 
     public void ShowNotification(string message, float duration = 3f)
     {
@@ -40,6 +35,7 @@ public class InteractionRaycast : MonoBehaviour
 
     void Start()
     {
+        TLCCanvas.Ensure();
         playerStats = GetComponentInParent<PlayerStats>();
         if (playerStats != null) playerController = playerStats.GetComponent<PlayerController>();
     }
@@ -132,59 +128,24 @@ public class InteractionRaycast : MonoBehaviour
         return null;
     }
 
-    void OnGUI()
+    /// <summary>The HUD texts are real objects on the TLC_UI canvas (HUD/RoomName, HUD/InteractPrompt, ...); this fills them in.</summary>
+    void LateUpdate()
     {
-        if (notifStyle == null)
-        {
-            notifStyle = new GUIStyle { alignment = TextAnchor.MiddleCenter, fontSize = 24, fontStyle = FontStyle.Bold, wordWrap = true };
-            promptStyle = new GUIStyle { alignment = TextAnchor.MiddleCenter, fontSize = 22, fontStyle = FontStyle.Bold };
-        }
+        TLCCanvas ui = TLCCanvas.Instance;
+        if (ui == null) return;
+        bool blocked = playerController != null && (playerController.isDead || playerController.isCinematicPlaying);
+        TLCCanvas.SetText(ui.notification, notificationMessage);
+        TLCCanvas.SetText(ui.roomName, string.IsNullOrEmpty(currentRoom) ? "" : currentRoom.ToUpper());
+        TLCCanvas.SetText(ui.floorName, string.IsNullOrEmpty(currentRoom) || string.IsNullOrEmpty(currentFloor) ? "" : currentFloor.ToUpper());
+        TLCCanvas.SetText(ui.prompt, currentPrompt);
+        if (ui.crosshair != null) ui.crosshair.enabled = !KeypadController.IsAnyKeypadOpen && !blocked;
+    }
 
-        // Notification Text
-        if (!string.IsNullOrEmpty(notificationMessage))
-        {
-            notifStyle.normal.textColor = Color.black;
-            GUI.Label(new Rect(Screen.width / 2 - 299, Screen.height / 2 - 169, 600, 80), notificationMessage, notifStyle);
-
-            notifStyle.normal.textColor = Color.yellow;
-            GUI.Label(new Rect(Screen.width / 2 - 300, Screen.height / 2 - 170, 600, 80), notificationMessage, notifStyle);
-        }
-
-        // Room name (above the prompt): big name + the floor in small letters
-        if (!string.IsNullOrEmpty(currentRoom))
-        {
-            if (roomStyle == null)
-            {
-                roomStyle = new GUIStyle { alignment = TextAnchor.MiddleCenter, fontSize = 30, fontStyle = FontStyle.Bold };
-                floorStyle = new GUIStyle { alignment = TextAnchor.MiddleCenter, fontSize = 15, fontStyle = FontStyle.Bold };
-            }
-            string room = currentRoom.ToUpper();
-            roomStyle.normal.textColor = new Color(0f, 0f, 0f, 0.85f);
-            GUI.Label(new Rect(Screen.width / 2 - 299, Screen.height / 2 - 98, 600, 40), room, roomStyle);
-            roomStyle.normal.textColor = new Color(0.93f, 0.89f, 0.82f, 1f);
-            GUI.Label(new Rect(Screen.width / 2 - 300, Screen.height / 2 - 100, 600, 40), room, roomStyle);
-            if (!string.IsNullOrEmpty(currentFloor))
-            {
-                floorStyle.normal.textColor = new Color(0.8f, 0.25f, 0.2f, 0.95f);
-                GUI.Label(new Rect(Screen.width / 2 - 300, Screen.height / 2 - 64, 600, 22), currentFloor.ToUpper(), floorStyle);
-            }
-        }
-
-        // Interaction Prompt text
-        if (!string.IsNullOrEmpty(currentPrompt))
-        {
-            // Shadow effect
-            promptStyle.normal.textColor = Color.black;
-            GUI.Label(new Rect(Screen.width / 2 - 249, Screen.height / 2 + 51, 500, 40), currentPrompt, promptStyle);
-
-            // Main white text
-            promptStyle.normal.textColor = Color.white;
-            GUI.Label(new Rect(Screen.width / 2 - 250, Screen.height / 2 + 50, 500, 40), currentPrompt, promptStyle);
-        }
-
-        // Center crosshair dot (hidden while a keypad is open)
-        if (KeypadController.IsAnyKeypadOpen) return;
-        GUI.color = Color.white;
-        GUI.DrawTexture(new Rect(Screen.width / 2 - 2, Screen.height / 2 - 2, 5, 5), Texture2D.whiteTexture);
+    void OnDisable()
+    {
+        TLCCanvas ui = TLCCanvas.Instance;
+        if (ui == null) return;
+        TLCCanvas.SetText(ui.notification, ""); TLCCanvas.SetText(ui.roomName, ""); TLCCanvas.SetText(ui.floorName, ""); TLCCanvas.SetText(ui.prompt, "");
+        if (ui.crosshair != null) ui.crosshair.enabled = false;
     }
 }

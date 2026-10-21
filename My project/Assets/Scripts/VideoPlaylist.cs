@@ -18,7 +18,6 @@ public class VideoPlaylist : MonoBehaviour
     private int currentVideoIndex = 0;
     private bool finished = false;
     private float safetyDeadline = -1f;
-    private GUIStyle hintStyle;
 
     void Awake()
     {
@@ -74,15 +73,13 @@ public class VideoPlaylist : MonoBehaviour
         }
     }
 
-    void OnGUI()
+    /// <summary>"Press SPACE to skip": a real object on the TLC_UI canvas (IntroSkipHint).</summary>
+    void LateUpdate()
     {
-        if (finished || safetyDeadline < 0f) return;
-        if (hintStyle == null)
-        {
-            hintStyle = new GUIStyle { alignment = TextAnchor.LowerRight, fontSize = 16 };
-            hintStyle.normal.textColor = new Color(1f, 1f, 1f, 0.6f);
-        }
-        GUI.Label(new Rect(Screen.width - 320, Screen.height - 40, 300, 30), "Press " + skipKey.ToString().ToUpper() + " to skip", hintStyle);
+        bool show = !finished && safetyDeadline >= 0f;
+        TLCCanvas ui = show ? TLCCanvas.Ensure() : TLCCanvas.Instance;
+        if (ui == null || ui.introSkipHint == null) return;
+        TLCCanvas.SetText(ui.introSkipHint, show ? "Press " + skipKey.ToString().ToUpper() + " to skip" : "");
     }
 
     private void OnVideoError(VideoPlayer vp, string message)

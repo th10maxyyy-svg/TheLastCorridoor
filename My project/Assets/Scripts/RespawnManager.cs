@@ -27,7 +27,6 @@ public class RespawnManager : MonoBehaviour
 
     private string msgTitle, msgLine, msgLives;
     private float msgStart = -1f;
-    private GUIStyle msgTitleStyle, msgLineStyle, msgLivesStyle;
 
     private void Awake()
     {
@@ -248,46 +247,28 @@ public class RespawnManager : MonoBehaviour
     }
 
     // ------------------------------------------------------------------ death message (1st and 2nd death)
-    private void OnGUI()
+    /// <summary>Death message: real objects on the TLC_UI canvas (DeathMessage/Title, Line, Lives).</summary>
+    private void LateUpdate()
     {
         if (msgStart < 0f || string.IsNullOrEmpty(msgTitle)) return;
+        TLCCanvas ui = TLCCanvas.Ensure();
+        if (ui == null || ui.deathGroup == null) return;
+        if (!ui.deathGroup.gameObject.activeSelf) ui.deathGroup.gameObject.SetActive(true);
+        ui.deathGroup.alpha = 1f;
         float t = Time.unscaledTime - msgStart;
-        float k = Screen.height / 1080f;
-        if (msgTitleStyle == null)
-        {
-            msgTitleStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold, wordWrap = true };
-            msgLineStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Italic, wordWrap = true };
-            msgLivesStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
-        }
-        msgTitleStyle.fontSize = Mathf.RoundToInt(64 * k);
-        msgLineStyle.fontSize = Mathf.RoundToInt(30 * k);
-        msgLivesStyle.fontSize = Mathf.RoundToInt(22 * k);
-
-        GUI.depth = -1000;
-        float w = Screen.width * 0.9f, x = (Screen.width - w) * 0.5f, cy = Screen.height * 0.5f;
 
         // the title types itself in, letter by letter, with a slight flicker
         int shown = Mathf.Clamp(Mathf.FloorToInt(t * 22f), 0, msgTitle.Length);
         float flicker = (t < 1.5f && Random.value < 0.08f) ? 0.4f : 1f;
-        DrawShadowed(new Rect(x, cy - 120f * k, w, 110f * k), msgTitle.Substring(0, shown), msgTitleStyle,
-                     new Color(0.72f, 0.06f, 0.05f, flicker));
+        ui.deathTitle.text = msgTitle.Substring(0, shown);
+        ui.deathTitle.color = new Color(0.72f, 0.06f, 0.05f, flicker);
 
         float a2 = Mathf.Clamp01((t - msgTitle.Length / 22f - 0.3f) / 0.8f);
-        if (a2 > 0f)
-        {
-            DrawShadowed(new Rect(x, cy, w, 50f * k), msgLine, msgLineStyle, new Color(0.88f, 0.84f, 0.76f, a2));
-            DrawShadowed(new Rect(x, cy + 70f * k, w, 34f * k), msgLives, msgLivesStyle, new Color(0.72f, 0.06f, 0.05f, a2 * 0.9f));
-        }
+        ui.deathLine.text = msgLine;
+        ui.deathLine.color = new Color(0.88f, 0.84f, 0.76f, a2);
+        ui.deathLives.text = msgLives;
+        ui.deathLives.color = new Color(0.72f, 0.06f, 0.05f, a2 * 0.9f);
     }
 
-    private static void DrawShadowed(Rect r, string text, GUIStyle style, Color c)
-    {
-        Color old = GUI.color;
-        GUI.color = new Color(0f, 0f, 0f, c.a * 0.85f);
-        GUI.Label(new Rect(r.x + 3f, r.y + 3f, r.width, r.height), text, style);
-        GUI.color = c;
-        style.normal.textColor = Color.white;
-        GUI.Label(r, text, style);
-        GUI.color = old;
-    }
+
 }

@@ -318,21 +318,24 @@ public class PlayerBehaviorTracker : MonoBehaviour
     }
 
     // ------------------------------------------------------------------------------------------------ F8 debug panel
-    void OnGUI()
+    /// <summary>F8 panel: a real object on the TLC_UI canvas (AIPanel).</summary>
+    void LateUpdate()
     {
+        TLCCanvas ui = TLCCanvas.Instance;
+        if (ui == null || ui.aiPanel == null) return;
+        if (ui.aiPanel.activeSelf != showPanel) ui.aiPanel.SetActive(showPanel);
         if (!showPanel) return;
-        GUILayout.BeginArea(new Rect(10, 10, 340, 240), GUI.skin.box);
-        GUILayout.Label("ADAPTIVE AI  (press F8 to hide)");
-        GUILayout.Label($"Comfort score: {ComfortScore:0} / 100");
-        GUILayout.Label($"  hiding {sHide}/25   movement {sMove}/20   puzzle {sPuzzle}/20");
-        GUILayout.Label($"  deaths {sDeath}/20   survival {sSurvive}/15");
-        GUILayout.Label($"Skill class: {CurrentClass}   (next: {pendingClass} x{pendingCount})");
-        GUILayout.Label($"Enemy aggression: {Aggression} / 5");
-        if (enemyAI != null)
-            GUILayout.Label($"Chase speed {enemyAI.CurrentChaseSpeed:0.0}   detection {enemyAI.CurrentDetectionRange:0.0} m");
         SpotUse fav = FavouriteSpot();
-        GUILayout.Label(fav != null ? $"Favourite hiding spot used {fav.count}x" : "No hiding spot used yet");
-        GUILayout.Label($"Next evaluation in {Mathf.Max(0f, nextEvaluationTime - Time.time):0} s");
-        GUILayout.EndArea();
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        sb.AppendLine("<b>ADAPTIVE AI</b>  (press F8 to hide)");
+        sb.AppendLine($"Comfort score: {ComfortScore:0} / 100");
+        sb.AppendLine($"  hiding {sHide}/25   movement {sMove}/20   puzzle {sPuzzle}/20");
+        sb.AppendLine($"  deaths {sDeath}/20   survival {sSurvive}/15");
+        sb.AppendLine($"Skill class: {CurrentClass}   (next: {pendingClass} x{pendingCount})");
+        sb.AppendLine($"Enemy aggression: {Aggression} / 5");
+        if (enemyAI != null) sb.AppendLine($"Chase speed {enemyAI.CurrentChaseSpeed:0.0}   detection {enemyAI.CurrentDetectionRange:0.0} m");
+        sb.AppendLine(fav != null ? $"Favourite hiding spot used {fav.count}x" : "No hiding spot used yet");
+        sb.Append($"Next evaluation in {Mathf.Max(0f, nextEvaluationTime - Time.time):0} s");
+        ui.aiText.text = sb.ToString();
     }
 }

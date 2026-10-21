@@ -159,13 +159,10 @@ public class ConsumedEndingCinematic : MonoBehaviour
     private string subtitle = "", title = "", titleLine = "";
     private float titleAlpha, shakeAmp, startTime;
     private bool skipRequested;
-    private GUIStyle subStyle, titleStyle, lineStyle;
-    private static Texture2D blackTex;
     private Vector3 camVel;
     private Light keyLight, rimLight;
     private const string PunchState = "Hell Slammer A";   // the zombie swipe clip
     private float eyelid, bloodAlpha, redFlash, extraRoll;
-    private static Texture2D bloodTex, lidTex, redTex;
     private AudioSource sfx;
     private AudioLowPassFilter muffle;
 
@@ -202,58 +199,7 @@ public class ConsumedEndingCinematic : MonoBehaviour
         if (muffle != null) muffle.cutoffFrequency = 900f;
     }
 
-    private static void MakeOverlayTextures()
-    {
-        if (bloodTex != null) return;
-        const int S = 256;
-        bloodTex = new Texture2D(S, S, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
-        float[] a = new float[S * S];
-        System.Random r = new System.Random(1337);
-        for (int y = 0; y < S; y++)                 // dark red rim
-            for (int x = 0; x < S; x++)
-            {
-                float ex = Mathf.Min(x, S - 1 - x) / (float)S, ey = Mathf.Min(y, S - 1 - y) / (float)S;
-                float edge = Mathf.Clamp01(1f - Mathf.Min(ex, ey) / 0.22f);
-                a[y * S + x] = Mathf.Pow(edge, 1.6f) * (0.55f + 0.45f * Mathf.PerlinNoise(x * 0.05f, y * 0.05f));
-            }
-        for (int k = 0; k < 34; k++)               // splatters, mostly near the edges
-        {
-            float cx = (float)r.NextDouble() * S, cy = (float)r.NextDouble() * S;
-            if (r.NextDouble() < 0.75) { if (r.NextDouble() < 0.5) cx = r.NextDouble() < 0.5 ? cx * 0.25f : S - cx * 0.25f; else cy = r.NextDouble() < 0.5 ? cy * 0.25f : S - cy * 0.25f; }
-            float rad = 3f + (float)r.NextDouble() * (k < 8 ? 26f : 9f);
-            for (int y = (int)(cy - rad - 2); y <= cy + rad + 2; y++)
-                for (int x = (int)(cx - rad - 2); x <= cx + rad + 2; x++)
-                {
-                    if (x < 0 || y < 0 || x >= S || y >= S) continue;
-                    float dd = Vector2.Distance(new Vector2(x, y), new Vector2(cx, cy)) / rad;
-                    float wob = 0.85f + 0.3f * Mathf.PerlinNoise(x * 0.3f + k, y * 0.3f);
-                    if (dd < wob) a[y * S + x] = Mathf.Max(a[y * S + x], 0.95f);
-                }
-        }
-        for (int k = 0; k < 14; k++)               // drips running down from the top
-        {
-            int x0 = r.Next(S); int w = 1 + r.Next(3); int len = 20 + r.Next(110);
-            for (int i = 0; i < len; i++)
-                for (int dx = -w; dx <= w; dx++)
-                {
-                    int x = x0 + dx, y = S - 1 - i;
-                    if (x < 0 || x >= S || y < 0) continue;
-                    a[y * S + x] = Mathf.Max(a[y * S + x], 0.9f * (1f - i / (float)len * 0.4f));
-                }
-        }
-        Color32[] px = new Color32[S * S];
-        for (int i = 0; i < px.Length; i++)
-        {
-            float v = a[i];
-            px[i] = new Color32((byte)(95 + 80 * v), (byte)(4 + 6 * v), (byte)(6 + 4 * v), (byte)(255 * Mathf.Clamp01(v)));
-        }
-        bloodTex.SetPixels32(px); bloodTex.Apply();
 
-        lidTex = new Texture2D(1, 64, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
-        for (int y = 0; y < 64; y++) lidTex.SetPixel(0, y, new Color(0f, 0f, 0f, Mathf.SmoothStep(0f, 1f, y / 63f)));
-        lidTex.Apply();
-        redTex = new Texture2D(1, 1); redTex.SetPixel(0, 0, new Color(0.55f, 0f, 0f, 1f)); redTex.Apply();
-    }
 
     public static IEnumerator Play()
     {
@@ -532,10 +478,10 @@ public class ConsumedEndingCinematic : MonoBehaviour
         muffle.cutoffFrequency = 22000f;
         sfx = camGo.AddComponent<AudioSource>();
         sfx.playOnAwake = false; sfx.spatialBlend = 0f;
-        MakeOverlayTextures();
+        overlay = TLCCanvas.Ensure();
         foreach (Camera c in FindObjectsByType<Camera>(FindObjectsInactive.Exclude)) if (c != cam) c.enabled = false;
         foreach (AudioListener al in FindObjectsByType<AudioListener>(FindObjectsInactive.Exclude)) if (al.gameObject != camGo) al.enabled = false;
-        foreach (Canvas cv in FindObjectsByType<Canvas>(FindObjectsInactive.Exclude)) if (cv.isRootCanvas) cv.enabled = false;
+        foreach (Canvas cv in FindObjectsByType<Canvas>(FindObjectsInactive.Exclude)) if (cv.isRootCanvas && cv.GetComponent<TLCCanvas>() == null) cv.enabled = false;
 
         // soft cold key light on the camera + rim light over the clown (no shadows = no lag)
         keyLight = MakeLight("CinematicKeyLight", camGo.transform, new Color(0.7f, 0.76f, 0.9f), 1.3f, 6f);
@@ -729,65 +675,39 @@ public class ConsumedEndingCinematic : MonoBehaviour
     }
 
     // ------------------------------------------------------------------ overlay
-    private void OnGUI()
+    // ------------------------------------------------------------------ overlay: real objects on the TLC_UI canvas (CinematicOverlay)
+    private TLCCanvas overlay;
+
+    private void LateUpdate()
     {
         if (!IsPlaying) return;
-        GUI.depth = -2000;
-        if (blackTex == null) { blackTex = new Texture2D(1, 1); blackTex.SetPixel(0, 0, Color.black); blackTex.Apply(); }
-        float k = Screen.height / 1080f;
-        if (subStyle == null)
-        {
-            subStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Italic, wordWrap = true };
-            titleStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
-            lineStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, wordWrap = true };
-        }
-        subStyle.fontSize = Mathf.RoundToInt(32 * k);
-        titleStyle.fontSize = Mathf.RoundToInt(96 * k);
-        lineStyle.fontSize = Mathf.RoundToInt(28 * k);
+        if (overlay == null) overlay = TLCCanvas.Ensure();
+        if (overlay == null || overlay.cinematic == null) return;
+        TLCCanvas o = overlay;
+        TLCCanvas.SetActive(o.cinematic, true);
+        TLCCanvas.SetActive(o.hud, false);
+        TLCCanvas.SetActive(o.objectivePanel, false);
+        o.cinematic.transform.SetAsLastSibling();
 
-        float W = Screen.width, H = Screen.height;
-        if (bloodAlpha > 0f && bloodTex != null) { GUI.color = new Color(1f, 1f, 1f, bloodAlpha); GUI.DrawTexture(new Rect(0, 0, W, H), bloodTex, ScaleMode.StretchToFill, true); }
-        if (redFlash > 0f && redTex != null) { GUI.color = new Color(1f, 1f, 1f, redFlash * 0.75f); GUI.DrawTexture(new Rect(0, 0, W, H), redTex); }
-        if (eyelid > 0f && lidTex != null)
-        {
-            float lid = eyelid * H * 0.5f, soft = H * 0.14f;
-            GUI.color = Color.black;
-            GUI.DrawTexture(new Rect(0, 0, W, lid), blackTex);
-            GUI.DrawTexture(new Rect(0, H - lid, W, lid), blackTex);
-            GUI.DrawTextureWithTexCoords(new Rect(0, lid, W, soft), lidTex, new Rect(0, 0, 1, 1));
-            GUI.DrawTextureWithTexCoords(new Rect(0, H - lid - soft, W, soft), lidTex, new Rect(0, 1, 1, -1));
-        }
+        o.cineBlack.color = new Color(0f, 0f, 0f, black);
+        o.cineBlood.color = new Color(1f, 1f, 1f, bloodAlpha);
+        o.cineRed.color = new Color(0.55f, 0f, 0f, redFlash * 0.75f);
+        float lidH = eyelid > 0f ? eyelid * 540f + 150f : 0f;      // canvas space is 1080 high
+        o.lidTop.rectTransform.sizeDelta = new Vector2(0f, lidH);
+        o.lidBottom.rectTransform.sizeDelta = new Vector2(0f, lidH);
 
-        float bar = Screen.height * 0.11f;
-        GUI.color = Color.black;
-        GUI.DrawTexture(new Rect(0, 0, Screen.width, bar), blackTex);
-        GUI.DrawTexture(new Rect(0, Screen.height - bar, Screen.width, bar), blackTex);
-        if (black > 0f) { GUI.color = new Color(0, 0, 0, black); GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), blackTex); }
-
-        if (!string.IsNullOrEmpty(subtitle))
-            Shadow(new Rect(Screen.width * 0.08f, Screen.height - bar - 95f * k, Screen.width * 0.84f, 80f * k), subtitle, subStyle, new Color(0.92f, 0.86f, 0.76f, 1f));
-
+        TLCCanvas.SetText(o.cineSubtitle, subtitle);
+        TLCCanvas.SetText(o.cineTitle, title);
+        TLCCanvas.SetText(o.cineTitleLine, string.IsNullOrEmpty(title) ? "" : titleLine);
         if (!string.IsNullOrEmpty(title))
         {
-            Shadow(new Rect(0, Screen.height * 0.38f, Screen.width, 130f * k), title, titleStyle, new Color(0.72f, 0.18f, 0.1f, titleAlpha));
-            Shadow(new Rect(Screen.width * 0.15f, Screen.height * 0.38f + 140f * k, Screen.width * 0.7f, 60f * k), titleLine, lineStyle, new Color(0.85f, 0.8f, 0.72f, titleAlpha));
+            o.cineTitle.color = new Color(0.72f, 0.18f, 0.1f, titleAlpha);
+            o.cineTitleLine.color = new Color(0.85f, 0.8f, 0.72f, titleAlpha);
         }
-        else if (Time.time - startTime > 2f)
-        {
-            GUI.color = new Color(1f, 1f, 1f, 0.35f);
-            GUI.Label(new Rect(Screen.width - 260f * k, Screen.height - bar + 10f * k, 240f * k, 30f * k), "Press any key to skip", lineStyle);
-        }
-        GUI.color = Color.white;
+        TLCCanvas.SetActive(o.cineSkip.gameObject, Time.time - startTime > 2f && string.IsNullOrEmpty(title));
     }
 
-    private static void Shadow(Rect r, string text, GUIStyle s, Color c)
-    {
-        GUI.color = new Color(0f, 0f, 0f, c.a * 0.85f);
-        s.normal.textColor = Color.white;
-        GUI.Label(new Rect(r.x + 3f, r.y + 3f, r.width, r.height), text, s);
-        GUI.color = c;
-        GUI.Label(r, text, s);
-    }
+
 
 #if UNITY_EDITOR
     private void OnDrawGizmosSelected()
