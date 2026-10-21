@@ -214,10 +214,9 @@ public class PlayerController : MonoBehaviour
     {
         if (playerCamera == null) return;
 
-        float sensitivity = mouseSensitivity * GameSettings.MouseSensitivity; // SETTINGS menu multiplier
-        transform.Rotate(Vector3.up * Input.GetAxis("Mouse X") * sensitivity);
+        transform.Rotate(Vector3.up * Input.GetAxis("Mouse X") * mouseSensitivity);
 
-        rotationX -= Input.GetAxis("Mouse Y") * sensitivity;
+        rotationX -= Input.GetAxis("Mouse Y") * mouseSensitivity;
         rotationX = Mathf.Clamp(rotationX, upperLookLimit, lowerLookLimit);
         
         playerCamera.transform.localRotation = Quaternion.Euler(rotationX, 0, 0);
@@ -312,7 +311,7 @@ public class PlayerController : MonoBehaviour
             timer += Time.deltaTime * (isCrouching ? crouchBobSpeed : isSprinting ? sprintBobSpeed : walkBobSpeed);
             playerCamera.transform.localPosition = new Vector3(
                 playerCamera.transform.localPosition.x,
-                defaultYPos + Mathf.Sin(timer) * (isCrouching ? crouchBobAmount : isSprinting ? sprintBobAmount : walkBobAmount) * GameSettings.EffectsIntensity,
+                defaultYPos + Mathf.Sin(timer) * (isCrouching ? crouchBobAmount : isSprinting ? sprintBobAmount : walkBobAmount),
                 playerCamera.transform.localPosition.z);
         }
         else
@@ -539,6 +538,22 @@ public class PlayerController : MonoBehaviour
         fadeImage.color = color;
     }
 
+    // --- the player's own body is hidden during the basement jumpscare + drag (you only see the clown) ---
+    private readonly System.Collections.Generic.List<Renderer> hiddenBodyRenderers = new System.Collections.Generic.List<Renderer>();
+    public void SetBodyVisible(bool visible)
+    {
+        if (!visible)
+        {
+            foreach (Renderer r in GetComponentsInChildren<Renderer>())
+                if (r.enabled && !hiddenBodyRenderers.Contains(r)) { r.enabled = false; hiddenBodyRenderers.Add(r); }
+        }
+        else
+        {
+            foreach (Renderer r in hiddenBodyRenderers) if (r != null) r.enabled = true;
+            hiddenBodyRenderers.Clear();
+        }
+    }
+
     // --- NEW: DRAG TO BASEMENT CINEMATIC ---
     public void TriggerDragToBasementCinematic(Transform spawnPoint, GameObject dragger = null)
     {
@@ -553,6 +568,7 @@ public class PlayerController : MonoBehaviour
     private System.Collections.IEnumerator DragToBasementSequence(Transform spawnPoint, GameObject dragger)
     {
         isWakingUp = true; // Paralyze player Update loop immediately!
+        SetBodyVisible(false); // never show the player's own legs/arms while he is being dragged
         if (characterController != null) characterController.enabled = false;
         if (fadeImage != null) fadeImage.gameObject.SetActive(true);
 
@@ -562,69 +578,127 @@ public class PlayerController : MonoBehaviour
             playerStats.TriggerHeavyBreathing(10f);
         }
         
+        Animator draggerAnim = null;
+        Vector3 dragDir = -transform.forward;
+        dragDir.y = 0f;
         if (dragger != null)
         {
             // Enemy ko normal AI se rok kar dragging scene ka hissa bana dein!
             UnityEngine.AI.NavMeshAgent agent = dragger.GetComponent<UnityEngine.AI.NavMeshAgent>();
             if (agent != null) agent.enabled = false;
-            
+
             EnemyAI enemyAI = dragger.GetComponent<EnemyAI>();
             if (enemyAI != null) enemyAI.enabled = false;
-            
-            Animator draggerAnim = dragger.GetComponentInChildren<Animator>();
-            if (draggerAnim != null) draggerAnim.SetFloat("Speed", 1.5f); // Walk animation while dragging
+
+            // He walks AWAY from the player, pulling him along: the direction is from the player towards the enemy
+            Vector3 toEnemy = dragger.transform.position - transform.position;
+            toEnemy.y = 0f;
+            if (toEnemy.sqrMagnitude > 0.01f) dragDir = toEnemy.normalized;
+
+            // REAL walk animation: switch the animator straight to "Walking" (it used to stay in the yell pose, so he slid like a dummy)
+            draggerAnim = (enemyAI != null && enemyAI.enemyAnimator != null) ? enemyAI.enemyAnimator : dragger.GetComponentInChildren<Animator>(true);
+            if (draggerAnim != null && (draggerAnim.runtimeAnimatorController == null || !draggerAnim.isActiveAndEnabled))
+            {
+                Debug.LogWarning("[Drag] enemy Animator has no controller / is inactive: " + draggerAnim.name + " ctrl=" + (draggerAnim.runtimeAnimatorController != null) + " active=" + draggerAnim.isActiveAndEnabled);
+                draggerAnim = null;
+            }
+            if (draggerAnim != null)
+            {
+                draggerAnim.speed = 1f;
+                draggerAnim.ResetTrigger("Tease");
+                draggerAnim.ResetTrigger("Attack");
+                draggerAnim.SetFloat("Speed", 1.6f);
+                draggerAnim.CrossFadeInFixedTime("Walking", 0.25f);
+            }
+            CinematicAmbush.AmbushLog("drag start: dragger=" + dragger.name + " pos=" + dragger.transform.position + " walkAnim=" + (draggerAnim != null ? draggerAnim.name : "NONE"));
+            if (enemyAI != null) enemyAI.KeepGrounded();
+        }
+        if (dragDir.sqrMagnitude < 0.01f) dragDir = transform.forward;
+        dragDir.Normalize();
+
+        // 1. He grabs the player's leg and steps AHEAD of him, so while dragging you clearly SEE him walking away with you
+        //    (before he stayed 0.7 m away and the low camera only saw the top of his skull)
+        EnemyAI draggerAI = dragger != null ? dragger.GetComponent<EnemyAI>() : null;
+        float floorY = transform.position.y - 1f;
+        {
+            RaycastHit floorHit;
+            if (Physics.Raycast(transform.position + Vector3.up * 0.5f, Vector3.down, out floorHit, 6f, ~0, QueryTriggerInteraction.Ignore))
+                floorY = floorHit.point.y;
+        }
+        Vector3 enemyFrom = dragger != null ? dragger.transform.position : Vector3.zero;
+        Vector3 enemyTo = enemyFrom;
+        if (dragger != null)
+        {
+            Vector3 p = transform.position; p.y = enemyFrom.y;
+            enemyTo = p + dragDir * 2.0f;
         }
 
-        // 1. Fall Down (Drop to floor quickly)
-        float duration = 0.6f;
+        // the player falls on his back: camera on the floor, looking up along his body at the clown
+        float duration = 0.55f;
         float elapsed = 0f;
-        Vector3 startPos = playerCamera.transform.localPosition;
-        Quaternion startRot = playerCamera.transform.localRotation;
-        
-        Vector3 targetPos = new Vector3(0, 0.2f, 0.35f); 
-        Quaternion targetLocalRot = Quaternion.Euler(-10f, startRot.eulerAngles.y, 75f); // Tilted head
-        
+        Vector3 camStartPos = playerCamera.transform.position;
+        Quaternion camStartRot = playerCamera.transform.rotation;
+        Vector3 smoothLook = dragger != null ? dragger.transform.position + Vector3.up * 0.45f : transform.position + dragDir * 2f;
+        if (fadeImage != null) StartCoroutine(FadeScreen(0f, 0.45f, 0.35f));   // hit the floor: vision goes dark for a moment
         while (elapsed < duration)
         {
             float t = elapsed / duration;
-            t = t * t * (3f - 2f * t); 
-            playerCamera.transform.localPosition = Vector3.Lerp(startPos, targetPos, t);
-            playerCamera.transform.localRotation = Quaternion.Lerp(startRot, targetLocalRot, t);
+            t = t * t * (3f - 2f * t);
+            if (dragger != null)
+            {
+                dragger.transform.position = Vector3.Lerp(enemyFrom, enemyTo, t);
+                dragger.transform.rotation = Quaternion.Slerp(dragger.transform.rotation, Quaternion.LookRotation(dragDir), t);
+                if (draggerAI != null) draggerAI.KeepGrounded();
+            }
+            Vector3 camFloor = transform.position - dragDir * 0.25f; camFloor.y = floorY + 0.32f;
+            Vector3 target = dragger != null ? dragger.transform.position + Vector3.up * 0.45f : transform.position + dragDir * 2f;
+            smoothLook = Vector3.Lerp(smoothLook, target, 0.25f);
+            Quaternion lookRot = Quaternion.LookRotation((smoothLook - camFloor).normalized) * Quaternion.Euler(0f, 0f, 18f);
+            playerCamera.transform.position = Vector3.Lerp(camStartPos, camFloor, t);
+            playerCamera.transform.rotation = Quaternion.Slerp(camStartRot, lookRot, t);
             elapsed += Time.deltaTime;
             yield return null;
         }
-        playerCamera.transform.localPosition = targetPos;
-        playerCamera.transform.localRotation = targetLocalRot;
+        if (fadeImage != null) StartCoroutine(FadeScreen(0.45f, 0.1f, 0.5f));    // eyes open again: watch him drag you
 
-        // 2. The Drag (Slide backward while blinking)
-        float dragDuration = 2.5f; // Faster fade to avoid seeing wall clipping!
+
+        // 2. The drag: he walks away holding the leg, the player slides behind him, the head bumps along the floor
+        float dragDuration = 3.4f;
         elapsed = 0f;
-        
-        // Start fading in and out to simulate blinking/fainting
-        StartCoroutine(FadeScreen(0f, 0.8f, 0.8f)); // Fade almost to black quickly
-        
+        bool blackoutStarted = false;
         while (elapsed < dragDuration)
         {
-            // Drag backward slowly
-            Vector3 moveDelta = -transform.forward * 1.5f * Time.deltaTime;
+            float walk = 1.25f * Mathf.Clamp01(elapsed / 0.5f);
+            Vector3 moveDelta = dragDir * walk * Time.deltaTime;
+
+            // never drag through a wall
+            if (dragger != null && Physics.Raycast(dragger.transform.position + Vector3.up * 0.2f, dragDir, 0.8f, ~0, QueryTriggerInteraction.Ignore))
+                moveDelta = Vector3.zero;
+
             transform.position += moveDelta;
-            
-            // Enemy (Dragger) ko bhi saath peeche kheench kar le jao taake lagay wo drag kar raha hai!
             if (dragger != null)
             {
                 dragger.transform.position += moveDelta;
-                // Force him to look at player
-                dragger.transform.rotation = Quaternion.Slerp(dragger.transform.rotation, Quaternion.LookRotation(transform.position - dragger.transform.position), Time.deltaTime * 10f);
+                dragger.transform.rotation = Quaternion.Slerp(dragger.transform.rotation, Quaternion.LookRotation(dragDir), Time.deltaTime * 6f);
+                if (draggerAI != null) draggerAI.KeepGrounded();
+                if (draggerAnim != null) draggerAnim.SetFloat("Speed", moveDelta.sqrMagnitude > 0f ? 1.6f : 0f);
             }
-            
-            // Eye blink logic
-            if (elapsed > 0.8f && elapsed < 0.9f)
+
+            // camera: on the floor behind the player's body, looking up at the clown's back; small bumps with every pull
+            float pull = Mathf.Abs(Mathf.Sin(elapsed * 4.2f));
+            Vector3 camFloor = transform.position - dragDir * 0.25f;
+            camFloor.y = floorY + 0.32f + pull * 0.03f;
+            Vector3 target = dragger != null ? dragger.transform.position + Vector3.up * 0.45f : transform.position + dragDir * 2f;
+            smoothLook = Vector3.Lerp(smoothLook, target, Time.deltaTime * 8f);
+            playerCamera.transform.position = camFloor;
+            playerCamera.transform.rotation = Quaternion.LookRotation((smoothLook - camFloor).normalized)
+                                             * Quaternion.Euler(-pull * 1.5f, Mathf.Sin(elapsed * 1.3f) * 3f, 18f + Mathf.Sin(elapsed * 2.1f) * 4f);
+
+            // he drags you into the dark: you pass out near the end
+            if (!blackoutStarted && elapsed > dragDuration - 1.1f)
             {
-                StartCoroutine(FadeScreen(0.8f, 0.3f, 0.5f)); // Open eyes a bit
-            }
-            if (elapsed > 1.4f && elapsed < 1.5f)
-            {
-                StartCoroutine(FadeScreen(0.3f, 1f, 1f)); // Close fully (Blackout)
+                blackoutStarted = true;
+                StartCoroutine(FadeScreen(0.1f, 1f, 1.0f));
             }
 
             elapsed += Time.deltaTime;
@@ -667,7 +741,8 @@ public class PlayerController : MonoBehaviour
         }
         isDead = false;
 
-        // 4. Wake Up Sequence!
+        // 4. Wake Up Sequence! (the body is shown again once he is in the basement)
+        SetBodyVisible(true);
         StartCoroutine(WakeUpSequence());
     }
 

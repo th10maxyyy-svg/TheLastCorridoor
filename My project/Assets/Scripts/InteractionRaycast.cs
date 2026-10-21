@@ -12,6 +12,11 @@ public class InteractionRaycast : MonoBehaviour
     private PlayerStats playerStats;
     private PlayerController playerController;
     private string currentPrompt = "";
+    private string currentRoom = "";
+    private string currentFloor = "";
+    [SerializeField] private float roomNameDistance = 7f;
+    private GUIStyle roomStyle;
+    private GUIStyle floorStyle;
     private string notificationMessage = "";
     private float notificationTimer = 0f;
 
@@ -58,6 +63,7 @@ public class InteractionRaycast : MonoBehaviour
         if (KeypadController.IsAnyKeypadOpen)
         {
             currentPrompt = ""; // the keypad panel is on screen - no "Press E" text over it
+            currentRoom = "";
             return;
         }
 
@@ -67,6 +73,7 @@ public class InteractionRaycast : MonoBehaviour
             if (playerController.isDead || playerController.isCinematicPlaying)
             {
                 currentPrompt = "";
+                currentRoom = "";
                 return;
             }
 
@@ -77,7 +84,12 @@ public class InteractionRaycast : MonoBehaviour
             }
         }
 
-        IInteractable interactable = FindInteractable();
+        // ROOM NAME: looking at a room door (also from a few metres away) shows which room it is
+        DoorController lookedDoor = FindInteractable(roomNameDistance) as DoorController;
+        currentRoom = lookedDoor != null ? lookedDoor.RoomName : "";
+        currentFloor = lookedDoor != null ? lookedDoor.FloorName : "";
+
+        IInteractable interactable = FindInteractable(rayDistance);
         if (interactable == null)
         {
             currentPrompt = "";
@@ -100,9 +112,9 @@ public class InteractionRaycast : MonoBehaviour
     /// Nearest interactable in front of the camera. Invisible trigger volumes don't block the ray any more,
     /// the player's own colliders are skipped, and clicking a child mesh still finds the script on its parent.
     /// </summary>
-    private IInteractable FindInteractable()
+    private IInteractable FindInteractable(float distance)
     {
-        RaycastHit[] hits = Physics.RaycastAll(new Ray(transform.position, transform.forward), rayDistance, ~0, QueryTriggerInteraction.Collide);
+        RaycastHit[] hits = Physics.RaycastAll(new Ray(transform.position, transform.forward), distance, ~0, QueryTriggerInteraction.Collide);
         System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
 
         Transform playerRoot = playerStats != null ? playerStats.transform : null;
@@ -136,6 +148,26 @@ public class InteractionRaycast : MonoBehaviour
 
             notifStyle.normal.textColor = Color.yellow;
             GUI.Label(new Rect(Screen.width / 2 - 300, Screen.height / 2 - 170, 600, 80), notificationMessage, notifStyle);
+        }
+
+        // Room name (above the prompt): big name + the floor in small letters
+        if (!string.IsNullOrEmpty(currentRoom))
+        {
+            if (roomStyle == null)
+            {
+                roomStyle = new GUIStyle { alignment = TextAnchor.MiddleCenter, fontSize = 30, fontStyle = FontStyle.Bold };
+                floorStyle = new GUIStyle { alignment = TextAnchor.MiddleCenter, fontSize = 15, fontStyle = FontStyle.Bold };
+            }
+            string room = currentRoom.ToUpper();
+            roomStyle.normal.textColor = new Color(0f, 0f, 0f, 0.85f);
+            GUI.Label(new Rect(Screen.width / 2 - 299, Screen.height / 2 - 98, 600, 40), room, roomStyle);
+            roomStyle.normal.textColor = new Color(0.93f, 0.89f, 0.82f, 1f);
+            GUI.Label(new Rect(Screen.width / 2 - 300, Screen.height / 2 - 100, 600, 40), room, roomStyle);
+            if (!string.IsNullOrEmpty(currentFloor))
+            {
+                floorStyle.normal.textColor = new Color(0.8f, 0.25f, 0.2f, 0.95f);
+                GUI.Label(new Rect(Screen.width / 2 - 300, Screen.height / 2 - 64, 600, 22), currentFloor.ToUpper(), floorStyle);
+            }
         }
 
         // Interaction Prompt text

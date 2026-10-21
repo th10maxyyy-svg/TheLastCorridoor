@@ -17,11 +17,18 @@ public class MainMenuManager : MonoBehaviour
         {
             SaveManager.instance.DeleteSave();
         }
-        else if (System.IO.File.Exists(SaveManager.SaveFilePath))
+
+        // The game scene's SaveManager falls back to the .bak backup when the main save file is missing, so a "new game" that
+        // deleted only the main file still came back as the OLD game (it behaved like RESUME). Remove every copy.
+        string main = SaveManager.SaveFilePath;
+        string[] files = { main, SaveManager.BackupPathFor(main), main + ".tmp" };
+        foreach (string f in files)
         {
-            try { System.IO.File.Delete(SaveManager.SaveFilePath); }
-            catch (System.Exception e) { Debug.LogWarning("Could not delete old save: " + e.Message); }
+            try { if (System.IO.File.Exists(f)) System.IO.File.Delete(f); }
+            catch (System.Exception e) { Debug.LogWarning("Could not delete old save file " + f + ": " + e.Message); }
         }
+        IntroState.skipIntro = false;
+        EnemyRestore.RestoreOnNextLoad = false;   // a new game never restores the enemy's old position
         Debug.Log("Old save deleted for New Game.");
 
         SceneManager.LoadScene(gameSceneName);

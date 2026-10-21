@@ -23,6 +23,7 @@ public class EnemyHorrorFX : MonoBehaviour
     public float gaitIrregularity = 0.25f;
 
     private EnemyAI ai;
+    private UnityEngine.AI.NavMeshAgent agent;
     private Animator anim;
     private Transform head;
     private Transform neck;
@@ -40,6 +41,7 @@ public class EnemyHorrorFX : MonoBehaviour
     void Start()
     {
         ai = GetComponent<EnemyAI>();
+        agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
         anim = ai != null ? ai.enemyAnimator : GetComponentInChildren<Animator>();
         if (anim != null && anim.isHuman)
         {
@@ -64,17 +66,27 @@ public class EnemyHorrorFX : MonoBehaviour
         if (s == EnemyAI.AIState.Stunned) return;
         if (s == EnemyAI.AIState.CinematicEscape || s == EnemyAI.AIState.Dormant) { anim.speed = 1f; return; }
 
-        // ANIMATION FIX: only the walk and run loops get the uneven speed. The attack / yell clips keep their normal speed,
-        // otherwise their timing drifts (the damage and the scream no longer matched the animation).
+        // The walk and run loops follow the real movement speed (no more skating), with a little unevenness on top.
+        // The attack clip plays faster (a quick lunge); everything else (yell...) keeps its normal speed.
         AnimatorStateInfo info = anim.GetCurrentAnimatorStateInfo(0);
+        if (info.IsName("Hell Slammer A") && s == EnemyAI.AIState.Chase) { anim.speed = ai.AttackAnimSpeed; return; }
+
         bool locomotion = (info.IsName("Walking") || info.IsName("Run")) && !anim.IsInTransition(0);
         if (!locomotion) { anim.speed = 1f; return; }
 
         float n = Mathf.PerlinNoise(Time.time * 0.9f, seed);
-        if (s == EnemyAI.AIState.Chase)
-            anim.speed = 1.12f + n * 0.15f;                         // frantic sprint
+        float vel = agent != null ? agent.velocity.magnitude : 0f;
+        if (info.IsName("Run"))
+        {
+            // scale so the feet match the ground speed (zombie run is about 4.5 m/s at speed 1)
+            float match = Mathf.Clamp(vel / 4.5f, 0.9f, 1.8f);
+            anim.speed = match * (0.92f + n * 0.16f);
+        }
         else
-            anim.speed = 1f - gaitIrregularity * 0.5f + n * gaitIrregularity; // limping, uneven walk
+        {
+            float match = Mathf.Clamp(vel / 1.3f, 0.8f, 1.8f);       // creeping zombie walk
+            anim.speed = match * (1f - gaitIrregularity * 0.5f + n * gaitIrregularity);
+        }
     }
 
     void LateUpdate()

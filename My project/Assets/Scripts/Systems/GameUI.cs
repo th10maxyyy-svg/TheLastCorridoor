@@ -457,7 +457,7 @@ public class GameUI : MonoBehaviour
         GUI.DrawTexture(new Rect(x, y, w, 98f), tBlack);
         GUI.DrawTexture(new Rect(x, y, 4f, 98f), tRed);
         GUI.color = Color.white;
-        GUI.Label(new Rect(x + 16f, y + 6f, w - 24f, 26f), "OBJECTIVE   " + tracker.DoneCount() + "/" + tracker.Objectives.Count, sToastTitle);
+        GUI.Label(new Rect(x + 16f, y + 6f, w - 24f, 26f), tracker.IsGated ? "OBJECTIVE" : "OBJECTIVE   " + tracker.DoneCount() + "/" + tracker.Objectives.Count, sToastTitle);
         GUI.Label(new Rect(x + 16f, y + 30f, w - 24f, 40f), cur != null ? tracker.TitleWithProgress(cur) : "Survive.", sToastText);
         GUI.Label(new Rect(x + 16f, y + 70f, w - 24f, 24f), "TAB  Journal      ESC  Menu", sSmall);
     }

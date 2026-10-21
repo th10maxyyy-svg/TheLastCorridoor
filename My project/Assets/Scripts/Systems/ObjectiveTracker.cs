@@ -31,6 +31,12 @@ public class ObjectiveTracker : MonoBehaviour
     }
 
     private readonly List<Objective> objectives = new List<Objective>();
+
+    // FIRST GOAL: at the start only "find the guard room key" is shown. Every other objective stays hidden until
+    // the Guard Room has been unlocked (that is where the story really begins).
+    private Objective guardObjective;
+    private Inventory cachedInventory;
+    public bool IsGated => guardObjective != null && !guardObjective.done;
     public IReadOnlyList<Objective> Objectives => objectives;
 
     [SerializeField] private float discoverDistance = 7f;
@@ -65,7 +71,25 @@ public class ObjectiveTracker : MonoBehaviour
     private void Build()
     {
         objectives.Clear();
+        guardObjective = null;
         FindObjectsInactive inc = FindObjectsInactive.Include;
+
+        foreach (DoorController d in FindObjectsByType<DoorController>(inc))
+        {
+            if (string.IsNullOrEmpty(d.RequiredKey) || !d.RequiredKey.ToLower().Contains("guard")) continue;
+            DoorController door = d;
+            string keyName = d.RequiredKey;
+            string doorId = d.DoorID;
+            guardObjective = Add("GuardKey", "Find the Guard Room key to unlock it", -100, null,
+                () => door == null || !door.IsLocked || (SaveManager.instance != null && SaveManager.instance.IsDoorUnlocked(doorId)), true);
+            guardObjective.progressText = () =>
+            {
+                if (cachedInventory == null) cachedInventory = FindAnyObjectByType<Inventory>();
+                Inventory inv = cachedInventory;
+                return inv != null && inv.HasItem(keyName) ? "- key found, open the Guard Room" : "";
+            };
+            break;
+        }
 
         foreach (HeadlampPickup h in FindObjectsByType<HeadlampPickup>(inc))
         {
@@ -164,6 +188,7 @@ public class ObjectiveTracker : MonoBehaviour
         LastKnownTotal = objectives.Count;
         built = true;
         RefreshStates(false);
+        if (IsGated) GameUI.Toast("OBJECTIVE", guardObjective.title);   // tell the player right away what to do
     }
 
     // ------------------------------------------------------------------------------------------ polling
@@ -186,8 +211,32 @@ public class ObjectiveTracker : MonoBehaviour
             if (pc != null) player = pc.transform;
         }
 
+        // the guard key objective first (it decides whether the rest of the list is shown at all)
+        if (guardObjective != null && !guardObjective.done)
+        {
+            guardObjective.done = sm.HasEvent(DonePrefix + guardObjective.id);
+            if (!guardObjective.done)
+            {
+                bool opened = false;
+                try { opened = guardObjective.isDone(); } catch { opened = false; }
+                if (opened)
+                {
+                    guardObjective.done = true;
+                    sm.RecordEvent(DonePrefix + guardObjective.id, false);
+                    if (notify) GameUI.Toast("OBJECTIVE COMPLETE", guardObjective.title);
+                }
+            }
+        }
+        bool gated = IsGated;
+
         foreach (Objective o in objectives)
         {
+            if (gated && o != guardObjective)
+            {
+                o.discovered = false;          // hidden until the Guard Room is open
+                o.done = sm.HasEvent(DonePrefix + o.id);
+                continue;
+            }
             o.discovered = o.alwaysVisible || sm.HasEvent(FoundPrefix + o.id);
             o.done = sm.HasEvent(DonePrefix + o.id);
 
@@ -240,6 +289,8 @@ public class ObjectiveTracker : MonoBehaviour
     /// <summary>The objective shown on the HUD: the most recently discovered one that is not finished yet.</summary>
     public Objective Current()
     {
+        if (IsGated) return guardObjective;   // at the start this is the ONLY objective
+
         SaveManager sm = SaveManager.instance;
         Objective best = null;
         int bestIndex = -1;

@@ -16,6 +16,10 @@ public class DoorController : MonoBehaviour, IInteractable
     [SerializeField] private AudioClip openSound;
     [SerializeField] private AudioClip closeSound;
 
+    [Header("Room Name")]
+    [Tooltip("Optional. Name shown on screen when the player looks at this door. Leave empty = taken automatically from the room it belongs to in the Hierarchy (e.g. GuardRoom -> \"Guard Room\").")]
+    [SerializeField] private string roomNameOverride = "";
+
     [Header("Events")]
     public UnityEvent onDoorOpen;
     [Tooltip("Fires when player tries to open but it's locked")]
@@ -187,6 +191,68 @@ public class DoorController : MonoBehaviour, IInteractable
     }
     
     public bool IsOpen => isOpen;
+    public bool IsLocked => isLocked;
+    public string RequiredKey => requiredKey;
+    public string DoorID => GetDoorID();
+
+    // ------------------------------------------------------------------ room name shown when the player looks at a door
+    private string cachedRoomName, cachedFloorName;
+
+    /// <summary>Room this door leads into ("" for cupboards, fridges, toilet stalls etc. - only real room doors get a name).</summary>
+    public string RoomName { get { if (cachedRoomName == null) ResolveRoomName(); return cachedRoomName; } }
+    public string FloorName { get { if (cachedRoomName == null) ResolveRoomName(); return cachedFloorName; } }
+
+    private static readonly System.Collections.Generic.Dictionary<string, string> PrettyRooms = new System.Collections.Generic.Dictionary<string, string>
+    {
+        { "GuardRoom", "Guard Room" }, { "DayRoom", "Day Room" }, { "Stock", "Stock Room" }, { "DiningRoom", "Dining Room" },
+        { "Kitchen", "Kitchen" }, { "KitchenA", "Kitchen" }, { "Office", "Head Office" }, { "OfficeA", "Office" },
+        { "ToiletsMan", "Men's Toilets" }, { "ToiletsManA", "Men's Toilets" }, { "ToiletsWoman", "Women's Toilets" }, { "ToiletsWomanA", "Women's Toilets" },
+        { "Bathroom", "Bathroom" }, { "Surgery", "Surgery" }, { "ExamRoom", "Exam Room" }, { "Classroom", "Classroom" },
+        { "Bedroom", "Visiting Room" }, { "Gatehouse", "Gatehouse" }, { "HallDownstair", "Main Hall" }, { "HallUpstair", "Upper Hall" },
+        { "HallUnderground", "Basement Hall" }, { "Morgue", "Morgue" }, { "MachineRoom", "Machine Room" },
+        { "SeclusionRoomA", "Seclusion Room A" }, { "SeclusionRoomB", "Seclusion Room B" },
+    };
+
+    private void ResolveRoomName()
+    {
+        cachedRoomName = ""; cachedFloorName = "";
+        if (!string.IsNullOrEmpty(roomNameOverride)) { cachedRoomName = roomNameOverride; return; }
+
+        // only real doors: "Door", "Door_V1 (2)", "DoorD_V2_Left", "MainDoor" - not cupboards, fridges, cases, mirrors, toilet stalls, safes
+        if (!IsRoomDoorName(name) && (transform.parent == null || !IsRoomDoorName(transform.parent.name))) return;
+
+        for (Transform t = transform; t != null && t.parent != null; t = t.parent)
+        {
+            string floor = t.parent.name;
+            if (floor == "1stFloor" || floor == "2ndFloor" || floor == "Basement")
+            {
+                string key = t.name;
+                string pretty;
+                if (!PrettyRooms.TryGetValue(key, out pretty)) pretty = SplitWords(key);
+                cachedRoomName = pretty;
+                cachedFloorName = floor == "1stFloor" ? "Ground Floor" : floor == "2ndFloor" ? "First Floor" : "Basement";
+                return;
+            }
+        }
+    }
+
+    private static bool IsRoomDoorName(string n)
+    {
+        if (string.IsNullOrEmpty(n)) return false;
+        return n.StartsWith("Door") || n.StartsWith("MainDoor");
+    }
+
+    private static string SplitWords(string s)
+    {
+        System.Text.StringBuilder b = new System.Text.StringBuilder();
+        for (int i = 0; i < s.Length; i++)
+        {
+            char c = s[i];
+            if (i > 0 && char.IsUpper(c) && !char.IsUpper(s[i - 1])) b.Append(' ');
+            b.Append(c);
+        }
+        return b.ToString().Trim();
+    }
 
     /// <summary>Used by the end cinematic: unlocks and silently swings the door open.</summary>
     public void OpenForCinematic()

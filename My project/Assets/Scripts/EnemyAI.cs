@@ -119,6 +119,31 @@ public class EnemyAI : MonoBehaviour
     [Tooltip("Chase mein player se itna faasla rakhta hai (warna model camera ke andar ghus jata tha)")]
     [SerializeField] private float chaseStandOffDistance = 1.1f;
 
+    [Header("Clown Tuning (fast, relentless hunter)")]
+    [Tooltip("Attack animation plays this much faster, so the swing is a quick lunge instead of a slow wind-up")]
+    public float attackAnimSpeed = 1.7f;
+    [Tooltip("Within this distance he senses the player even from behind (but still needs a clear line)")]
+    [SerializeField] private float closeSenseRange = 5f;
+    [Tooltip("Extra speed multiplier when the player is close (a lunge)")]
+    [SerializeField] private float lungeSpeedMultiplier = 1.25f;
+    [Tooltip("Extra speed multiplier for a few seconds after waking up / after a stun (rage)")]
+    [SerializeField] private float rageSpeedMultiplier = 1.2f;
+
+    // the scene was saved with soft values (walk 1, run 5, 90 degree view): these floors keep him a real threat.
+    private const float MinPatrolSpeed = 2.0f, MaxPatrolSpeed = 2.4f;   // walk animation plays below Speed 2.5, run above it
+    private const float MinChaseSpeed = 6.6f, MinDetectionRange = 16f, MinFov = 140f, MinAttackRange = 2.0f, MinDamage = 30f, MinLoseSight = 5f;
+    private float rageUntil = 0f;
+    private float voiceMuteUntil = 0f;   // while set, no random laughs / ambient loop (used around the basement scene)
+
+    /// <summary>Length of his tease line ("Peek-a-boo, I finally found you"), so the scene can wait until he has finished saying it.</summary>
+    public float TeaseDialogueLength
+    {
+        get { return (teaseVoiceLines != null && teaseVoiceLines.Length > 0 && teaseVoiceLines[0] != null) ? teaseVoiceLines[0].length : 0f; }
+    }
+
+    /// <summary>Speed the animator should assume for the attack clip (read by EnemyHorrorFX).</summary>
+    public float AttackAnimSpeed => attackAnimSpeed;
+
     private float nextStalkPauseTime = 0f;
     private float stalkPauseUntil = 0f;
     private float nextSpottedLineTime = 0f;
@@ -127,6 +152,7 @@ public class EnemyAI : MonoBehaviour
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
+        ApplyClownTuning();
         if (BaseChaseSpeed <= 0f) // (may already be set if the adaptive AI configured us while inactive)
         {
             BaseChaseSpeed = chaseSpeed;
@@ -143,6 +169,34 @@ public class EnemyAI : MonoBehaviour
         if (currentState == AIState.Dormant && !externallyActivated)
         {
             gameObject.SetActive(false);
+        }
+    }
+
+    private void ApplyClownTuning()
+    {
+        attackRotationOffset = 0f;   // the new zombie attack clip already faces forward (the old clip faced sideways)
+        patrolSpeed = Mathf.Clamp(patrolSpeed, MinPatrolSpeed, MaxPatrolSpeed);
+        chaseSpeed = Mathf.Max(chaseSpeed, MinChaseSpeed);
+        detectionRange = Mathf.Max(detectionRange, MinDetectionRange);
+        fovAngle = Mathf.Max(fovAngle, MinFov);
+        attackRange = Mathf.Max(attackRange, MinAttackRange);
+        damageAmount = Mathf.Max(damageAmount, MinDamage);
+        loseSightTime = Mathf.Max(loseSightTime, MinLoseSight);
+        searchDuration = Mathf.Max(searchDuration, 8f);
+        if (BaseChaseSpeed > 0f) // the adaptive AI configured us before Awake: keep its numbers above the floors too
+        {
+            BaseChaseSpeed = Mathf.Max(BaseChaseSpeed, MinChaseSpeed);
+            BaseDetectionRange = Mathf.Max(BaseDetectionRange, MinDetectionRange);
+            BaseSearchDuration = Mathf.Max(BaseSearchDuration, 8f);
+        }
+
+        if (agent != null)
+        {
+            // snappy movement: the default agent accelerates and turns so slowly that he looked heavy and "stuck on rails"
+            agent.acceleration = 40f;
+            agent.angularSpeed = 480f;
+            agent.autoBraking = false;
+            agent.obstacleAvoidanceType = ObstacleAvoidanceType.LowQualityObstacleAvoidance;
         }
     }
 
@@ -190,8 +244,9 @@ public class EnemyAI : MonoBehaviour
         {
             enemyAudioSource.PlayOneShot(teaseVoiceLines[0]);
             nextSpottedLineTime = Time.time + 20f;
-            if (enemyAnimator != null) enemyAnimator.SetTrigger("Tease");
-            chaseYellUntil = Time.time + 1.3f; // stops for a moment and screams before running at the player
+            // NO tease pose here: spotting the player only plays his voice - he keeps running straight at them.
+            // (The tease / yell pose is reserved for the basement scene, see StartTeasing.)
+            rageUntil = Mathf.Max(rageUntil, Time.time + 3f);
         }
     }
 
@@ -599,6 +654,14 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
+    /// <summary>Puts the model at the right height (used by cinematics that switch his AI off, where LateUpdate no longer does it).</summary>
+    public void KeepGrounded()
+    {
+        if (enemyAnimator == null) return;
+        enemyAnimator.transform.localRotation = Quaternion.identity;
+        enemyAnimator.transform.localPosition = new Vector3(0f, groundOffset, 0f);
+    }
+
     void LateUpdate()
     {
         if (enemyAnimator != null)
@@ -725,6 +788,7 @@ public class EnemyAI : MonoBehaviour
         AIState previousState = currentState;
         currentState = AIState.Stunned;
         ResetAnimTriggers(); // a queued Attack/Tease must not fire the moment he stands up again
+        StopAttackSwing();
 
         if (agent.isActiveAndEnabled && agent.isOnNavMesh)
         {
@@ -733,43 +797,69 @@ public class EnemyAI : MonoBehaviour
         }
         agent.updateRotation = false; // NavMesh must not fight the "lying down" rotation
 
-        if (enemyAnimator != null)
-        {
-            enemyAnimator.speed = 0f; // Freeze animation
-        }
+        // electric shock: the animation shudders for a moment, then he drops
+        if (enemyAnimator != null) enemyAnimator.speed = 0f;
 
-        // Dushman ko zameen par lita dein (Rotate 90 degrees backward)
         stunOriginalXRotation = transform.localEulerAngles.x;
-        transform.localEulerAngles = new Vector3(90f, transform.localEulerAngles.y, transform.localEulerAngles.z);
+        float startX = stunOriginalXRotation;
+        Vector3 e = transform.localEulerAngles;
+
+        // fall to the floor (about 0.3 s, accelerating like a real fall) with a small jerk
+        float t = 0f;
+        while (t < 0.3f)
+        {
+            t += Time.deltaTime;
+            float k = Mathf.Clamp01(t / 0.3f); k *= k;
+            float jerk = Mathf.Sin(t * 90f) * (1f - k) * 4f;
+            transform.localEulerAngles = new Vector3(Mathf.LerpAngle(startX, 90f, k) + jerk, e.y, e.z);
+            yield return null;
+        }
+        transform.localEulerAngles = new Vector3(90f, e.y, e.z);
 
         while (Time.time < stunEndTime) yield return null;
 
-        // Dushman ko wapas khara karein
-        transform.localEulerAngles = new Vector3(stunOriginalXRotation, transform.localEulerAngles.y, transform.localEulerAngles.z);
-        agent.updateRotation = true;
-        
-        if (enemyAnimator != null)
-        {
-            enemyAnimator.speed = 1f; // Unfreeze animation
-        }
-        
         // Something else (e.g. the ending cinematic) took over while he was stunned - don't overwrite that state
         if (currentState != AIState.Stunned) yield break;
 
-        // After stun, the enemy is angry and immediately chases the player if possible
+        // get up (about 0.7 s, slow at first)
+        t = 0f;
+        Vector3 e2 = transform.localEulerAngles;
+        while (t < 0.7f)
+        {
+            t += Time.deltaTime;
+            float k = Mathf.Clamp01(t / 0.7f); k = 1f - (1f - k) * (1f - k);
+            transform.localEulerAngles = new Vector3(Mathf.LerpAngle(90f, startX, k), e2.y, e2.z);
+            yield return null;
+            if (currentState != AIState.Stunned) yield break;
+        }
+        transform.localEulerAngles = new Vector3(startX, e2.y, e2.z);
+        agent.updateRotation = true;
+        if (enemyAnimator != null) enemyAnimator.speed = 1f; // Unfreeze animation
+
+        // After the stun he is furious: straight back on the hunt, faster for a few seconds
         if (playerTransform != null)
         {
             currentState = AIState.Chase;
+            rageUntil = Time.time + 8f;
+            lastKnownPosition = playerTransform.position;
+            lostSightTimer = 0f;
+            nextAttackTime = Time.time + 0.5f;
         }
         else
         {
             currentState = previousState;
         }
-        
+
         if (agent.isActiveAndEnabled && agent.isOnNavMesh)
         {
             agent.isStopped = false;
         }
+    }
+
+    /// <summary>Cancels a swing that is waiting for its hit moment (stun / cinematic).</summary>
+    private void StopAttackSwing()
+    {
+        // AttackHitRoutine checks the state itself; nothing to stop - this exists so future swing effects can be cancelled here.
     }
 
     private void PatrolBehavior()
@@ -778,7 +868,7 @@ public class EnemyAI : MonoBehaviour
         HandleFootsteps();
 
         // Clown ki random darawni aawazein (Random Voices)
-        if (patrolVoiceLines != null && patrolVoiceLines.Length > 0 && Time.time >= nextVoiceTime)
+        if (patrolVoiceLines != null && patrolVoiceLines.Length > 0 && Time.time >= nextVoiceTime && Time.time >= voiceMuteUntil)
         {
             AudioClip voice = patrolVoiceLines[Random.Range(0, patrolVoiceLines.Length)];
             if (enemyAudioSource != null && voice != null)
@@ -856,7 +946,7 @@ public class EnemyAI : MonoBehaviour
         {
             nextStalkPauseTime = Time.time + Random.Range(20f, 40f);
             stalkPauseUntil = Time.time + Random.Range(2.5f, 4f);
-            if (patrolVoiceLines != null && patrolVoiceLines.Length > 0 && enemyAudioSource != null)
+            if (patrolVoiceLines != null && patrolVoiceLines.Length > 0 && enemyAudioSource != null && Time.time >= voiceMuteUntil)
             {
                 enemyAudioSource.PlayOneShot(patrolVoiceLines[Random.Range(0, patrolVoiceLines.Length)]);
                 nextVoiceTime = Time.time + Random.Range(minVoiceDelay, maxVoiceDelay);
@@ -868,7 +958,9 @@ public class EnemyAI : MonoBehaviour
 
     private void ChaseBehavior()
     {
-        agent.speed = chaseSpeed;
+        float speedNow = chaseSpeed;
+        if (Time.time < rageUntil) speedNow *= rageSpeedMultiplier;
+        agent.speed = speedNow;
         // Stop a little in front of the player instead of walking INTO them (the model used to fill the camera)
         agent.stoppingDistance = chaseStandOffDistance;
 
@@ -910,7 +1002,10 @@ public class EnemyAI : MonoBehaviour
 
         float distanceToPlayer = Vector3.Distance(transform.position, playerTransform.position);
 
-        if (playerHidden || distanceToPlayer > detectionRange || lostSightTimer > loseSightTime)
+        // LUNGE: when the player is close and in view he bursts forward (the player cannot simply jog away)
+        if (playerVisible && distanceToPlayer < 8f) agent.speed = speedNow * lungeSpeedMultiplier;
+
+        if (playerHidden || distanceToPlayer > detectionRange * 1.6f || lostSightTimer > loseSightTime)
         {
             currentState = AIState.Search;
             searchTimer = searchDuration;
@@ -983,7 +1078,7 @@ public class EnemyAI : MonoBehaviour
     /// </summary>
     private void SearchBehavior()
     {
-        agent.speed = patrolSpeed;
+        agent.speed = Mathf.Min(patrolSpeed * 1.15f, MaxPatrolSpeed);   // prowls a little faster than a normal patrol, still a walk
         HandleFootsteps();
         ResetAudioToAmbient();
 
@@ -1075,6 +1170,9 @@ public class EnemyAI : MonoBehaviour
         float distanceToPlayer = Vector3.Distance(transform.position, playerTransform.position);
         if (distanceToPlayer > detectionRange) return false;
 
+        // right behind / next to him: he feels the player even without looking (needs a clear line, no walls)
+        if (distanceToPlayer < closeSenseRange && HasLineOfSightToPlayer()) return true;
+
         Vector3 directionToPlayer = (playerTransform.position - transform.position).normalized;
         float angleToPlayer = Vector3.Angle(transform.forward, directionToPlayer);
 
@@ -1112,13 +1210,13 @@ public class EnemyAI : MonoBehaviour
             enemyAnimator.SetTrigger("Attack");
         }
 
-        nextAttackTime = Time.time + Mathf.Max(attackRate, attackAnimLength);
+        nextAttackTime = Time.time + Mathf.Max(attackRate, attackAnimLength / Mathf.Max(0.5f, attackAnimSpeed));
         StartCoroutine(AttackHitRoutine());
     }
 
     private System.Collections.IEnumerator AttackHitRoutine()
     {
-        yield return new WaitForSeconds(attackHitDelay);
+        yield return new WaitForSeconds(attackHitDelay / Mathf.Max(0.5f, attackAnimSpeed));
 
         // Something else took over (stun, cinematic, he lost the player...) - the swing does nothing
         if (currentState != AIState.Chase || playerTransform == null || playerStats == null) yield break;
@@ -1127,7 +1225,7 @@ public class EnemyAI : MonoBehaviour
         bool playerHidden = playerController != null && playerController.isHidden;
         float dist = Vector3.Distance(transform.position, playerTransform.position);
         float height = Mathf.Abs(playerTransform.position.y - transform.position.y);
-        if (playerHidden || dist > attackRange * 1.4f || height > maxAttackHeightDifference) yield break; // player stepped away in time
+        if (playerHidden || dist > attackRange * 1.5f || height > maxAttackHeightDifference) yield break; // player stepped away in time
 
         playerStats.TakeDamage(damageAmount);
         if (playerStats.IsDead() && currentState != AIState.VanishAfterKill)
@@ -1166,7 +1264,7 @@ public class EnemyAI : MonoBehaviour
         Vector3 searchCenter = transform.position;
 
         // Granny Sense: 40% chance hai ke enemy randomly wander karte hue player ki aam disha (general area) ki taraf aaye
-        if (playerTransform != null && Random.value < 0.4f)
+        if (playerTransform != null && Random.value < 0.55f)
         {
             searchCenter = Vector3.Lerp(transform.position, playerTransform.position, Random.Range(0.2f, 0.7f));
         }
@@ -1271,6 +1369,7 @@ public class EnemyAI : MonoBehaviour
         {
             agent.isStopped = false;
             agent.speed = chaseSpeed * 1.2f; // Sprints even faster when awakened!
+            rageUntil = Time.time + 6f;
             
             // Agar dushman bohat door hai, to usay thora qareeb teleport kar do taake chase mazedar ho
             if (playerTransform != null && Vector3.Distance(transform.position, playerTransform.position) > 25f)
@@ -1304,10 +1403,33 @@ public class EnemyAI : MonoBehaviour
     }
 
     // --- NEW: STAIRCASE TEASING (CINEMATIC) ---
-    public void StartTeasing(Transform targetToLookAt, float teaseDuration, Transform leaveTarget = null)
+    /// <param name="playTeasePose">Only the basement scene (he catches the player in the first room and drags him down) passes true.
+    /// Everywhere else the tease pose is OFF: the request just makes sure he is awake and hunting normally.</param>
+    public void StartTeasing(Transform targetToLookAt, float teaseDuration, Transform leaveTarget = null, bool playTeasePose = false)
     {
         if (agent == null) return;
-        
+
+        if (!playTeasePose)
+        {
+            if (currentState == AIState.Dormant)
+            {
+                currentState = AIState.Patrol;
+                hasInitializedPatrol = false;
+                if (agent.isActiveAndEnabled && agent.isOnNavMesh) agent.isStopped = false;
+            }
+            return;
+        }
+
+        // BASEMENT SCENE: he says ONE thing - the tease line. Everything else he was playing (ambient loop, chase music,
+        // a leftover laugh) is cut, and no laughs are allowed until well after he has dragged the player away.
+        voiceMuteUntil = Time.time + teaseDuration + 30f;
+        if (enemyAudioSource != null)
+        {
+            enemyAudioSource.Stop();
+            enemyAudioSource.clip = null;
+            enemyAudioSource.loop = false;
+        }
+
         currentState = AIState.Tease;
         teaseTarget = targetToLookAt;
         teaseTimer = teaseDuration;
@@ -1324,12 +1446,11 @@ public class EnemyAI : MonoBehaviour
             enemyAnimator.SetTrigger("Tease");
         }
         
-        // Play a random creepy voice line
-        if (enemyAudioSource != null && teaseVoiceLines != null && teaseVoiceLines.Length > 0)
+        // the tease dialogue ("Peek-a-boo, I finally found you...")
+        if (enemyAudioSource != null && teaseVoiceLines != null && teaseVoiceLines.Length > 0 && teaseVoiceLines[0] != null)
         {
-            AudioClip taunt = teaseVoiceLines[Random.Range(0, teaseVoiceLines.Length)];
-            enemyAudioSource.PlayOneShot(taunt);
-            Debug.Log("Enemy is teasing the player!");
+            enemyAudioSource.PlayOneShot(teaseVoiceLines[0]);
+            Debug.Log("Enemy says his tease line.");
         }
     }
 
@@ -1489,6 +1610,7 @@ public class EnemyAI : MonoBehaviour
 
     private void ResetAudioToAmbient()
     {
+        if (Time.time < voiceMuteUntil) return;   // quiet while the basement scene plays
         if (enemyAudioSource != null)
         {
             // Agar pehle se chase music baj raha tha to use band karo
