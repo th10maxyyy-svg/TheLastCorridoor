@@ -2,11 +2,15 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// OBJECTIVES (FR_48, FR_49, FR_31).
-/// Builds the objective list automatically from the puzzles and hazards that exist in the scene - no setup needed.
-///  - An objective is DISCOVERED when the player first comes near its puzzle (so the list grows as the asylum is explored).
-///  - It is COMPLETED automatically when the puzzle reports it is solved (or its save flag is set).
-/// Both states are stored as events in the save file, so they survive deaths, respawns and loading.
+/// OBJECTIVES (FR_48, FR_49, FR_31) - a STORY CHAIN: the player always sees exactly ONE thing to do next.
+///  1. Find the Guard Room key            (start of the game)
+///  2. ESCAPE THE BASEMENT (6 steps)       (after the clown drags him down)
+///  3. One objective per room upstairs     (surgery, exam room, kitchens, visiting room, office, bathroom...)
+///  4. Escape the asylum through the main gate
+/// A step is completed as soon as its condition is true (key picked up, door unlocked, puzzle solved...) - also when
+/// the player does things out of order. Completed steps are stored as events in the save file, so they survive deaths,
+/// respawns and loading. Steps whose objects are missing from the scene are left out automatically.
+/// To change the order or the texts: edit BuildChain() below - every step is one line.
 /// Created at runtime by GameUI inside the game level.
 /// </summary>
 public class ObjectiveTracker : MonoBehaviour
@@ -25,24 +29,27 @@ public class ObjectiveTracker : MonoBehaviour
         public int order;
         public List<Transform> anchors = new List<Transform>();
         public System.Func<bool> isDone;           // live check
-        public System.Func<string> progressText;   // optional "(3/5)"
-        public bool discovered;
+        public System.Func<string> progressText;   // optional extra text, e.g. "- key found, open the Guard Room"
+        public bool discovered;                    // reached in the chain (shown in the journal)
         public bool done;
     }
 
     private readonly List<Objective> objectives = new List<Objective>();
-
-    // FIRST GOAL: at the start only "find the guard room key" is shown. Every other objective stays hidden until
-    // the Guard Room has been unlocked (that is where the story really begins).
-    private Objective guardObjective;
-    private Inventory cachedInventory;
-    public bool IsGated => guardObjective != null && !guardObjective.done;
     public IReadOnlyList<Objective> Objectives => objectives;
 
-    [SerializeField] private float discoverDistance = 7f;
+    private int currentIndex = 0;
+    private int lastAnnouncedIndex = -1;
     private float nextPoll;
     private Transform player;
+    private Inventory inventory;
     private bool built;
+
+    // silent achievement trackers (not in the list)
+    private readonly List<string> keypadFlags = new List<string>();
+    private bool hasHeadlamp;
+
+    /// <summary>True while the very first objective (the Guard Room key) is the active one.</summary>
+    public bool IsGated => built && currentIndex == 0 && objectives.Count > 0 && objectives[0].id == "GuardKey";
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() { Instance = null; LastKnownTotal = 0; }
@@ -52,146 +59,237 @@ public class ObjectiveTracker : MonoBehaviour
 
     void Start()
     {
-        Build();
+        BuildChain();
+        RefreshStates(false);
+        Objective cur = Current();
+        if (cur != null) GameUI.Toast("OBJECTIVE", TitleWithProgress(cur));   // tell the player right away what to do
+        lastAnnouncedIndex = currentIndex;
     }
 
-    // ------------------------------------------------------------------------------------------ building the list
+    // ============================================================================================ scene lookups
     private static string IdOf(Transform t) => SaveManager.GetSceneObjectId(t);
-
     private static bool Flag(string flag) => SaveManager.instance != null && SaveManager.instance.HasFlag(flag);
 
-    private Objective Add(string id, string title, int order, Transform anchor, System.Func<bool> isDone, bool alwaysVisible = false)
+    private readonly Dictionary<string, List<GameObject>> keyObjects = new Dictionary<string, List<GameObject>>();
+    private readonly Dictionary<string, List<string>> keyIds = new Dictionary<string, List<string>>();
+
+    private bool KeyExists(string keyName) => keyObjects.ContainsKey(keyName.ToLower());
+
+    /// <summary>True once a key/item with this name has ever been picked up (or is in the hand right now).</summary>
+    private bool KeyTaken(string keyName)
     {
-        Objective o = new Objective { id = id, title = title, order = order, isDone = isDone, alwaysVisible = alwaysVisible };
-        if (anchor != null) o.anchors.Add(anchor);
+        string k = keyName.ToLower();
+        SaveManager sm = SaveManager.instance;
+        if (sm != null)
+        {
+            if (!keyIds.TryGetValue(k, out List<string> ids))
+            {
+                ids = new List<string>();
+                if (keyObjects.TryGetValue(k, out List<GameObject> gos))
+                    foreach (GameObject g in gos) if (g != null) ids.Add(sm.GetItemId(g));
+                keyIds[k] = ids;
+            }
+            foreach (string id in ids) if (!string.IsNullOrEmpty(id) && sm.IsItemCollected(id)) return true;
+        }
+        if (inventory == null) inventory = FindAnyObjectByType<Inventory>();
+        return inventory != null && inventory.HasItem(keyName);
+    }
+
+    /// <summary>The locked door of a room (by its name in the Hierarchy, e.g. "GuardRoom"), optionally the one that needs this key.</summary>
+    private static DoorController LockedDoor(string room, string key = null)
+    {
+        foreach (DoorController d in FindObjectsByType<DoorController>(FindObjectsInactive.Include))
+        {
+            if (!d.IsLocked) continue;
+            if (key != null && (d.RequiredKey == null || d.RequiredKey.ToLower() != key.ToLower())) continue;
+            for (Transform t = d.transform; t != null; t = t.parent)
+                if (t.name == room) return d;
+        }
+        return null;
+    }
+
+    private static bool DoorOpened(DoorController d, string id)
+    {
+        if (d != null && !d.IsLocked) return true;
+        return SaveManager.instance != null && !string.IsNullOrEmpty(id) && SaveManager.instance.IsDoorUnlocked(id);
+    }
+
+    private static T InRoom<T>(string room) where T : Component
+    {
+        foreach (T c in FindObjectsByType<T>(FindObjectsInactive.Include))
+            for (Transform t = c.transform; t != null; t = t.parent)
+                if (t.name == room) return c;
+        return null;
+    }
+
+    private Objective Add(string id, string title, System.Func<bool> isDone)
+    {
+        Objective o = new Objective { id = id, title = title, order = objectives.Count, isDone = isDone };
         objectives.Add(o);
         return o;
     }
 
-    private void Build()
+    // ============================================================================================ THE CHAIN
+    private void BuildChain()
     {
         objectives.Clear();
-        guardObjective = null;
+        keyObjects.Clear();
+        keyIds.Clear();
         FindObjectsInactive inc = FindObjectsInactive.Include;
 
+        foreach (KeyItem k in FindObjectsByType<KeyItem>(inc))
+        {
+            string n = (k.GetKeyName() ?? "").ToLower();
+            if (n.Length == 0) continue;
+            if (!keyObjects.TryGetValue(n, out List<GameObject> list)) keyObjects[n] = list = new List<GameObject>();
+            list.Add(k.gameObject);
+        }
+        if (inventory == null) inventory = FindAnyObjectByType<Inventory>();
+
+        // ---------------------------------------------------------------- 1. the start: the Guard Room
+        DoorController guardDoor = null;
         foreach (DoorController d in FindObjectsByType<DoorController>(inc))
+            if (!string.IsNullOrEmpty(d.RequiredKey) && d.RequiredKey.ToLower().Contains("guard")) { guardDoor = d; break; }
+        if (guardDoor != null)
         {
-            if (string.IsNullOrEmpty(d.RequiredKey) || !d.RequiredKey.ToLower().Contains("guard")) continue;
-            DoorController door = d;
-            string keyName = d.RequiredKey;
-            string doorId = d.DoorID;
-            guardObjective = Add("GuardKey", "Find the Guard Room key to unlock it", -100, null,
-                () => door == null || !door.IsLocked || (SaveManager.instance != null && SaveManager.instance.IsDoorUnlocked(doorId)), true);
-            guardObjective.progressText = () =>
+            DoorController gd = guardDoor; string gid = gd.DoorID; string gkey = gd.RequiredKey;
+            Objective o = Add("GuardKey", "Find the Guard Room key to unlock it", () => DoorOpened(gd, gid));
+            o.progressText = () => KeyTaken(gkey) ? "- key found, open the Guard Room" : "";
+        }
+
+        // ---------------------------------------------------------------- 2. ESCAPE THE BASEMENT
+        const string B = "ESCAPE THE BASEMENT: ";
+        DoorController cell = LockedDoor("SeclusionRoomB");
+        if (cell != null)
+        {
+            string id = cell.DoorID; string key = cell.RequiredKey;
+            Add("Basement_Cell", B + "find a key to get out of this cell", () => DoorOpened(cell, id) || KeyTaken(key));
+        }
+        if (KeyExists("Morgue Key"))
+        {
+            DoorController morgue = LockedDoor("Morgue", "Morgue Key"); string mid = morgue != null ? morgue.DoorID : null;
+            Add("Basement_MorgueKey", B + "find the key to the Morgue", () => KeyTaken("Morgue Key") || (morgue != null && DoorOpened(morgue, mid)));
+        }
+        ElectricTrap barrier = InRoom<ElectricTrap>("Morgue");
+        if (barrier != null)
+        {
+            string flag = "TrapDisabled_" + IdOf(barrier.transform);
+            Add("Barrier_Morgue", B + "shut down the electric barrier in the Morgue", () => Flag(flag));
+        }
+        if (KeyExists("blue key"))
+        {
+            DoorController machine = LockedDoor("MachineRoom", "blue key"); string mid = machine != null ? machine.DoorID : null;
+            Add("Basement_BlueKey", B + "search the morgue drawers for a key", () => KeyTaken("blue key") || (machine != null && DoorOpened(machine, mid)));
+        }
+        GeneratorPuzzle gen = InRoom<GeneratorPuzzle>("MachineRoom");
+        if (gen != null)
+        {
+            GeneratorPuzzle g = gen;
+            Add("Generator_Basement", B + "find the crank handle and start the generator", () => g != null && g.isGeneratorOn);
+        }
+        if (cell != null || gen != null)
+        {
+            Add("Basement_Leave", B + "the way is open - get back upstairs!", () =>
             {
-                if (cachedInventory == null) cachedInventory = FindAnyObjectByType<Inventory>();
-                Inventory inv = cachedInventory;
-                return inv != null && inv.HasItem(keyName) ? "- key found, open the Guard Room" : "";
-            };
-            break;
+                if (player == null) return false;
+                return player.position.y > -6f;   // the basement floor is ~17 m below the ground floor
+            });
         }
 
-        foreach (HeadlampPickup h in FindObjectsByType<HeadlampPickup>(inc))
+        // ---------------------------------------------------------------- 3. room by room upstairs
+        if (KeyExists("surgery key"))
+            Add("SurgeryKey", "Guard Room: take the Surgery key", () => KeyTaken("surgery key"));
+
+        DeadBodyPuzzle body = null;
+        foreach (DeadBodyPuzzle b in FindObjectsByType<DeadBodyPuzzle>(inc)) if (b.isCorrectBody) { body = b; break; }
+        if (body != null)
         {
-            Add("Headlamp", "Find a light source", 0, h.transform, () => Flag(HeadlampPickup.SaveFlag), true);
-            break;
+            DeadBodyPuzzle b = body;
+            Add("Body_Surgery", "Surgery: find a scalpel and cut open the right body", () => b != null && b.IsSolved);
         }
 
-        foreach (GrandfatherClockPuzzle p in FindObjectsByType<GrandfatherClockPuzzle>(inc))
+        CrankGeneratorPuzzle xray = InRoom<CrankGeneratorPuzzle>("ExamRoom");
+        if (xray != null)
         {
-            GrandfatherClockPuzzle c = p;
-            Add("Clock_" + IdOf(c.transform), "Repair the grandfather clock", 10, c.transform, () => c != null && c.IsSolved);
+            CrankGeneratorPuzzle x = xray;
+            Add("Crank_Xray", "Exam Room: power the X-ray machine with the rusty crank", () => x != null && x.IsSolved);
         }
+        if (KeyExists("pharmacy key"))
+            Add("PharmacyKey", "Exam Room: open the locked cabinet and take the key", () => KeyTaken("pharmacy key"));
 
-        foreach (OvenPuzzleManager p in FindObjectsByType<OvenPuzzleManager>(inc))
+        KeypadController kitchenPad = InRoom<KeypadController>("Kitchen");
+        if (kitchenPad != null)
         {
-            OvenPuzzleManager m = p;
-            Objective o = Add("Oven_" + IdOf(m.transform), "Set the three ovens to the right temperatures", 20, null, () => m != null && m.IsSolved);
-            foreach (OvenDial d in FindObjectsByType<OvenDial>(inc)) o.anchors.Add(d.transform);
-            if (o.anchors.Count == 0) o.anchors.Add(m.transform);
+            string flag = "Keypad_" + IdOf(kitchenPad.transform);
+            Add("Kitchen_Code", "Kitchen (first floor): crack the door code", () => Flag(flag));
         }
-
-        foreach (MicrowavePuzzle p in FindObjectsByType<MicrowavePuzzle>(inc))
+        MicrowavePuzzle micro = InRoom<MicrowavePuzzle>("Kitchen");
+        if (micro != null)
         {
-            MicrowavePuzzle m = p;
-            Add("Microwave_" + IdOf(m.transform), "Get the microwave working", 20, m.transform, () => m != null && m.IsSolved);
+            MicrowavePuzzle m = micro;
+            Add("Microwave_Kitchen", "Kitchen: melt the ice in the microwave", () => m != null && m.IsSolved);
         }
-
-        List<DeadBodyPuzzle> bodies = new List<DeadBodyPuzzle>(FindObjectsByType<DeadBodyPuzzle>(inc));
-        DeadBodyPuzzle rightBody = bodies.Find(b => b.isCorrectBody);
-        if (rightBody != null)
+        if (KeyExists("dining room key"))
+            Add("Phone_Visit", "Visiting Room: answer the phone and take the Dining Room key", () => KeyTaken("dining room key"));
+        if (KeyExists("stock room key"))
         {
-            DeadBodyPuzzle b = rightBody;
-            Objective o = Add("Body_" + IdOf(b.transform), "Find the right body and cut it open", 30, null, () => b != null && b.IsSolved);
-            foreach (DeadBodyPuzzle any in bodies) o.anchors.Add(any.transform);
+            DoorController kd = LockedDoor("KitchenA", "stock room key"); string kid = kd != null ? kd.DoorID : null;
+            Add("StockKey", "Dining Room: find the Stock Room key", () => KeyTaken("stock room key") || (kd != null && DoorOpened(kd, kid)));
         }
 
-        foreach (CrankGeneratorPuzzle p in FindObjectsByType<CrankGeneratorPuzzle>(inc))
+        ToxicGasTrap gas = InRoom<ToxicGasTrap>("KitchenA");
+        FuseBoxPuzzle kitchenFuses = InRoom<FuseBoxPuzzle>("KitchenA");
+        if (gas != null || kitchenFuses != null)
         {
-            CrankGeneratorPuzzle c = p;
-            Add("Crank_" + IdOf(c.transform), "Power the X-ray machine with a crank", 40, c.transform, () => c != null && c.IsSolved);
+            string flag = gas != null ? "GasTrapCleared_" + IdOf(gas.transform) : null;
+            FuseBoxPuzzle f = kitchenFuses;
+            Add("Gas_KitchenA", "Kitchen (ground floor): find 2 fuses and fix the fuse box before the gas kills you",
+                () => (f != null && f.IsSolved) || (flag != null && Flag(flag)));
         }
-
-        foreach (GeneratorPuzzle p in FindObjectsByType<GeneratorPuzzle>(inc))
+        OvenPuzzleManager oven = InRoom<OvenPuzzleManager>("KitchenA");
+        if (oven != null)
         {
-            GeneratorPuzzle g = p;
-            Add("Generator_" + IdOf(g.transform), "Start the generator", 40, g.transform, () => g != null && g.isGeneratorOn);
+            OvenPuzzleManager ov = oven;
+            Add("Oven_KitchenA", "Kitchen: set the three ovens to the right temperatures", () => ov != null && ov.IsSolved);
         }
+        if (KeyExists("office key"))
+            Add("OfficeKey", "Classroom: find the Office key", () => KeyTaken("office key"));
 
-        foreach (FuseBoxPuzzle p in FindObjectsByType<FuseBoxPuzzle>(inc))
+        GrandfatherClockPuzzle clock = InRoom<GrandfatherClockPuzzle>("Office");
+        if (clock != null)
         {
-            FuseBoxPuzzle f = p;
-            string title = "Restore the fuse box (find " + f.requiredFuses + " x " + f.fuseItemName + ")";
-            Add("Fuse_" + IdOf(f.transform), title, 50, f.transform, () => f != null && f.IsSolved);
+            GrandfatherClockPuzzle c = clock;
+            Add("Clock_Office", "Head Office: repair the grandfather clock", () => c != null && c.IsSolved);
         }
-
-        foreach (AcidDrainPuzzle p in FindObjectsByType<AcidDrainPuzzle>(inc))
+        FuseBoxPuzzle bathBox = InRoom<FuseBoxPuzzle>("Bathroom");
+        if (bathBox != null)
         {
-            AcidDrainPuzzle a = p;
-            Add("Acid_" + IdOf(a.transform), "Drain the acid tank to reach the key", 60, a.transform, () => a != null && a.IsSolved);
+            FuseBoxPuzzle f = bathBox; string fuseName = f.fuseItemName;
+            if (KeyExists(fuseName))
+                Add("BathFuse", "Head Office: search the body bags for a fuse", () => KeyTaken(fuseName) || (f != null && f.IsSolved));
+            Add("Fuse_Bathroom", "Bathroom: put the fuse in the control box", () => f != null && f.IsSolved);
         }
-
-        foreach (ElectricTrap p in FindObjectsByType<ElectricTrap>(inc))
+        AcidDrainPuzzle acid = InRoom<AcidDrainPuzzle>("Bathroom");
+        if (acid != null)
         {
-            string flag = "TrapDisabled_" + IdOf(p.transform);
-            Add("Barrier_" + IdOf(p.transform), "Shut down the electrified barrier", 60, p.transform, () => Flag(flag));
+            AcidDrainPuzzle a = acid;
+            Add("Acid_Bathroom", "Bathroom: find the valve and drain the acid bath", () => a != null && a.IsSolved);
         }
 
-        foreach (ToxicGasTrap p in FindObjectsByType<ToxicGasTrap>(inc))
-        {
-            string flag = "GasTrapCleared_" + IdOf(p.transform);
-            Add("Gas_" + IdOf(p.transform), "Survive the gas room - find the ventilation switch", 60, p.transform, () => Flag(flag));
-        }
+        // ---------------------------------------------------------------- 4. the end
+        Add("Escape", "Escape the asylum through the main gate",
+            () => SaveManager.instance != null && SaveManager.instance.HasEvent(DonePrefix + "Escape"));
 
-        KeypadController[] pads = FindObjectsByType<KeypadController>(inc);
-        if (pads.Length > 0)
-        {
-            List<string> padFlags = new List<string>();
-            foreach (KeypadController k in pads) padFlags.Add("Keypad_" + IdOf(k.transform));
-            System.Func<int> padsDone = () => { int n = 0; foreach (string f in padFlags) if (Flag(f)) n++; return n; };
-            Objective o = Add("Keypads", "Crack the keypad codes", 70, null, () => padsDone() >= padFlags.Count);
-            foreach (KeypadController k in pads) o.anchors.Add(k.transform);
-            o.progressText = () => "(" + padsDone() + "/" + padFlags.Count + ")";
-        }
+        // silent trackers for the achievements (Codebreaker, Let There Be Light)
+        keypadFlags.Clear();
+        foreach (KeypadController k in FindObjectsByType<KeypadController>(inc)) keypadFlags.Add("Keypad_" + IdOf(k.transform));
+        hasHeadlamp = FindObjectsByType<HeadlampPickup>(inc).Length > 0;
 
-        if (GameProgress.CountNotesInScene() > 0)
-        {
-            Objective o = Add("Notes", "Read the notes to learn what happened here", 5, null,
-                () => GameProgress.NotesRead() >= GameProgress.CountNotesInScene(), true);
-            o.progressText = () => "(" + GameProgress.NotesRead() + "/" + GameProgress.CountNotesInScene() + ")";
-        }
-
-        Add("Escape", "Escape the asylum through the main gate", 100, null,
-            () => SaveManager.instance != null && SaveManager.instance.HasEvent(DonePrefix + "Escape"), true);
-
-        objectives.Sort((a, b) => a.order.CompareTo(b.order));
         LastKnownTotal = objectives.Count;
         built = true;
-        RefreshStates(false);
-        if (IsGated) GameUI.Toast("OBJECTIVE", guardObjective.title);   // tell the player right away what to do
     }
 
-    // ------------------------------------------------------------------------------------------ polling
+    // ============================================================================================ polling
     void Update()
     {
         if (!built || Time.unscaledTime < nextPoll) return;
@@ -211,65 +309,45 @@ public class ObjectiveTracker : MonoBehaviour
             if (pc != null) player = pc.transform;
         }
 
-        // the guard key objective first (it decides whether the rest of the list is shown at all)
-        if (guardObjective != null && !guardObjective.done)
-        {
-            guardObjective.done = sm.HasEvent(DonePrefix + guardObjective.id);
-            if (!guardObjective.done)
-            {
-                bool opened = false;
-                try { opened = guardObjective.isDone(); } catch { opened = false; }
-                if (opened)
-                {
-                    guardObjective.done = true;
-                    sm.RecordEvent(DonePrefix + guardObjective.id, false);
-                    if (notify) GameUI.Toast("OBJECTIVE COMPLETE", guardObjective.title);
-                }
-            }
-        }
-        bool gated = IsGated;
-
+        // completion, IN ORDER: the active step is checked, and if it is already true (the player did it early)
+        // the chain moves on at once. Done steps are sticky (saved), even if the key is used up later.
         foreach (Objective o in objectives)
         {
-            if (gated && o != guardObjective)
-            {
-                o.discovered = false;          // hidden until the Guard Room is open
-                o.done = sm.HasEvent(DonePrefix + o.id);
-                continue;
-            }
-            o.discovered = o.alwaysVisible || sm.HasEvent(FoundPrefix + o.id);
-            o.done = sm.HasEvent(DonePrefix + o.id);
+            if (!o.done) o.done = sm.HasEvent(DonePrefix + o.id);
+            if (o.done) continue;
+            if (o.id == "Escape") break;
+            bool solved = false;
+            try { solved = o.isDone != null && o.isDone(); } catch { solved = false; }
+            if (!solved) break;                       // this is the step the player has to do now
+            o.done = true;
+            sm.RecordEvent(DonePrefix + o.id, false); // false = adaptive AI (DDA) timing stays exactly as before
+            if (notify) GameUI.Toast("OBJECTIVE COMPLETE", o.title);
+        }
 
-            // discovery: the player walked close to the puzzle
-            if (!o.discovered && player != null)
-            {
-                foreach (Transform a in o.anchors)
-                {
-                    if (a == null) continue;
-                    Vector3 delta = a.position - player.position;
-                    if (Mathf.Abs(delta.y) < 4f && new Vector2(delta.x, delta.z).magnitude < discoverDistance)
-                    {
-                        o.discovered = true;
-                        sm.RecordEvent(FoundPrefix + o.id, false);
-                        if (notify && !o.done) GameUI.Toast("NEW OBJECTIVE", o.title);
-                        break;
-                    }
-                }
-            }
+        // the active step = the first one that is not done yet; everything up to it is "discovered" (journal)
+        currentIndex = objectives.Count;
+        for (int i = 0; i < objectives.Count; i++) if (!objectives[i].done) { currentIndex = i; break; }
+        for (int i = 0; i < objectives.Count; i++)
+        {
+            Objective o = objectives[i];
+            o.discovered = o.done || i <= currentIndex;
+            if (o.discovered && !sm.HasEvent(FoundPrefix + o.id)) sm.RecordEvent(FoundPrefix + o.id, false);
+        }
 
-            // completion: the puzzle says it is solved
-            if (!o.done && o.id != "Escape")
-            {
-                bool solved = false;
-                try { solved = o.isDone != null && o.isDone(); } catch { solved = false; }
-                if (solved)
-                {
-                    o.done = true;
-                    if (!o.discovered) { o.discovered = true; sm.RecordEvent(FoundPrefix + o.id, false); }
-                    sm.RecordEvent(DonePrefix + o.id, false); // false = adaptive AI (DDA) timing stays exactly as before
-                    if (notify) GameUI.Toast("OBJECTIVE COMPLETE", o.title);
-                }
-            }
+        if (notify && currentIndex != lastAnnouncedIndex)
+        {
+            lastAnnouncedIndex = currentIndex;
+            Objective cur = Current();
+            if (cur != null) GameUI.Toast("NEW OBJECTIVE", cur.title);
+        }
+
+        // achievements that are not steps of the chain
+        if (hasHeadlamp && !sm.HasEvent(DonePrefix + "Headlamp") && Flag(HeadlampPickup.SaveFlag)) sm.RecordEvent(DonePrefix + "Headlamp", false);
+        if (keypadFlags.Count > 0 && !sm.HasEvent(DonePrefix + "Keypads"))
+        {
+            bool all = true;
+            foreach (string f in keypadFlags) if (!Flag(f)) { all = false; break; }
+            if (all) sm.RecordEvent(DonePrefix + "Keypads", false);
         }
     }
 
@@ -279,37 +357,18 @@ public class ObjectiveTracker : MonoBehaviour
         if (SaveManager.instance != null) SaveManager.instance.RecordEvent(DonePrefix + "Escape", false);
     }
 
-    // ------------------------------------------------------------------------------------------ queries for the UI
+    // ============================================================================================ queries for the UI
     public string TitleWithProgress(Objective o)
     {
-        string p = o.progressText != null ? " " + o.progressText() : "";
-        return o.title + p;
+        string p = o.progressText != null ? o.progressText() : "";
+        return string.IsNullOrEmpty(p) ? o.title : o.title + " " + p;
     }
 
-    /// <summary>The objective shown on the HUD: the most recently discovered one that is not finished yet.</summary>
+    /// <summary>The objective shown on the HUD: always the next step of the chain.</summary>
     public Objective Current()
     {
-        if (IsGated) return guardObjective;   // at the start this is the ONLY objective
-
-        SaveManager sm = SaveManager.instance;
-        Objective best = null;
-        int bestIndex = -1;
-        if (sm != null)
-        {
-            List<string> events = SaveManager.SplitList(sm.currentSaveData.eventsCSV);
-            foreach (Objective o in objectives)
-            {
-                if (o.done || !o.discovered || o.alwaysVisible) continue;
-                int idx = events.LastIndexOf(FoundPrefix + o.id);
-                if (idx > bestIndex) { bestIndex = idx; best = o; }
-            }
-        }
-        if (best != null) return best;
-
-        // nothing new: first unfinished always-visible objective, the escape last
-        foreach (Objective o in objectives) if (!o.done && o.alwaysVisible && o.id != "Escape" && o.id != "Notes") return o;
-        foreach (Objective o in objectives) if (!o.done && o.id == "Escape") return o;
-        return null;
+        if (!built || currentIndex < 0 || currentIndex >= objectives.Count) return null;
+        return objectives[currentIndex];
     }
 
     public int DoneCount() { int n = 0; foreach (Objective o in objectives) if (o.done) n++; return n; }

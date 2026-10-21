@@ -36,6 +36,65 @@ public class CinematicAmbush : MonoBehaviour
         // WORLD STATE: respawn ke baad wahi jumpscare / basement drag dobara na chale
         saveFlag = "Ambush_" + SaveManager.GetSceneObjectId(transform);
         if (SaveManager.instance != null && SaveManager.instance.HasFlag(saveFlag)) hasAmbushed = true;
+
+        // RESUME FIX: the game was closed after the Guard Room was unlocked but BEFORE the player reached the basement
+        // (e.g. during the jumpscare). The door is open but the event never finished - replay it as soon as the player
+        // comes back to that door, instead of leaving him upstairs with the story broken.
+        if (isBasementTransition && !hasAmbushed && SaveManager.instance != null)
+        {
+            pendingDoor = FindStoryDoor();
+            if (pendingDoor != null && SaveManager.instance.IsDoorUnlocked(pendingDoor.DoorID))
+            {
+                pendingRetrigger = true;
+                Debug.Log("[Ambush] Resume: the basement event was not finished - it will replay at " + pendingDoor.name);
+            }
+        }
+    }
+
+    private bool pendingRetrigger;
+    private DoorController pendingDoor;
+    private Transform pendingPlayer;
+
+    private DoorController FindStoryDoor()
+    {
+        foreach (DoorController d in FindObjectsByType<DoorController>(FindObjectsInactive.Include))
+            if (d.ambushToTrigger == this) return d;
+        foreach (DoorController d in FindObjectsByType<DoorController>(FindObjectsInactive.Include))
+            if (!string.IsNullOrEmpty(d.RequiredKey) && d.RequiredKey.ToLower().Contains("guard")) return d;
+        return null;
+    }
+
+    void Update()
+    {
+        if (!pendingRetrigger || hasAmbushed || pendingDoor == null) return;
+        if (pendingPlayer == null)
+        {
+            PlayerController p = FindAnyObjectByType<PlayerController>();
+            if (p == null) return;
+            pendingPlayer = p.transform;
+        }
+        Vector3 d = pendingDoor.transform.position - pendingPlayer.position;
+        if (Mathf.Abs(d.y) < 2.5f && new Vector2(d.x, d.z).magnitude < 3.5f)
+        {
+            pendingRetrigger = false;
+            TriggerAmbush(true);
+        }
+    }
+
+    /// <summary>The basement event is only marked as done once the player really lies in the basement.</summary>
+    private System.Collections.IEnumerator MarkDoneWhenInBasement(Transform player)
+    {
+        float timeout = Time.time + 40f;
+        while (Time.time < timeout)
+        {
+            if (player != null && basementSpawnPoint != null && Vector3.Distance(player.position, basementSpawnPoint.position) < 3f)
+            {
+                if (SaveManager.instance != null && !string.IsNullOrEmpty(saveFlag)) SaveManager.instance.SetFlag(saveFlag);
+                AmbushLog("player is in the basement - event saved as done");
+                yield break;
+            }
+            yield return new WaitForSeconds(0.25f);
+        }
     }
 
     private string saveFlag;
@@ -63,7 +122,10 @@ public class CinematicAmbush : MonoBehaviour
             return; // Only ambush once, unless forced!
         }
         hasAmbushed = true;
-        if (SaveManager.instance != null && !string.IsNullOrEmpty(saveFlag)) SaveManager.instance.SetFlag(saveFlag);
+        pendingRetrigger = false;
+        // the basement event is saved as done only when the player has really been dropped in the basement
+        // (if the game is closed during the jumpscare, it replays next time instead of being lost)
+        if (!isBasementTransition && SaveManager.instance != null && !string.IsNullOrEmpty(saveFlag)) SaveManager.instance.SetFlag(saveFlag);
 
         // Play the sudden scream! (not in the basement scene: there he only says his tease line)
         if (ambushScream != null && !isBasementTransition)
@@ -440,6 +502,7 @@ public class CinematicAmbush : MonoBehaviour
         if (pc != null)
         {
             pc.TriggerDragToBasementCinematic(basementSpawnPoint, enemy.gameObject);
+            StartCoroutine(MarkDoneWhenInBasement(playerTransform));
         }
     }
 }

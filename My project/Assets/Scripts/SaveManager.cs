@@ -107,17 +107,55 @@ public class SaveManager : MonoBehaviour
     }
 
     // ------------------------------------------------------------------ checkpoint autosave
-    // BUG FIX: player ki position pehle sirf marne par (basement) save hoti thi. Resume karne par player hamesha
-    // shuru wale kamre mein hota tha. Ab har kuch seconds mein (jab mehfooz ho) position save hoti hai.
-    private const float checkpointInterval = 15f;
+    // RESUME = EXACTLY WHERE THE PLAYER STOPPED:
+    //  - every 0.25 s the player's position is remembered (only while he stands normally on the ground: not during a
+    //    cinematic / the drag / waking up / hiding / riding the elevator / mid-jump),
+    //  - that position is written to the save file every 5 s, when the game is closed, and on every manual save.
+    // Any teleport that saves its own spot (basement drop, respawn point) clears the remembered position, so an older
+    // spot can never overwrite it.
+    private const float checkpointInterval = 5f;
     private float nextCheckpointTime = 0f;
+    private float nextSampleTime = 0f;
     private PlayerController cachedPlayer;
+
+    private Vector3 lastGoodPos;
+    private Quaternion lastGoodRot;
+    private bool hasLastGood;
+    private int lastGoodSceneLoad = -1;
 
     void Update()
     {
+        if (Time.unscaledTime >= nextSampleTime)
+        {
+            nextSampleTime = Time.unscaledTime + 0.25f;
+            SampleGoodPosition(false);
+        }
         if (Time.unscaledTime < nextCheckpointTime) return;
         nextCheckpointTime = Time.unscaledTime + checkpointInterval;
         TrySavePlayerCheckpoint();
+    }
+
+    /// <summary>Remembers where the player stands, if it is a normal spot to resume from.</summary>
+    private void SampleGoodPosition(bool manual)
+    {
+        if (suppressAutoSave || RespawnManager.instance == null) return;      // not in the game level
+        if (restoredSceneLoad != sceneLoadCount) return;                      // world not restored yet
+
+        if (cachedPlayer == null) cachedPlayer = FindAnyObjectByType<PlayerController>();
+        PlayerController pc = cachedPlayer;
+        if (pc == null || (!pc.enabled && !manual) || pc.isDead || pc.isHidden || pc.isCinematicPlaying) return;
+        if (pc.transform.parent != null) return;                              // riding the elevator
+
+        PlayerStats stats = pc.GetComponent<PlayerStats>();
+        if (stats != null && stats.IsDead()) return;
+
+        CharacterController cc = pc.GetComponent<CharacterController>();
+        if (cc != null && (!cc.enabled || (!cc.isGrounded && !manual))) return; // drag / wake-up / mid-jump
+
+        lastGoodPos = pc.transform.position;
+        lastGoodRot = pc.transform.rotation;
+        hasLastGood = true;
+        lastGoodSceneLoad = sceneLoadCount;
     }
 
     /// <summary>Manual save from the pause menu (FR_38). Same safety rules as the automatic checkpoint.</summary>
@@ -188,7 +226,7 @@ public class SaveManager : MonoBehaviour
         if (!TrySavePlayerCheckpoint()) WriteToFile();
     }
 
-    /// <summary>Saves where the player stands, but only when it is a SAFE place to resume from.</summary>
+    /// <summary>Writes the player's last normal position (see above) to the save file.</summary>
     private bool TrySavePlayerCheckpoint() => TrySavePlayerCheckpoint(false);
 
     /// <param name="manual">True when the pause menu asks (the PlayerController is disabled while the game is paused).</param>
@@ -197,23 +235,8 @@ public class SaveManager : MonoBehaviour
         if (suppressAutoSave || RespawnManager.instance == null) return false;      // not in the game level
         if (restoredSceneLoad != sceneLoadCount) return false;                      // world not restored yet
 
-        if (cachedPlayer == null) cachedPlayer = FindAnyObjectByType<PlayerController>();
-        PlayerController pc = cachedPlayer;
-        if (pc == null || (!pc.enabled && !manual) || pc.isDead || pc.isHidden || pc.isCinematicPlaying) return false;
-        if (pc.transform.parent != null) return false;                              // riding the elevator
-
-        PlayerStats stats = pc.GetComponent<PlayerStats>();
-        if (stats != null && stats.IsDead()) return false;
-
-        CharacterController cc = pc.GetComponent<CharacterController>();
-        if (cc != null && (!cc.enabled || !cc.isGrounded)) return false;
-
-        // Never checkpoint in the middle of a chase / cinematic
-        foreach (EnemyAI enemy in FindObjectsByType<EnemyAI>())
-        {
-            EnemyAI.AIState s = enemy.State;
-            if (s == EnemyAI.AIState.Chase || s == EnemyAI.AIState.Tease || s == EnemyAI.AIState.CinematicEscape) return false;
-        }
+        SampleGoodPosition(manual);                                                 // take the very latest spot if possible
+        if (!hasLastGood || lastGoodSceneLoad != sceneLoadCount) return false;
 
         // FR_40: also remember where the enemy is, so Resume / Load puts him back (only while he is calmly patrolling/searching)
         currentSaveData.hasEnemyPosition = false;
@@ -230,8 +253,11 @@ public class SaveManager : MonoBehaviour
         }
 
         // RespawnManager adds +1m on load (for the floor-level basement point) - compensate so we come back where we stood
-        Vector3 pos = pc.transform.position - Vector3.up * 0.9f;
-        SavePlayerTransform(pos, pc.transform.rotation);
+        Vector3 pos = lastGoodPos - Vector3.up * 0.9f;
+        Quaternion rot = lastGoodRot;
+        SavePlayerTransform(pos, rot);
+        // SavePlayerTransform clears the remembered spot; keep it, it is the one we just wrote
+        lastGoodPos = pos + Vector3.up * 0.9f; lastGoodRot = rot; hasLastGood = true; lastGoodSceneLoad = sceneLoadCount;
         return true;
     }
 
@@ -482,6 +508,7 @@ public class SaveManager : MonoBehaviour
     // ------------------------------------------------------------------ player
     public void SavePlayerTransform(Vector3 position, Quaternion rotation)
     {
+        hasLastGood = false;   // a teleport saved its own spot (basement drop, respawn point): never overwrite it with an older one
         currentSaveData.playerPosition = new float[] { position.x, position.y, position.z };
         currentSaveData.playerRotation = new float[] { rotation.x, rotation.y, rotation.z, rotation.w };
         WriteToFile();

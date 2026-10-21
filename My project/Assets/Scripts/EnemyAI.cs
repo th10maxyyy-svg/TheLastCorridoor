@@ -891,6 +891,9 @@ public class EnemyAI : MonoBehaviour
         // --- STALKING PAUSE: kabhi kabhi ruk kar player ki disha mein ghoorta hai aur hansta hai ---
         if (StalkPause()) return;
 
+        // --- NEVER LOST: if he has been far away / on another floor for too long, he comes to the player's area ---
+        if (KeepNearPlayer()) return;
+
         // --- GRANNY-LIKE WANDER ---
         // Enemy ab har waqt player ke peeche nahi bhagega. Ye randomly patrol karega.
 
@@ -915,6 +918,68 @@ public class EnemyAI : MonoBehaviour
         {
             GetNewPatrolTarget();
         }
+    }
+
+    // ------------------------------------------------------------------ presence: he never disappears for long
+    [Header("Presence (never lost)")]
+    [Tooltip("Seconds he may stay far from the player (or on another floor) before he comes to the player's area")]
+    public float maxTimeAway = 20f;
+    private float awayTimer;
+    private float nextRelocateTime;
+
+    /// <summary>
+    /// He used to wander only around his own floor: once the player was in the basement or on another floor, the
+    /// clown was never seen again. Now, after 'maxTimeAway' seconds far away he walks to the player's area
+    /// (out of sight, 10-18 m away); if there is no walkable way there, he appears somewhere near but out of view.
+    /// </summary>
+    private bool KeepNearPlayer()
+    {
+        if (playerTransform == null || !agent.isOnNavMesh) return false;
+        Vector3 me = transform.position, pl = playerTransform.position;
+        float dy = Mathf.Abs(pl.y - me.y);
+        float flat = new Vector2(pl.x - me.x, pl.z - me.z).magnitude;
+        bool away = flat > 28f || dy > 2.6f;
+        awayTimer = away ? awayTimer + Time.deltaTime : 0f;
+        if (awayTimer < maxTimeAway || Time.time < nextRelocateTime) return false;
+
+        awayTimer = 0f;
+        nextRelocateTime = Time.time + maxTimeAway + 10f;
+        NavMeshPath path = new NavMeshPath();
+        Vector3 eye = pl + Vector3.up * 0.7f;
+
+        // 1. walk there (a point on the PLAYER's floor, 10-18 m from him)
+        for (int i = 0; i < 14; i++)
+        {
+            Vector2 c = Random.insideUnitCircle.normalized * Random.Range(10f, 18f);
+            Vector3 p = pl + new Vector3(c.x, 0f, c.y);
+            if (!NavMesh.SamplePosition(p, out NavMeshHit hit, 3f, NavMesh.AllAreas)) continue;
+            if (Mathf.Abs(hit.position.y - (pl.y - 1f)) > 2.6f && Mathf.Abs(hit.position.y - pl.y) > 2.6f) continue;
+            if (!agent.CalculatePath(hit.position, path) || path.status != NavMeshPathStatus.PathComplete) continue;
+            patrolTarget = hit.position;
+            agent.isStopped = false;
+            agent.SetPath(path);
+            Debug.Log("EnemyAI: was away from the player too long - heading to the player's area.");
+            return false;
+        }
+
+        // 2. no walkable way (other floor not connected): appear near the player, but OUT OF SIGHT
+        for (int i = 0; i < 20; i++)
+        {
+            Vector2 c = Random.insideUnitCircle.normalized * Random.Range(12f, 22f);
+            Vector3 p = pl + new Vector3(c.x, 0f, c.y);
+            if (!NavMesh.SamplePosition(p, out NavMeshHit hit, 3f, NavMesh.AllAreas)) continue;
+            if (Mathf.Abs(hit.position.y - (pl.y - 1f)) > 2.6f && Mathf.Abs(hit.position.y - pl.y) > 2.6f) continue;
+            Vector3 head = hit.position + Vector3.up * 1.6f;
+            if (!Physics.Linecast(eye, head, ~0, QueryTriggerInteraction.Ignore)) continue; // the player would see him pop in
+            if (agent.Warp(hit.position))
+            {
+                hasInitializedPatrol = true;
+                GetNewPatrolTarget();
+                Debug.Log("EnemyAI: no path to the player's floor - repositioned near the player, out of sight.");
+                return true;
+            }
+        }
+        return false;
     }
 
     /// <summary>Returns true while he is standing still, staring towards where the player is.</summary>

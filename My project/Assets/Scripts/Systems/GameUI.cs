@@ -453,19 +453,37 @@ public class GameUI : MonoBehaviour
 
         ObjectiveTracker.Objective cur = tracker.Current();
         float w = 470f, x = vw - w - 24f, y = 24f;
+
+        // "ESCAPE THE BASEMENT: find the key..." -> the chapter becomes the header, the task the text
+        string header = "OBJECTIVE   " + tracker.DoneCount() + "/" + tracker.Objectives.Count;
+        if (tracker.IsGated) header = "OBJECTIVE";
+        string body = cur != null ? tracker.TitleWithProgress(cur) : "Survive.";
+        int colon = body.IndexOf(": ");
+        if (colon > 0 && body.Substring(0, colon) == body.Substring(0, colon).ToUpper())
+        {
+            header = body.Substring(0, colon);
+            body = body.Substring(colon + 2);
+            if (body.Length > 0) body = char.ToUpper(body[0]) + body.Substring(1);
+        }
+
+        float th = Mathf.Max(28f, sToastText.CalcHeight(new GUIContent(body), w - 24f));
+        float h = 30f + th + 30f;
         GUI.color = new Color(1f, 1f, 1f, 0.9f);
-        GUI.DrawTexture(new Rect(x, y, w, 98f), tBlack);
-        GUI.DrawTexture(new Rect(x, y, 4f, 98f), tRed);
+        GUI.DrawTexture(new Rect(x, y, w, h), tBlack);
+        GUI.DrawTexture(new Rect(x, y, 4f, h), tRed);
         GUI.color = Color.white;
-        GUI.Label(new Rect(x + 16f, y + 6f, w - 24f, 26f), tracker.IsGated ? "OBJECTIVE" : "OBJECTIVE   " + tracker.DoneCount() + "/" + tracker.Objectives.Count, sToastTitle);
-        GUI.Label(new Rect(x + 16f, y + 30f, w - 24f, 40f), cur != null ? tracker.TitleWithProgress(cur) : "Survive.", sToastText);
-        GUI.Label(new Rect(x + 16f, y + 70f, w - 24f, 24f), "TAB  Journal      ESC  Menu", sSmall);
+        GUI.Label(new Rect(x + 16f, y + 6f, w - 24f, 26f), header, sToastTitle);
+        GUI.Label(new Rect(x + 16f, y + 30f, w - 24f, th), body, sToastText);
+        GUI.Label(new Rect(x + 16f, y + 32f + th, w - 24f, 24f), "TAB  Journal      ESC  Menu", sSmall);
+        hudBottom = y + h;
     }
+
+    private float hudBottom = 122f;
 
     private void DrawToasts()
     {
         if (toasts.Count == 0) return;
-        float w = 470f, x = vw - w - 24f, y = mode == Mode.Game && !paused ? 136f : 24f;
+        float w = 470f, x = vw - w - 24f, y = mode == Mode.Game && !paused ? hudBottom + 14f : 24f;
         for (int i = 0; i < toasts.Count; i++)
         {
             ToastMsg t = toasts[i];
@@ -474,15 +492,17 @@ public class GameUI : MonoBehaviour
             if (age > ToastTime) { toasts.RemoveAt(i); i--; continue; }
             float a = Mathf.Clamp01(Mathf.Min(age * 4f, (ToastTime - age) * 2f));
             GUI.color = new Color(1f, 1f, 1f, a);
-            GUI.DrawTexture(new Rect(x, y, w, 76f), tPanel);
-            GUI.DrawTexture(new Rect(x, y, 4f, 76f), t.gold ? tGold : tRed);
+            float tth = Mathf.Max(44f, sToastText.CalcHeight(new GUIContent(t.text), w - 24f));
+            float tbh = 30f + tth + 4f;
+            GUI.DrawTexture(new Rect(x, y, w, tbh), tPanel);
+            GUI.DrawTexture(new Rect(x, y, 4f, tbh), t.gold ? tGold : tRed);
             Color old = sToastTitle.normal.textColor;
             if (t.gold) sToastTitle.normal.textColor = Gold;
             GUI.Label(new Rect(x + 16f, y + 6f, w - 24f, 24f), t.title, sToastTitle);
             sToastTitle.normal.textColor = old;
-            GUI.Label(new Rect(x + 16f, y + 28f, w - 24f, 46f), t.text, sToastText);
+            GUI.Label(new Rect(x + 16f, y + 28f, w - 24f, tth), t.text, sToastText);
             GUI.color = Color.white;
-            y += 84f;
+            y += tbh + 8f;
         }
     }
 

@@ -734,6 +734,11 @@ public class PlayerController : MonoBehaviour
         transform.position = spawnPoint.position;
         transform.rotation = spawnPoint.rotation;
 
+        // SAVE RIGHT NOW: the player is in the basement. If the game is closed at any moment from here on,
+        // Resume puts him back in the basement (before, the last autosave was still upstairs).
+        // The drop point is at floor level - RespawnManager adds +1 m when it places the player, exactly as for this point.
+        if (SaveManager.instance != null) SaveManager.instance.SavePlayerTransform(spawnPoint.position, spawnPoint.rotation);
+
         // Reset stats!
         if (playerStats != null)
         {
