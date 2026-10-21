@@ -70,7 +70,11 @@ public class MainMenuManager : MonoBehaviour
     {
         PlayClickSound();
         Debug.Log("Quit Game command received!");
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;   // Application.Quit() does nothing inside the Unity Editor
+#else
         Application.Quit();
+#endif
     }
 
     // Ye function Resume button ke liye hai
@@ -94,6 +98,11 @@ public class MainMenuManager : MonoBehaviour
 
         SceneManager.LoadScene(gameSceneName);
     }
+
+    // LOAD GAME / ACHIEVEMENTS / OPTIONS buttons (they open the panels of GameUI)
+    public void OpenLoadGame() { PlayClickSound(); GameUI.OpenFromMenu(0); }
+    public void OpenAchievements() { PlayClickSound(); GameUI.OpenFromMenu(1); }
+    public void OpenOptions() { PlayClickSound(); GameUI.OpenFromMenu(2); }
 
     // Ye function Settings kholne ke liye hai
     public void OpenSettings()

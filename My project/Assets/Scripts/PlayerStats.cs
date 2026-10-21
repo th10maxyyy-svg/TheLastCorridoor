@@ -18,6 +18,8 @@ public class PlayerStats : MonoBehaviour
     [Header("Optional UI References")]
     [SerializeField] private Slider healthSlider;
     [SerializeField] private Slider staminaSlider;
+    public Slider HealthSlider => healthSlider;   // read by HudBarStyler (only the look is changed)
+    public Slider StaminaSlider => staminaSlider;
 
     [Header("Immersive Audio (Breathing)")]
     [SerializeField] private AudioSource breathingAudioSource;

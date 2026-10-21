@@ -85,14 +85,40 @@ public class GameUI : MonoBehaviour
 
         GameSettings.Apply();
 
-        if (mode == Mode.Menu) HookMenuSliders();
+        if (mode == Mode.Menu)
+        {
+            HookMenuSliders();
+            PrepareMenu();
+        }
 
         if (mode == Mode.Game && ObjectiveTracker.Instance == null)
         {
             GameObject go = new GameObject("TLC_ObjectiveTracker");
             go.AddComponent<ObjectiveTracker>(); // scene object: rebuilt on every (re)load
             go.AddComponent<HorrorDirector>();   // unscripted horror events, session variation, enemy restore
+            go.AddComponent<HudBarStyler>();     // slim health / stamina bars
         }
+    }
+
+    /// <summary>Called by the LOAD GAME / ACHIEVEMENTS / OPTIONS buttons of the main menu scene (0 = load, 1 = achievements, 2 = options).</summary>
+    public static void OpenFromMenu(int which)
+    {
+        if (instance == null) Boot();
+        if (instance == null || instance.mode != Mode.Menu) return;
+        Panel[] targets = { Panel.Load, Panel.Achievements, Panel.Settings };
+        instance.OpenPanel(targets[Mathf.Clamp(which, 0, 2)], Panel.None);
+    }
+
+    /// <summary>True while the LOAD / ACHIEVEMENTS / OPTIONS panel is open in the main menu.</summary>
+    public static bool IsMenuPanelOpen { get { return instance != null && instance.mode == Mode.Menu && instance.panel != Panel.None; } }
+
+    private UnityEngine.UI.GraphicRaycaster[] menuRays;
+    private float raycastReenableAt;
+
+    private void PrepareMenu()
+    {
+        menuRays = FindObjectsByType<UnityEngine.UI.GraphicRaycaster>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        raycastReenableAt = 0f;
     }
 
     /// <summary>The main menu's own Settings screen has "volume" and "sensitivity" sliders - connect them to GameSettings.</summary>
@@ -287,15 +313,26 @@ public class GameUI : MonoBehaviour
         else if (mode == Mode.Menu)
         {
             if (Input.GetKeyDown(KeyCode.Escape) && panel != Panel.None) Back();
+
+            // While one of our panels is open the menu's own buttons (START, QUIT...) must not receive the same mouse click
+            bool open = panel != Panel.None;
+            if (open) raycastReenableAt = Time.unscaledTime + 0.25f;
+            bool want = !open && Time.unscaledTime >= raycastReenableAt;
+            if (menuRays != null)
+            {
+                foreach (UnityEngine.UI.GraphicRaycaster gr in menuRays)
+                    if (gr != null && gr.enabled != want) gr.enabled = want;
+            }
         }
     }
 
     // ============================================================================================ GUI styles
     private const float VW = 1920f, VH = 1080f;
     private float vw;
-    private GUIStyle sTitle, sHeader, sText, sSmall, sButton, sTab, sTabOn, sBox, sToastTitle, sToastText, sCenter, sRight, sBig, sListItem, sListItemOn;
-    private Texture2D tBlack, tPanel, tRed, tRedDark, tGray, tWhite, tGold;
-    private static readonly Color Blood = new Color(0.72f, 0.06f, 0.06f);
+    private GUIStyle sTitle, sHeader, sText, sSmall, sButton, sTab, sTabOn, sBox, sToastTitle, sToastText, sCenter, sRight, sBig, sListItem, sListItemOn, sSliderTrack, sSliderThumb;
+    private Texture2D tBlack, tPanel, tRed, tRedDark, tGray, tWhite, tGold, tCard, tCardHi;
+    private GUISkin sSkin;
+    private static readonly Color Blood = new Color(0.78f, 0.34f, 0.16f);   // rust orange (matches the menu sprites)
     private static readonly Color Bone = new Color(0.88f, 0.84f, 0.78f);
     private static readonly Color Dim = new Color(0.62f, 0.58f, 0.54f);
     private static readonly Color Gold = new Color(0.95f, 0.75f, 0.25f);
@@ -312,12 +349,25 @@ public class GameUI : MonoBehaviour
     {
         if (sTitle != null && tBlack != null) return;
         tBlack = Tex(new Color(0f, 0f, 0f, 0.82f));
-        tPanel = Tex(new Color(0.06f, 0.05f, 0.05f, 0.94f));
-        tRed = Tex(new Color(0.55f, 0.04f, 0.04f, 0.95f));
-        tRedDark = Tex(new Color(0.25f, 0.03f, 0.03f, 0.95f));
-        tGray = Tex(new Color(0.16f, 0.15f, 0.15f, 0.95f));
+        tPanel = Tex(new Color(0.045f, 0.038f, 0.036f, 0.97f));
+        tRed = Tex(new Color(0.50f, 0.17f, 0.08f, 0.97f));
+        tRedDark = Tex(new Color(0.24f, 0.10f, 0.06f, 0.95f));
+        tGray = Tex(new Color(0.13f, 0.105f, 0.095f, 0.95f));
         tWhite = Tex(Color.white);
         tGold = Tex(new Color(0.45f, 0.33f, 0.05f, 0.95f));
+        tCard = Tex(new Color(0.080f, 0.066f, 0.060f, 1f));
+        tCardHi = Tex(new Color(0.165f, 0.108f, 0.045f, 1f));
+
+        // a copy of the default skin with a slim rust scrollbar (so the global IMGUI skin is not touched)
+        sSkin = Object.Instantiate(GUI.skin);
+        sSkin.verticalScrollbar.normal.background = Tex(new Color(0.10f, 0.08f, 0.07f, 1f));
+        sSkin.verticalScrollbar.fixedWidth = 12f;
+        sSkin.verticalScrollbarThumb.normal.background = tRed;
+        sSkin.verticalScrollbarThumb.hover.background = Tex(new Color(0.75f, 0.33f, 0.14f, 1f));
+        sSkin.verticalScrollbarThumb.active.background = sSkin.verticalScrollbarThumb.hover.background;
+        sSkin.verticalScrollbarThumb.fixedWidth = 12f;
+        sSkin.verticalScrollbarUpButton.fixedHeight = 0f; sSkin.verticalScrollbarUpButton.fixedWidth = 0f;
+        sSkin.verticalScrollbarDownButton.fixedHeight = 0f; sSkin.verticalScrollbarDownButton.fixedWidth = 0f;
 
         sTitle = new GUIStyle(GUI.skin.label) { fontSize = 64, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
         sTitle.normal.textColor = Blood;
@@ -332,8 +382,8 @@ public class GameUI : MonoBehaviour
         sRight = new GUIStyle(sText) { alignment = TextAnchor.MiddleRight };
 
         sButton = new GUIStyle(GUI.skin.button) { fontSize = 26, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-        sButton.normal.background = tGray; sButton.normal.textColor = Bone;
-        sButton.hover.background = tRed; sButton.hover.textColor = Color.white;
+        sButton.normal.background = tGray; sButton.normal.textColor = new Color(0.82f, 0.66f, 0.54f);
+        sButton.hover.background = tRed; sButton.hover.textColor = new Color(1f, 0.93f, 0.85f);
         sButton.active.background = tRedDark; sButton.active.textColor = Color.white;
         sButton.focused.background = tGray; sButton.focused.textColor = Bone;
 
@@ -345,6 +395,11 @@ public class GameUI : MonoBehaviour
         sListItem.padding = new RectOffset(14, 10, 4, 4);
         sListItemOn = new GUIStyle(sListItem);
         sListItemOn.normal.background = tRedDark; sListItemOn.normal.textColor = Color.white;
+
+        sSliderTrack = new GUIStyle(GUI.skin.horizontalSlider) { fixedHeight = 8f, margin = new RectOffset(0, 0, 11, 11) };
+        sSliderTrack.normal.background = Tex(new Color(0.20f, 0.13f, 0.09f, 1f));
+        sSliderThumb = new GUIStyle(GUI.skin.horizontalSliderThumb) { fixedWidth = 18f, fixedHeight = 30f };
+        sSliderThumb.normal.background = tRed; sSliderThumb.hover.background = Tex(new Color(0.75f, 0.33f, 0.14f, 1f)); sSliderThumb.active.background = sSliderThumb.hover.background;
 
         sBox = new GUIStyle(GUI.skin.box);
         sBox.normal.background = tPanel;
@@ -384,8 +439,7 @@ public class GameUI : MonoBehaviour
         }
         else if (mode == Mode.Menu)
         {
-            if (panel == Panel.None) DrawMenuButtons();
-            else DrawPanel();
+            if (panel != Panel.None) DrawPanel();   // the three menu buttons are real scene objects now (see MainMenuSetup)
         }
         DrawToasts();
     }
@@ -433,25 +487,70 @@ public class GameUI : MonoBehaviour
     }
 
     // ------------------------------------------------------------------------------------ main menu
-    private void DrawMenuButtons()
-    {
-        float w = 300f, h = 54f, x = vw - w - 40f, y = VH - 3 * (h + 12f) - 40f;
-        if (Button(new Rect(x, y, w, h), "LOAD GAME")) OpenPanel(Panel.Load, Panel.None);
-        if (Button(new Rect(x, y + h + 12f, w, h), "ACHIEVEMENTS")) OpenPanel(Panel.Achievements, Panel.None);
-        if (Button(new Rect(x, y + 2 * (h + 12f), w, h), "OPTIONS")) OpenPanel(Panel.Settings, Panel.None);
-    }
-
     // ------------------------------------------------------------------------------------ panels
     private Rect Window(float w, float h)
     {
         GUI.DrawTexture(new Rect(0, 0, vw, VH), tBlack);
         Rect r = new Rect((vw - w) * 0.5f, (VH - h) * 0.5f, w, h);
         GUI.Box(r, GUIContent.none, sBox);
-        GUI.DrawTexture(new Rect(r.x, r.y, r.width, 4f), tRed);
+        // rusty double frame + accent bar on top
+        Color rust = new Color(0.42f, 0.22f, 0.12f, 1f);
+        Color rustDim = new Color(0.25f, 0.13f, 0.08f, 1f);
+        Color old = GUI.color;
+        GUI.color = rust;
+        GUI.DrawTexture(new Rect(r.x, r.y, r.width, 3f), tWhite);
+        GUI.DrawTexture(new Rect(r.x, r.yMax - 3f, r.width, 3f), tWhite);
+        GUI.DrawTexture(new Rect(r.x, r.y, 3f, r.height), tWhite);
+        GUI.DrawTexture(new Rect(r.xMax - 3f, r.y, 3f, r.height), tWhite);
+        GUI.color = rustDim;
+        GUI.DrawTexture(new Rect(r.x + 10f, r.y + 10f, r.width - 20f, 1.5f), tWhite);
+        GUI.DrawTexture(new Rect(r.x + 10f, r.yMax - 11.5f, r.width - 20f, 1.5f), tWhite);
+        GUI.DrawTexture(new Rect(r.x + 10f, r.y + 10f, 1.5f, r.height - 20f), tWhite);
+        GUI.DrawTexture(new Rect(r.xMax - 11.5f, r.y + 10f, 1.5f, r.height - 20f), tWhite);
+        GUI.color = old;
         return r;
     }
 
+    // ---- headings: the same rusty 3D lettering as the main menu (falls back to plain text if a sprite is missing)
+    private readonly System.Collections.Generic.Dictionary<string, Texture2D> headTex = new System.Collections.Generic.Dictionary<string, Texture2D>();
+
+    private void Heading(Rect area, string text, GUIStyle fallback)
+    {
+        string key = text.ToLowerInvariant().Replace(' ', '_');
+        if (!headTex.TryGetValue(key, out Texture2D t))
+        {
+            t = Resources.Load<Texture2D>("MenuButtons/title_" + key);
+            headTex[key] = t;
+        }
+        if (t == null) { GUI.Label(area, text, fallback); return; }
+        float h = Mathf.Min(area.height, 78f);
+        float w = h * t.width / t.height;
+        GUI.DrawTexture(new Rect(area.center.x - w * 0.5f, area.center.y - h * 0.5f, w, h), t, ScaleMode.StretchToFill, true);
+    }
+
+    /// <summary>Dark card with a thin rust (or ember-gold when highlighted) outline and a coloured stripe on the left.</summary>
+    private void Card(Rect r, bool hi)
+    {
+        GUI.DrawTexture(r, hi ? tCardHi : tCard);
+        Color old = GUI.color;
+        GUI.color = hi ? new Color(0.90f, 0.62f, 0.20f, 0.55f) : new Color(0.45f, 0.22f, 0.11f, 0.60f);
+        GUI.DrawTexture(new Rect(r.x, r.y, r.width, 1f), tWhite);
+        GUI.DrawTexture(new Rect(r.x, r.yMax - 1f, r.width, 1f), tWhite);
+        GUI.DrawTexture(new Rect(r.xMax - 1f, r.y, 1f, r.height), tWhite);
+        GUI.color = hi ? new Color(1f, 0.70f, 0.22f, 1f) : new Color(0.50f, 0.20f, 0.10f, 1f);
+        GUI.DrawTexture(new Rect(r.x, r.y, 5f, r.height), tWhite);
+        GUI.color = old;
+    }
+
     private void DrawPanel()
+    {
+        GUISkin oldSkin = GUI.skin;
+        if (sSkin != null) GUI.skin = sSkin;
+        DrawPanelInner();
+        GUI.skin = oldSkin;
+    }
+
+    private void DrawPanelInner()
     {
         switch (panel)
         {
@@ -470,7 +569,7 @@ public class GameUI : MonoBehaviour
     private void DrawPause()
     {
         Rect r = Window(560f, 820f);
-        GUI.Label(new Rect(r.x, r.y + 20f, r.width, 80f), "PAUSED", sTitle);
+        Heading(new Rect(r.x, r.y + 20f, r.width, 80f), "PAUSED", sTitle);
         string[] labels = { "RESUME", "SAVE GAME", "LOAD GAME", "JOURNAL", "ACHIEVEMENTS", "SETTINGS", "MAIN MENU", "QUIT GAME" };
         float bx = r.x + 80f, bw = r.width - 160f, by = r.y + 120f, bh = 58f;
         for (int i = 0; i < labels.Length; i++)
@@ -519,16 +618,19 @@ public class GameUI : MonoBehaviour
     private void DrawSlots(bool saving)
     {
         Rect r = Window(1000f, 700f);
-        GUI.Label(new Rect(r.x, r.y + 20f, r.width, 70f), saving ? "SAVE GAME" : "LOAD GAME", sBig);
+        Heading(new Rect(r.x, r.y + 20f, r.width, 70f), saving ? "SAVE GAME" : "LOAD GAME", sBig);
         float y = r.y + 110f;
         int first = saving ? 1 : 0;
         for (int slot = first; slot <= SaveSlots.SlotCount; slot++)
         {
             SaveSlots.SlotInfo info = SaveSlots.GetInfo(slot);
             Rect row = new Rect(r.x + 40f, y, r.width - 80f, 92f);
-            GUI.DrawTexture(row, tGray);
-            GUI.Label(new Rect(row.x + 20f, row.y + 8f, 600f, 36f), info.label, sHeader);
-            GUI.Label(new Rect(row.x + 20f, row.y + 48f, 680f, 36f), info.details, sSmall);
+            Card(row, info.exists);
+            Rect badge = new Rect(row.x + 22f, row.y + 16f, 60f, 60f);
+            GUI.DrawTexture(badge, tBlack);
+            GUI.Label(badge, slot == 0 ? "A" : slot.ToString(), sBig.Sized(34));
+            GUI.Label(new Rect(row.x + 100f, row.y + 8f, 600f, 36f), info.label, sHeader);
+            GUI.Label(new Rect(row.x + 100f, row.y + 48f, 600f, 36f), info.details, sSmall);
 
             Rect btn = new Rect(row.xMax - 200f, row.y + 18f, 180f, 56f);
             if (saving)
@@ -570,7 +672,7 @@ public class GameUI : MonoBehaviour
     private void DrawSettings()
     {
         Rect r = Window(900f, 640f);
-        GUI.Label(new Rect(r.x, r.y + 20f, r.width, 70f), "SETTINGS", sBig);
+        Heading(new Rect(r.x, r.y + 20f, r.width, 70f), "SETTINGS", sBig);
         float x = r.x + 60f, y = r.y + 120f, lw = 300f, sw = r.width - 120f - lw - 110f;
 
         GameSettings.SetMasterVolume(Slider(x, ref y, lw, sw, "Master Volume", GameSettings.MasterVolume, 0f, 1f, Mathf.RoundToInt(GameSettings.MasterVolume * 100f) + "%"));
@@ -585,8 +687,9 @@ public class GameUI : MonoBehaviour
 
     private float Slider(float x, ref float y, float lw, float sw, string label, float value, float min, float max, string shown)
     {
+        Card(new Rect(x - 20f, y - 8f, lw + sw + 140f, 58f), false);
         GUI.Label(new Rect(x, y, lw, 40f), label, sText);
-        float v = GUI.HorizontalSlider(new Rect(x + lw, y + 14f, sw, 30f), value, min, max);
+        float v = GUI.HorizontalSlider(new Rect(x + lw, y + 14f, sw, 30f), value, min, max, sSliderTrack, sSliderThumb);
         GUI.Label(new Rect(x + lw + sw + 20f, y, 100f, 40f), shown, sText);
         y += 70f;
         return v;
@@ -597,39 +700,57 @@ public class GameUI : MonoBehaviour
     {
         Rect r = Window(1240f, 900f);
         IReadOnlyList<GameProgress.AchievementDef> list = GameProgress.Achievements;
-        GUI.Label(new Rect(r.x, r.y + 16f, r.width, 70f), "ACHIEVEMENTS", sBig);
-        GUI.Label(new Rect(r.x, r.y + 80f, r.width, 34f),
-            GameProgress.UnlockedCount() + " / " + list.Count + " unlocked      Endings discovered: " + GameProgress.EndingsSeen() + " / " + GameProgress.EndingCount, sCenter);
+        Heading(new Rect(r.x, r.y + 16f, r.width, 70f), "ACHIEVEMENTS", sBig);
+        int unlocked = GameProgress.UnlockedCount();
+        GUI.Label(new Rect(r.x, r.y + 82f, r.width, 30f),
+            unlocked + " / " + list.Count + " unlocked        ·        Endings discovered: " + GameProgress.EndingsSeen() + " / " + GameProgress.EndingCount, sCenter.Sized(21));
+        Rect total = new Rect(r.center.x - 220f, r.y + 118f, 440f, 6f);
+        GUI.DrawTexture(total, tBlack);
+        Color oc = GUI.color; GUI.color = new Color(1f, 0.62f, 0.2f, 1f);
+        GUI.DrawTexture(new Rect(total.x, total.y, total.width * unlocked / Mathf.Max(1, list.Count), total.height), tWhite);
+        GUI.color = oc;
 
         SaveData save = GameProgress.CurrentSave;
-        Rect view = new Rect(r.x + 30f, r.y + 130f, r.width - 60f, r.height - 230f);
-        float rowH = 86f, colW = (view.width - 30f) * 0.5f;
+        Rect view = new Rect(r.x + 30f, r.y + 142f, r.width - 60f, r.height - 242f);
+        float rowH = 92f, colW = (view.width - 34f) * 0.5f;
         int rows = (list.Count + 1) / 2;
-        Rect content = new Rect(0, 0, view.width - 24f, rows * (rowH + 10f));
+        Rect content = new Rect(0, 0, view.width - 18f, rows * (rowH + 10f));
         scrollA = GUI.BeginScrollView(view, scrollA, content);
+        GUIStyle tStyle = sHeader.Sized(23);
+        GUIStyle dStyle = new GUIStyle(sSmall) { fontSize = 18, clipping = TextClipping.Clip };
+        GUIStyle chip = new GUIStyle(sSmall) { fontSize = 14, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleRight };
         for (int i = 0; i < list.Count; i++)
         {
             GameProgress.AchievementDef a = list[i];
             bool got = GameProgress.IsUnlocked(a.id);
             Rect cell = new Rect((i % 2) * (colW + 10f), (i / 2) * (rowH + 10f), colW, rowH);
-            GUI.DrawTexture(cell, got ? tGold : tGray);
-            string title = got || !a.hidden ? a.title : "??? (hidden)";
-            string desc = got || !a.hidden ? a.description : "Keep playing to discover this one.";
-            GUI.Label(new Rect(cell.x + 16f, cell.y + 6f, cell.width - 32f, 32f), (got ? "[UNLOCKED]  " : "[LOCKED]  ") + title, sHeader.Sized(23));
-            GUI.Label(new Rect(cell.x + 16f, cell.y + 40f, cell.width - 200f, 40f), desc, sSmall);
+            Card(cell, got);
+            bool secret = !got && a.hidden;
+            string title = secret ? "???" : a.title;
+            string desc = secret ? "Hidden - keep playing to discover this one." : a.description;
+
+            tStyle.normal.textColor = got ? new Color(1f, 0.86f, 0.52f) : new Color(0.80f, 0.74f, 0.68f);
+            GUI.Label(new Rect(cell.x + 22f, cell.y + 8f, cell.width - 150f, 32f), title, tStyle);
+            chip.normal.textColor = got ? new Color(1f, 0.70f, 0.22f) : new Color(0.50f, 0.42f, 0.38f);
+            GUI.Label(new Rect(cell.xMax - 130f, cell.y + 12f, 116f, 22f), got ? "UNLOCKED" : "LOCKED", chip);
+
+            bool side = got || (a.progress != null && save != null);
+            GUI.Label(new Rect(cell.x + 22f, cell.y + 42f, cell.width - 44f - (side ? 150f : 0f), 46f), desc, dStyle);
 
             if (got)
             {
-                GUI.Label(new Rect(cell.xMax - 190f, cell.y + 44f, 175f, 30f), GameProgress.UnlockDate(a.id), sSmall.Right());
+                GUI.Label(new Rect(cell.xMax - 150f, cell.y + 62f, 136f, 24f), GameProgress.UnlockDate(a.id), sSmall.Right().Sized(16));
             }
             else if (a.progress != null && save != null)
             {
                 int target = GameProgress.TargetOf(a);
                 int cur = Mathf.Min(target, a.progress(save));
-                Rect bar = new Rect(cell.xMax - 190f, cell.y + 52f, 170f, 14f);
+                Rect bar = new Rect(cell.xMax - 150f, cell.y + 74f, 134f, 8f);
                 GUI.DrawTexture(bar, tBlack);
-                GUI.DrawTexture(new Rect(bar.x, bar.y, bar.width * cur / Mathf.Max(1, target), bar.height), tRed);
-                GUI.Label(new Rect(bar.x, bar.y - 30f, bar.width, 26f), cur + " / " + target, sSmall.Right());
+                Color pc = GUI.color; GUI.color = new Color(0.78f, 0.30f, 0.12f, 1f);
+                GUI.DrawTexture(new Rect(bar.x, bar.y, bar.width * cur / Mathf.Max(1, target), bar.height), tWhite);
+                GUI.color = pc;
+                GUI.Label(new Rect(bar.x, bar.y - 28f, bar.width, 24f), cur + " / " + target, sSmall.Right().Sized(16));
             }
         }
         GUI.EndScrollView();
@@ -640,7 +761,7 @@ public class GameUI : MonoBehaviour
     private void DrawJournal()
     {
         Rect r = Window(1400f, 900f);
-        GUI.Label(new Rect(r.x, r.y + 14f, r.width, 70f), "JOURNAL", sBig);
+        Heading(new Rect(r.x, r.y + 14f, r.width, 70f), "JOURNAL", sBig);
         string[] tabs = { "OBJECTIVES", "ITEMS", "NOTES", "STATISTICS" };
         float tw = 260f, tx = r.x + (r.width - tabs.Length * (tw + 10f)) * 0.5f;
         for (int i = 0; i < tabs.Length; i++)

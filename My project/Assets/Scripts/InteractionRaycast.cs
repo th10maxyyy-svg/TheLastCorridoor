@@ -55,6 +55,12 @@ public class InteractionRaycast : MonoBehaviour
 
     private void CheckForInteractable()
     {
+        if (KeypadController.IsAnyKeypadOpen)
+        {
+            currentPrompt = ""; // the keypad panel is on screen - no "Press E" text over it
+            return;
+        }
+
         if (playerController != null)
         {
             // No interacting while dead or during a cinematic
@@ -144,7 +150,8 @@ public class InteractionRaycast : MonoBehaviour
             GUI.Label(new Rect(Screen.width / 2 - 250, Screen.height / 2 + 50, 500, 40), currentPrompt, promptStyle);
         }
 
-        // Center crosshair dot
+        // Center crosshair dot (hidden while a keypad is open)
+        if (KeypadController.IsAnyKeypadOpen) return;
         GUI.color = Color.white;
         GUI.DrawTexture(new Rect(Screen.width / 2 - 2, Screen.height / 2 - 2, 5, 5), Texture2D.whiteTexture);
     }

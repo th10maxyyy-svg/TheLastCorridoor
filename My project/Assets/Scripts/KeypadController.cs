@@ -115,6 +115,14 @@ public class KeypadController : MonoBehaviour, IInteractable
             return;
         }
 
+        // Keyboard input as well as mouse clicks
+        for (int d = 0; d <= 9; d++)
+        {
+            if (Input.GetKeyDown(KeyCode.Alpha0 + d) || Input.GetKeyDown(KeyCode.Keypad0 + d)) AddDigit(d.ToString());
+        }
+        if (Input.GetKeyDown(KeyCode.Backspace) && currentInput.Length > 0 && !isSuccess && !isError) currentInput = currentInput.Substring(0, currentInput.Length - 1);
+        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) CheckPasscode();
+
         if (autoCloseTime > 0f && Time.time >= autoCloseTime)
         {
             CloseKeypad();
@@ -138,83 +146,90 @@ public class KeypadController : MonoBehaviour, IInteractable
         CloseKeypad();
     }
 
+    private Texture2D panelTex, displayTex;
+    private GUIStyle titleStyle, displayStyle, buttonStyle, smallButtonStyle;
+
+    private static Texture2D MakeTex(Color c)
+    {
+        Texture2D t = new Texture2D(1, 1);
+        t.SetPixel(0, 0, c);
+        t.Apply();
+        t.hideFlags = HideFlags.HideAndDontSave;
+        return t;
+    }
+
+    private void BuildStyles()
+    {
+        panelTex = MakeTex(new Color(0.07f, 0.07f, 0.08f, 0.97f));
+        displayTex = MakeTex(new Color(0.02f, 0.03f, 0.03f, 1f));
+
+        titleStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 14, fontStyle = FontStyle.Bold };
+        titleStyle.normal.textColor = new Color(0.75f, 0.75f, 0.75f);
+
+        displayStyle = new GUIStyle(GUI.skin.box) { alignment = TextAnchor.MiddleCenter, fontSize = 34, fontStyle = FontStyle.Bold };
+        displayStyle.normal.background = displayTex;
+
+        buttonStyle = new GUIStyle(GUI.skin.button) { alignment = TextAnchor.MiddleCenter, fontSize = 26, fontStyle = FontStyle.Bold };
+        smallButtonStyle = new GUIStyle(buttonStyle) { fontSize = 18 };
+    }
+
     private void OnGUI()
     {
         if (!isKeypadOpen) return;
+        if (panelTex == null) BuildStyles();
 
-        // Draw a simple 2D Keypad in the center of the screen
-        int boxWidth = 300;
-        int boxHeight = 450;
-        float startX = (Screen.width - boxWidth) / 2;
-        float startY = (Screen.height - boxHeight) / 2;
+        // Layout is designed on a 300 x 500 panel and scaled with the screen so it never overflows or overlaps
+        const float W = 300f, H = 500f;
+        float s = Mathf.Clamp(Screen.height / 800f, 0.8f, 2.5f);
+        Matrix4x4 oldMatrix = GUI.matrix;
+        GUI.matrix = Matrix4x4.TRS(new Vector3((Screen.width - W * s) * 0.5f, (Screen.height - H * s) * 0.5f, 0f), Quaternion.identity, new Vector3(s, s, 1f));
 
-        GUI.Box(new Rect(startX, startY, boxWidth, boxHeight), "SECURITY KEYPAD");
+        // Panel background (opaque, so the 3D keypad behind it does not shine through)
+        GUI.DrawTexture(new Rect(0, 0, W, H), panelTex);
+        GUI.Label(new Rect(0, 8, W, 24), "SECURITY KEYPAD", titleStyle);
 
-        // Display area
-        GUIStyle displayStyle = new GUIStyle(GUI.skin.box);
-        displayStyle.fontSize = 32;
-        displayStyle.alignment = TextAnchor.MiddleCenter;
-
+        // Display
         if (isSuccess)
         {
             displayStyle.normal.textColor = Color.green;
-            GUI.Box(new Rect(startX + 25, startY + 40, 250, 60), "ACCEPTED", displayStyle);
+            GUI.Box(new Rect(25, 40, 250, 60), "ACCEPTED", displayStyle);
         }
         else if (isError)
         {
             displayStyle.normal.textColor = Color.red;
-            GUI.Box(new Rect(startX + 25, startY + 40, 250, 60), "ERROR", displayStyle);
+            GUI.Box(new Rect(25, 40, 250, 60), "ERROR", displayStyle);
         }
         else
         {
             displayStyle.normal.textColor = Color.white;
-            string displayStr = currentInput;
-            while(displayStr.Length < 4) displayStr += "_";
-            GUI.Box(new Rect(startX + 25, startY + 40, 250, 60), displayStr, displayStyle);
+            string displayStr = "";
+            for (int d = 0; d < 4; d++) displayStr += (d < currentInput.Length ? currentInput[d].ToString() : "_") + (d < 3 ? " " : "");
+            GUI.Box(new Rect(25, 40, 250, 60), displayStr, displayStyle);
         }
 
-        // Draw Buttons
-        int btnWidth = 70;
-        int btnHeight = 70;
-        int spacing = 20;
-
-        for (int i = 1; i <= 9; i++)
+        // 4 x 3 grid: 1 2 3 / 4 5 6 / 7 8 9 / C 0 ENT
+        const float bw = 76f, bh = 64f, gap = 11f, left = 25f, top = 116f;
+        string[] labels = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "ENT" };
+        for (int i = 0; i < labels.Length; i++)
         {
-            int row = (i - 1) / 3;
-            int col = (i - 1) % 3;
-
-            float btnX = startX + 25 + (col * (btnWidth + spacing));
-            float btnY = startY + 120 + (row * (btnHeight + spacing));
-
-            if (GUI.Button(new Rect(btnX, btnY, btnWidth, btnHeight), i.ToString()))
+            int row = i / 3, col = i % 3;
+            Rect r = new Rect(left + col * (bw + gap), top + row * (bh + gap), bw, bh);
+            bool special = labels[i] == "C" || labels[i] == "ENT";
+            if (GUI.Button(r, labels[i], special ? smallButtonStyle : buttonStyle))
             {
-                AddDigit(i.ToString());
+                if (labels[i] == "C") { if (!isSuccess && !isError) currentInput = ""; }
+                else if (labels[i] == "ENT") CheckPasscode();
+                else AddDigit(labels[i]);
             }
         }
 
-        // Zero, Clear, Enter buttons
-        float bottomRowY = startY + 120 + (3 * (btnHeight + spacing));
-
-        if (GUI.Button(new Rect(startX + 25, bottomRowY, btnWidth, btnHeight), "C"))
-        {
-            currentInput = "";
-        }
-
-        if (GUI.Button(new Rect(startX + 25 + btnWidth + spacing, bottomRowY, btnWidth, btnHeight), "0"))
-        {
-            AddDigit("0");
-        }
-
-        if (GUI.Button(new Rect(startX + 25 + (2 * (btnWidth + spacing)), bottomRowY, btnWidth, btnHeight), "ENT"))
-        {
-            CheckPasscode();
-        }
-
-        // Exit button
-        if (GUI.Button(new Rect(startX + 25, startY + boxHeight - 40, 250, 30), "EXIT"))
+        // Exit button (below the grid: grid ends at 116 + 4*64 + 3*11 = 405)
+        if (GUI.Button(new Rect(25, 428, 250, 48), "EXIT", smallButtonStyle))
         {
             CloseKeypad();
         }
+
+        GUI.matrix = oldMatrix;
     }
 
     private void AddDigit(string digit)
