@@ -57,6 +57,8 @@ public class DoorController : MonoBehaviour, IInteractable
             isOpen = true;
             transform.localRotation = openRotation; // Snap to open immediately
         }
+
+        SetupEnemyBlocker();
     }
 
     void Update()
@@ -68,6 +70,7 @@ public class DoorController : MonoBehaviour, IInteractable
     // Can be called by KeypadController's OnUnlock Event
     public void UnlockDoor()
     {
+        MarkDiscovered();
         isLocked = false;
         isOpen = true; // Automatically open when unlocked via keypad
         if (audioSource != null && openSound != null)
@@ -172,6 +175,7 @@ public class DoorController : MonoBehaviour, IInteractable
     private void ToggleDoor()
     {
         isOpen = !isOpen;
+        if (isOpen) MarkDiscovered();   // only the player calls ToggleDoor
 
         // Play sound and trigger events
         if (isOpen)
@@ -192,6 +196,48 @@ public class DoorController : MonoBehaviour, IInteractable
     
     public bool IsOpen => isOpen;
     public bool IsLocked => isLocked;
+
+    // ------------------------------------------------------------------ rooms the player has not discovered yet
+    // The clown may NOT walk into a room the player has never opened: a NavMeshObstacle blocks the doorway for his
+    // pathfinding until the player opens that door once (remembered in the save). Otherwise he could open an unknown
+    // door, go in, and the player would simply follow him inside.
+    public bool PlayerDiscovered { get; private set; }
+    private UnityEngine.AI.NavMeshObstacle enemyBlocker;
+    private string SeenFlag => "DoorSeen_" + GetDoorID();
+
+    private void SetupEnemyBlocker()
+    {
+        PlayerDiscovered = isOpen || (SaveManager.instance != null && SaveManager.instance.HasFlag(SeenFlag));
+        if (string.IsNullOrEmpty(RoomName)) return;                  // only real room doors
+        Collider col = GetComponentInChildren<Collider>();
+        if (col == null) return;
+        Bounds b = col.bounds;
+        GameObject g = new GameObject(name + "_EnemyBlocker");
+        g.transform.position = b.center;
+        enemyBlocker = g.AddComponent<UnityEngine.AI.NavMeshObstacle>();
+        enemyBlocker.shape = UnityEngine.AI.NavMeshObstacleShape.Box;
+        enemyBlocker.size = new Vector3(Mathf.Max(b.size.x, 0.2f), Mathf.Max(b.size.y, 1.5f), Mathf.Max(b.size.z, 0.2f));
+        enemyBlocker.carving = true;
+        enemyBlocker.carveOnlyStationary = true;
+        enemyBlocker.enabled = !PlayerDiscovered;
+    }
+
+    /// <summary>The player opened this door himself: from now on the clown may use it too.</summary>
+    public void MarkDiscovered()
+    {
+        if (PlayerDiscovered) return;
+        PlayerDiscovered = true;
+        if (enemyBlocker != null) enemyBlocker.enabled = false;
+        if (SaveManager.instance != null) SaveManager.instance.SetFlag(SeenFlag);
+    }
+
+    /// <summary>The clown pushes an (unlocked) closed door open when he walks through it.</summary>
+    public void OpenByEnemy()
+    {
+        if (isOpen || isLocked || isTrapLocked || !PlayerDiscovered) return;
+        isOpen = true;
+        if (audioSource != null && openSound != null) audioSource.PlayOneShot(openSound);
+    }
     public string RequiredKey => requiredKey;
     public string DoorID => GetDoorID();
 
@@ -257,6 +303,7 @@ public class DoorController : MonoBehaviour, IInteractable
     /// <summary>Used by the end cinematic: unlocks and silently swings the door open.</summary>
     public void OpenForCinematic()
     {
+        MarkDiscovered();
         isLocked = false;
         isTrapLocked = false;
         if (isOpen) return;

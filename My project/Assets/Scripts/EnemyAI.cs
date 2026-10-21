@@ -136,6 +136,16 @@ public class EnemyAI : MonoBehaviour
     private float voiceMuteUntil = 0f;   // while set, no random laughs / ambient loop (used around the basement scene)
 
     /// <summary>Length of his tease line ("Peek-a-boo, I finally found you"), so the scene can wait until he has finished saying it.</summary>
+    /// <summary>Plays his tease line (used by the ending cinematic).</summary>
+    public void PlayTeaseLine()
+    {
+        if (enemyAudioSource != null && teaseVoiceLines != null && teaseVoiceLines.Length > 0 && teaseVoiceLines[0] != null)
+        {
+            enemyAudioSource.Stop();
+            enemyAudioSource.PlayOneShot(teaseVoiceLines[0]);
+        }
+    }
+
     public float TeaseDialogueLength
     {
         get { return (teaseVoiceLines != null && teaseVoiceLines.Length > 0 && teaseVoiceLines[0] != null) ? teaseVoiceLines[0].length : 0f; }
@@ -174,7 +184,8 @@ public class EnemyAI : MonoBehaviour
 
     private void ApplyClownTuning()
     {
-        attackRotationOffset = 0f;   // the new zombie attack clip already faces forward (the old clip faced sideways)
+        if (!slamOffsetCaptured) { slamRotationOffset = attackRotationOffset; slamOffsetCaptured = true; } // the scene's value belongs to the clown's own (sideways) slam clip
+        attackRotationOffset = 0f;   // the zombie swipe clip already faces forward
         patrolSpeed = Mathf.Clamp(patrolSpeed, MinPatrolSpeed, MaxPatrolSpeed);
         chaseSpeed = Mathf.Max(chaseSpeed, MinChaseSpeed);
         detectionRange = Mathf.Max(detectionRange, MinDetectionRange);
@@ -315,6 +326,8 @@ public class EnemyAI : MonoBehaviour
     void Update()
     {
         if (agent == null) return;
+
+        OpenDoorsOnTheWay();
 
         if (ignorePlayerTimer > 0)
         {
@@ -669,15 +682,16 @@ public class EnemyAI : MonoBehaviour
             // The attack clip faces sideways, so the model is turned by 'attackRotationOffset' while it plays.
             // ANIMATION FIX: the turn is now blended together with the Animator transition. Before, it snapped
             // 90 degrees the instant the state changed, which made him pop sideways at the start and end of every attack.
+            // only the clown's own SLAM clip faces sideways; the zombie swipe ("Hell Slammer A" state) faces forward
             AnimatorStateInfo cur = enemyAnimator.GetCurrentAnimatorStateInfo(0);
-            float weight = cur.IsName("Hell Slammer A") ? 1f : 0f;
+            float weight = cur.IsName("Slam") ? 1f : 0f;
             if (enemyAnimator.IsInTransition(0))
             {
                 AnimatorStateInfo next = enemyAnimator.GetNextAnimatorStateInfo(0);
                 float k = Mathf.Clamp01(enemyAnimator.GetAnimatorTransitionInfo(0).normalizedTime);
-                weight = Mathf.Lerp(weight, next.IsName("Hell Slammer A") ? 1f : 0f, k);
+                weight = Mathf.Lerp(weight, next.IsName("Slam") ? 1f : 0f, k);
             }
-            enemyAnimator.transform.localRotation = Quaternion.Euler(0f, attackRotationOffset * weight, 0f);
+            enemyAnimator.transform.localRotation = Quaternion.Euler(0f, slamRotationOffset * weight, 0f);
             
             // Paon ko hawa mein janay se rokne ke liye position bhi lock rakhein
             enemyAnimator.transform.localPosition = new Vector3(0, groundOffset, 0);
@@ -920,6 +934,73 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
+    // ------------------------------------------------------------------ basement rule + smart escape + doors
+    private const float BasementY = -6f;   // the basement floor is ~17 m below the ground floor
+    private static bool IsInBasement(Vector3 p) => p.y < BasementY;
+    private static bool BasementCleared => SaveManager.instance != null &&
+        (SaveManager.instance.HasEvent(ObjectiveTracker.DonePrefix + "Basement_Leave") || SaveManager.instance.HasEvent(ObjectiveTracker.DonePrefix + "Generator_Basement"));
+
+    private float trappedTimer;
+    private float nextDoorCheck;
+
+    /// <summary>
+    /// He is in a part of the level from which the player cannot be reached (old NavMesh islands, a blocked doorway...).
+    /// Instead of standing and staring he leaves: as soon as the player is not looking at him he slips away and comes
+    /// back through another way - a reachable spot near the player, out of the player's sight. Returns true when he moved.
+    /// </summary>
+    private bool EscapeTrap()
+    {
+        if (playerTransform == null) return false;
+        Vector3 pl = playerTransform.position;
+        if (IsInBasement(pl) && !BasementCleared) return false;
+
+        // never vanish in front of the player's eyes: only when the player is not looking at him
+        Camera cam = Camera.main;
+        if (cam != null)
+        {
+            Vector3 toMe = (transform.position + Vector3.up * 0.5f) - cam.transform.position;
+            bool inView = Vector3.Dot(cam.transform.forward, toMe.normalized) > 0.55f;
+            bool blocked = Physics.Linecast(cam.transform.position, transform.position + Vector3.up * 0.5f, ~0, QueryTriggerInteraction.Ignore);
+            if (inView && !blocked) return false;
+        }
+
+        Vector3 eye = pl + Vector3.up * 0.7f;
+        NavMeshPath path = new NavMeshPath();
+        for (int i = 0; i < 24; i++)
+        {
+            Vector2 c = Random.insideUnitCircle.normalized * Random.Range(9f, 18f);
+            Vector3 p = pl + new Vector3(c.x, 0f, c.y);
+            if (!NavMesh.SamplePosition(p, out NavMeshHit hit, 3f, NavMesh.AllAreas)) continue;
+            if (Mathf.Abs(hit.position.y - pl.y) > 2.6f && Mathf.Abs(hit.position.y - (pl.y - 1f)) > 2.6f) continue;
+            if (!Physics.Linecast(eye, hit.position + Vector3.up * 1.6f, ~0, QueryTriggerInteraction.Ignore)) continue; // out of sight
+            if (!NavMesh.CalculatePath(hit.position, pl, NavMesh.AllAreas, path) || path.status != NavMeshPathStatus.PathComplete) continue; // must reach the player from there
+            if (agent.Warp(hit.position))
+            {
+                currentState = AIState.Search;
+                searchTimer = searchDuration;
+                ResetSearchPlan();
+                lastKnownPosition = pl;
+                agent.SetDestination(pl);
+                Debug.Log("EnemyAI: could not reach the player from that room - came round another way.");
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>Closed (unlocked) doors in front of him swing open, instead of him walking through them.</summary>
+    private void OpenDoorsOnTheWay()
+    {
+        if (Time.time < nextDoorCheck || agent == null || agent.velocity.sqrMagnitude < 0.04f) return;
+        nextDoorCheck = Time.time + 0.2f;
+        Vector3 ahead = transform.position + agent.velocity.normalized * 1.1f;
+        foreach (Collider c in Physics.OverlapSphere(ahead, 1.0f, ~0, QueryTriggerInteraction.Ignore))
+        {
+            DoorController d = c.GetComponentInParent<DoorController>();
+            if (d != null && !d.IsOpen && !d.IsLocked && d.PlayerDiscovered && !string.IsNullOrEmpty(d.RoomName)) d.OpenByEnemy();
+        }
+    }
+
     // ------------------------------------------------------------------ presence: he never disappears for long
     [Header("Presence (never lost)")]
     [Tooltip("Seconds he may stay far from the player (or on another floor) before he comes to the player's area")]
@@ -935,6 +1016,7 @@ public class EnemyAI : MonoBehaviour
     private bool KeepNearPlayer()
     {
         if (playerTransform == null || !agent.isOnNavMesh) return false;
+        if (IsInBasement(playerTransform.position) && !BasementCleared) { awayTimer = 0f; return false; } // the basement is the player's alone until he escapes it
         Vector3 me = transform.position, pl = playerTransform.position;
         float dy = Mathf.Abs(pl.y - me.y);
         float flat = new Vector2(pl.x - me.x, pl.z - me.z).magnitude;
@@ -971,6 +1053,7 @@ public class EnemyAI : MonoBehaviour
             if (Mathf.Abs(hit.position.y - (pl.y - 1f)) > 2.6f && Mathf.Abs(hit.position.y - pl.y) > 2.6f) continue;
             Vector3 head = hit.position + Vector3.up * 1.6f;
             if (!Physics.Linecast(eye, head, ~0, QueryTriggerInteraction.Ignore)) continue; // the player would see him pop in
+            if (!NavMesh.CalculatePath(hit.position, pl, NavMesh.AllAreas, path) || path.status != NavMeshPathStatus.PathComplete) continue; // never inside a room the player has not opened
             if (agent.Warp(hit.position))
             {
                 hasInitializedPatrol = true;
@@ -1107,6 +1190,15 @@ public class EnemyAI : MonoBehaviour
         {
             agent.updateRotation = true; // Wapis NavMesh ko control de do
         }
+
+        // SMART: he can see the player but there is no way to him from this room -> he does not stand there staring,
+        // he gets out and comes round (see EscapeTrap)
+        if (agent.hasPath && !agent.pathPending && agent.pathStatus != NavMeshPathStatus.PathComplete && distanceToPlayer > 2.5f)
+        {
+            trappedTimer += Time.deltaTime;
+            if (trappedTimer > 2.5f && EscapeTrap()) { trappedTimer = 0f; return; }
+        }
+        else trappedTimer = 0f;
 
         // Failsafe: Agar rasta toota hua hai (NavMesh partial) aur player tak nahi pahunch pa raha
         if (agent.hasPath && agent.pathStatus == NavMeshPathStatus.PathPartial && Vector3.Distance(transform.position, playerTransform.position) > 3f)
@@ -1269,19 +1361,36 @@ public class EnemyAI : MonoBehaviour
         // ANIMATION FIX: the attack clip is ~7.5 s long. Re-triggering it every 'attackRate' seconds restarted it over and over
         // (he never finished a swing), and the damage landed before the swing even started. Now: one full swing per attack,
         // damage at the moment of the slam, and the next attack only after the swing has ended.
+        // TWO attacks, picked at random (never the same one three times in a row):
+        //  - SLAM : the clown's own overhead slam (long, heavy)
+        //  - SWIPE: the zombie claw swipe (fast)
+        bool slam = Random.value < 0.5f;
+        if (sameAttackCount >= 2) slam = !lastAttackSlam;
+        sameAttackCount = slam == lastAttackSlam ? sameAttackCount + 1 : 1;
+        lastAttackSlam = slam;
         if (enemyAnimator != null)
         {
             enemyAnimator.ResetTrigger("Tease");
-            enemyAnimator.SetTrigger("Attack");
+            if (slam) enemyAnimator.CrossFadeInFixedTime("Slam", 0.12f);
+            else enemyAnimator.SetTrigger("Attack");
         }
 
-        nextAttackTime = Time.time + Mathf.Max(attackRate, attackAnimLength / Mathf.Max(0.5f, attackAnimSpeed));
-        StartCoroutine(AttackHitRoutine());
+        float len = slam ? attackAnimLength : SwipeLength;
+        float hit = slam ? attackHitDelay : SwipeHitDelay;
+        nextAttackTime = Time.time + Mathf.Max(attackRate, len / Mathf.Max(0.5f, attackAnimSpeed));
+        StartCoroutine(AttackHitRoutine(hit));
     }
 
-    private System.Collections.IEnumerator AttackHitRoutine()
+    private bool lastAttackSlam;
+    private int sameAttackCount;
+    private float slamRotationOffset = 90f;
+    private bool slamOffsetCaptured;
+    private const float SwipeHitDelay = 1.0f;   // zombie swipe: the claws hit ~1 s into the clip
+    private const float SwipeLength = 1.85f;    // and the swing is over after ~1.85 s
+
+    private System.Collections.IEnumerator AttackHitRoutine(float hitDelay)
     {
-        yield return new WaitForSeconds(attackHitDelay / Mathf.Max(0.5f, attackAnimSpeed));
+        yield return new WaitForSeconds(hitDelay / Mathf.Max(0.5f, attackAnimSpeed));
 
         // Something else took over (stun, cinematic, he lost the player...) - the swing does nothing
         if (currentState != AIState.Chase || playerTransform == null || playerStats == null) yield break;
@@ -1341,17 +1450,27 @@ public class EnemyAI : MonoBehaviour
 
         
         NavMeshHit hit;
+        if (!BasementCleared && !IsInBasement(transform.position) && IsInBasement(randomDirection))
+            randomDirection.y = transform.position.y;   // the player is in the basement: keep wandering upstairs
         // Search distance barha diya (30f) taake fail na ho
-        if (NavMesh.SamplePosition(randomDirection, out hit, 30f, NavMesh.AllAreas))
+        if (NavMesh.SamplePosition(randomDirection, out hit, 30f, NavMesh.AllAreas) && (BasementCleared || IsInBasement(transform.position) || !IsInBasement(hit.position)))
         {
-            patrolTarget = hit.position;
-            agent.SetDestination(patrolTarget);
+            // only places he can really walk to (not inside a room the player has not opened yet)
+            NavMeshPath p = new NavMeshPath();
+            if (agent.CalculatePath(hit.position, p) && p.status == NavMeshPathStatus.PathComplete)
+            {
+                patrolTarget = hit.position;
+                agent.SetPath(p);
+            }
+            else if (++patrolRetries < 6) { GetNewPatrolTarget(); patrolRetries = 0; return; }
+            else { patrolRetries = 0; agent.SetDestination(hit.position); }
         }
         else
         {
             Debug.LogWarning("EnemyAI: NavMesh.SamplePosition fail ho gaya! Koi rasta nahi mila.");
         }
     }
+    private int patrolRetries;
 
     private void HandleFootsteps(float customInterval = -1f)
     {

@@ -69,24 +69,40 @@ public class EnemyHorrorFX : MonoBehaviour
         // The walk and run loops follow the real movement speed (no more skating), with a little unevenness on top.
         // The attack clip plays faster (a quick lunge); everything else (yell...) keeps its normal speed.
         AnimatorStateInfo info = anim.GetCurrentAnimatorStateInfo(0);
-        if (info.IsName("Hell Slammer A") && s == EnemyAI.AIState.Chase) { anim.speed = ai.AttackAnimSpeed; return; }
+        if ((info.IsName("Hell Slammer A") || info.IsName("Slam")) && s == EnemyAI.AIState.Chase) { anim.speed = ai.AttackAnimSpeed; return; }
 
         bool locomotion = (info.IsName("Walking") || info.IsName("Run")) && !anim.IsInTransition(0);
         if (!locomotion) { anim.speed = 1f; return; }
 
-        float n = Mathf.PerlinNoise(Time.time * 0.9f, seed);
+        // FEET MATCH THE GROUND: the clip plays exactly as fast as he really moves, using the clip's own stride speed
+        // (measured from the animation itself), so he never slides or "moonwalks". A tiny unevenness keeps it creepy.
         float vel = agent != null ? agent.velocity.magnitude : 0f;
-        if (info.IsName("Run"))
+        bool run = info.IsName("Run");
+        float natural = ClipSpeed(run);
+        float match = Mathf.Clamp(vel / natural, run ? 0.75f : 0.6f, run ? 1.9f : 2.2f);
+        float n = Mathf.PerlinNoise(Time.time * 0.6f, seed) - 0.5f;
+        anim.speed = match * (1f + n * gaitIrregularity * 0.3f);
+    }
+
+    private float walkClipSpeed = -1f, runClipSpeed = -1f;
+
+    /// <summary>Metres per second the Walking / Run clip covers at playback speed 1.</summary>
+    private float ClipSpeed(bool run)
+    {
+        float cached = run ? runClipSpeed : walkClipSpeed;
+        if (cached > 0f) return cached;
+
+        float measured = 0f;
+        AnimatorClipInfo[] clips = anim.GetCurrentAnimatorClipInfo(0);
+        if (clips.Length > 0 && clips[0].clip != null)
         {
-            // scale so the feet match the ground speed (zombie run is about 4.5 m/s at speed 1)
-            float match = Mathf.Clamp(vel / 4.5f, 0.9f, 1.8f);
-            anim.speed = match * (0.92f + n * 0.16f);
+            measured = clips[0].clip.averageSpeed.magnitude;
+            if (anim.isHuman) measured *= anim.humanScale;
         }
-        else
-        {
-            float match = Mathf.Clamp(vel / 1.3f, 0.8f, 1.8f);       // creeping zombie walk
-            anim.speed = match * (1f - gaitIrregularity * 0.5f + n * gaitIrregularity);
-        }
+        // "in place" clips have no stride speed: use the values tuned for the clown's own Walking / Run clips
+        float result = measured > 0.3f ? measured : (run ? 4.25f : 1.07f);
+        if (run) runClipSpeed = result; else walkClipSpeed = result;
+        return result;
     }
 
     void LateUpdate()
@@ -98,7 +114,7 @@ public class EnemyHorrorFX : MonoBehaviour
         if (s == EnemyAI.AIState.Stunned || s == EnemyAI.AIState.Dormant) return;
 
         // Don't fight the attack animation
-        if (anim != null && anim.GetCurrentAnimatorStateInfo(0).IsName("Hell Slammer A")) return;
+        if (anim != null && (anim.GetCurrentAnimatorStateInfo(0).IsName("Hell Slammer A") || anim.GetCurrentAnimatorStateInfo(0).IsName("Slam"))) return;
 
         Vector3 faceDir = transform.forward;
 

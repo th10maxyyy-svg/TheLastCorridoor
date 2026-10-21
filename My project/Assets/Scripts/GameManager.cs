@@ -139,6 +139,10 @@ public class GameManager : MonoBehaviour
             GameUI.ShowEndingSummary(failureSummary);
             failureSummary = null;
             while (GameUI.IsSummaryOpen) yield return null;
+
+            // ENDING "CONSUMED": after CONTINUE the real-time 3D cinematic plays in the level, then the main menu
+            yield return ConsumedEndingCinematic.Play();
+            yield break;
         }
         
         if (gameOverPanel != null)

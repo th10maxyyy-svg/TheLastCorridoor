@@ -17,6 +17,18 @@ public class RespawnManager : MonoBehaviour
     public TextMeshProUGUI spookyText;
     public UnityEngine.UI.Image deathImage; // Image to show instead of text
 
+    [Header("Death Messages (shown on the black screen)")]
+    [Tooltip("1st death (2 lives left)")]
+    public string firstDeathTitle = "HE LET YOU LIVE.";
+    public string firstDeathLine = "He is not done playing with you yet...";
+    [Tooltip("2nd death (1 life left)")]
+    public string secondDeathTitle = "YOU WON'T BE SO LUCKY AGAIN.";
+    public string secondDeathLine = "Next time, he keeps you.";
+
+    private string msgTitle, msgLine, msgLives;
+    private float msgStart = -1f;
+    private GUIStyle msgTitleStyle, msgLineStyle, msgLivesStyle;
+
     private void Awake()
     {
         instance = this;
@@ -185,11 +197,16 @@ public class RespawnManager : MonoBehaviour
             }
         }
 
-        // 1. Hide Text (User requested to delete text)
+        // 1. Hide the old scene text; the death message is drawn on top of the black screen (see OnGUI)
         if (spookyText != null)
         {
             spookyText.gameObject.SetActive(false);
         }
+        bool lastLife = livesRemaining <= 1;
+        msgTitle = lastLife ? secondDeathTitle : firstDeathTitle;
+        msgLine = lastLife ? secondDeathLine : firstDeathLine;
+        msgLives = lastLife ? "LAST LIFE" : livesRemaining + " LIVES LEFT";
+        msgStart = Time.unscaledTime;
 
         // 2. Show the new Cinematic Image!
         if (deathImage != null)
@@ -228,5 +245,49 @@ public class RespawnManager : MonoBehaviour
 
         // Reload Scene (It will auto-place the player and dropped items in Start)
         UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
+    }
+
+    // ------------------------------------------------------------------ death message (1st and 2nd death)
+    private void OnGUI()
+    {
+        if (msgStart < 0f || string.IsNullOrEmpty(msgTitle)) return;
+        float t = Time.unscaledTime - msgStart;
+        float k = Screen.height / 1080f;
+        if (msgTitleStyle == null)
+        {
+            msgTitleStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold, wordWrap = true };
+            msgLineStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Italic, wordWrap = true };
+            msgLivesStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
+        }
+        msgTitleStyle.fontSize = Mathf.RoundToInt(64 * k);
+        msgLineStyle.fontSize = Mathf.RoundToInt(30 * k);
+        msgLivesStyle.fontSize = Mathf.RoundToInt(22 * k);
+
+        GUI.depth = -1000;
+        float w = Screen.width * 0.9f, x = (Screen.width - w) * 0.5f, cy = Screen.height * 0.5f;
+
+        // the title types itself in, letter by letter, with a slight flicker
+        int shown = Mathf.Clamp(Mathf.FloorToInt(t * 22f), 0, msgTitle.Length);
+        float flicker = (t < 1.5f && Random.value < 0.08f) ? 0.4f : 1f;
+        DrawShadowed(new Rect(x, cy - 120f * k, w, 110f * k), msgTitle.Substring(0, shown), msgTitleStyle,
+                     new Color(0.72f, 0.06f, 0.05f, flicker));
+
+        float a2 = Mathf.Clamp01((t - msgTitle.Length / 22f - 0.3f) / 0.8f);
+        if (a2 > 0f)
+        {
+            DrawShadowed(new Rect(x, cy, w, 50f * k), msgLine, msgLineStyle, new Color(0.88f, 0.84f, 0.76f, a2));
+            DrawShadowed(new Rect(x, cy + 70f * k, w, 34f * k), msgLives, msgLivesStyle, new Color(0.72f, 0.06f, 0.05f, a2 * 0.9f));
+        }
+    }
+
+    private static void DrawShadowed(Rect r, string text, GUIStyle style, Color c)
+    {
+        Color old = GUI.color;
+        GUI.color = new Color(0f, 0f, 0f, c.a * 0.85f);
+        GUI.Label(new Rect(r.x + 3f, r.y + 3f, r.width, r.height), text, style);
+        GUI.color = c;
+        style.normal.textColor = Color.white;
+        GUI.Label(r, text, style);
+        GUI.color = old;
     }
 }

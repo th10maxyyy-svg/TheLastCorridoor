@@ -102,7 +102,7 @@ NavMeshSettings:
   m_BuildSettings:
     serializedVersion: 3
     agentTypeID: 0
-    agentRadius: 0.5
+    agentRadius: 0.3
     agentHeight: 2
     agentSlope: 45
     agentClimb: 0.4
@@ -118,7 +118,7 @@ NavMeshSettings:
     preserveTilesOutsideBounds: 0
     debug:
       m_Flags: 0
-  m_NavMeshData: {fileID: 23800000, guid: 86bba44d569d1b34c9349ac1caec8ac3, type: 2}
+  m_NavMeshData: {fileID: 23800000, guid: ffd6862da5c007548a1f3509ea049e72, type: 2}
 --- !u!4 &300224 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4776808061965926, guid: 1c59f912edd0dc948ac2c2cb88158068, type: 3}
@@ -1021,6 +1021,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -1406,6 +1407,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -7255,6 +7257,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -7434,6 +7437,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -7773,6 +7777,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -8385,6 +8390,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -8445,6 +8451,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -9080,6 +9087,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -9392,6 +9400,7 @@ MonoBehaviour:
   currentPhase: 0
   enemyAI: {fileID: 1048910448}
   startRoomDoor: {fileID: 0}
+  respawnGraceSeconds: 10
   OnNightmarePhaseStarted:
     m_PersistentCalls:
       m_Calls: []
@@ -9840,6 +9849,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -10053,6 +10063,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -10409,6 +10420,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -10931,6 +10943,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -11616,6 +11629,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 0}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -11992,6 +12006,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -12295,6 +12310,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -12481,6 +12497,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -12529,6 +12546,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -12913,6 +12931,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -13051,6 +13070,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -13434,6 +13454,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -13783,6 +13804,7 @@ MonoBehaviour:
   interactKey: 101
   interactionAudioSource: {fileID: 0}
   pickupSound: {fileID: 0}
+  roomNameDistance: 7
 --- !u!1 &331583977
 GameObject:
   m_ObjectHideFlags: 0
@@ -13984,6 +14006,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -14161,6 +14184,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -14726,7 +14750,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7b45d0a471fd9384d853d1de3cda1d26, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerBehaviorTracker
-  updateInterval: 10
+  evaluationInterval: 30
+  confirmEvaluations: 2
+  fastPuzzleTime: 120
+  slowPuzzleTime: 300
+  hintCooldown: 90
+  showPanel: 0
 --- !u!114 &347203920
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14754,8 +14783,7 @@ MonoBehaviour:
   bloodOverlay: {fileID: 957303950}
   bloodDisplayTime: 6
   bloodFadeSpeed: 0.5
-  isScriptedDeath: 0
-  basementSpawnPoint: {fileID: 0}
+  isInvulnerable: 0
 --- !u!114 &347203921
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14976,6 +15004,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -15266,6 +15295,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -15772,6 +15802,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -16877,6 +16908,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -24305,6 +24337,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -24417,6 +24450,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -24646,6 +24680,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -26163,6 +26198,10 @@ MonoBehaviour:
   blackScreen: {fileID: 1351011048}
   spookyText: {fileID: 728866831}
   deathImage: {fileID: 0}
+  firstDeathTitle: HE LET YOU LIVE.
+  firstDeathLine: He is not done playing with you yet...
+  secondDeathTitle: YOU WON'T BE SO LUCKY AGAIN.
+  secondDeathLine: Next time, he keeps you.
 --- !u!4 &566122146
 Transform:
   m_ObjectHideFlags: 0
@@ -26861,6 +26900,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -27280,6 +27320,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 78ba00d4f5bb7474d97e2f2aa97363b6, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -27952,6 +27993,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -30204,6 +30246,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -30342,6 +30385,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -30802,6 +30846,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -31760,6 +31805,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -31931,6 +31977,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -32880,6 +32927,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -33268,6 +33316,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -33321,6 +33370,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -34597,6 +34647,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -40206,6 +40257,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -40345,6 +40397,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -40483,6 +40536,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -40531,6 +40585,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -40926,6 +40981,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -41006,6 +41062,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -41461,6 +41518,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -42127,6 +42185,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -43231,6 +43290,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -44422,6 +44482,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -44590,6 +44651,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -44849,6 +44911,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -49800,6 +49863,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 0}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -55117,6 +55181,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -55580,6 +55645,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -55767,9 +55833,23 @@ MonoBehaviour:
   enemyAnimator: {fileID: 5555971124308985356}
   attackRotationOffset: 250
   groundOffset: -1.1
+  attackHitDelay: 1.4
+  attackAnimLength: 2.4
+  loseSightTime: 3
+  maxAttackHeightDifference: 1.8
+  showDebugOverlay: 0
+  stalkPauses: 1
+  chaseStandOffDistance: 1.1
+  attackAnimSpeed: 1.7
+  closeSenseRange: 5
+  lungeSpeedMultiplier: 1.25
+  rageSpeedMultiplier: 1.2
   cinematicStopDistance: 2
+  silentCinematicVoice: 0
   cinematicFlinchDuration: 3
   cinematicRunSpeedMultiplier: 1.5
+  cinematicRetreatSpeedMultiplier: 0
+  maxTimeAway: 20
 --- !u!195 &1048910449
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -56081,6 +56161,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -57314,6 +57395,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -57614,6 +57696,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -58272,6 +58355,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -58479,6 +58563,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -58952,6 +59037,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -59021,14 +59107,33 @@ MonoBehaviour:
     - 0
     - 0
     heldItemName: 
-    droppedItemName: 
-    droppedItemPosition:
-    - 0
-    - 0
-    - 0
+    droppedItemsCSV: 
     unlockedDoorsCSV: 
     collectedItemsCSV: 
+    flagsCSV: 
     isNightmareActive: 0
+    aggressionLevel: 3
+    skillClass: Balanced
+    comfortScore: 60
+    playTime: 0
+    lastProgressTime: 0
+    lastPuzzleDuration: -1
+    deathsAtLastProgress: 0
+    hidingSpotsCSV: 
+    saveVersion: 2
+    eventsCSV: 
+    notesReadCSV: 
+    itemsFoundCSV: 
+    timesHidden: 0
+    taserShots: 0
+    savedAt: 
+    variationSeed: 0
+    loreFoundCSV: 
+    hasEnemyPosition: 0
+    enemyPosition:
+    - 0
+    - 0
+    - 0
 --- !u!4 &1164073941
 Transform:
   m_ObjectHideFlags: 0
@@ -59216,6 +59321,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -59481,6 +59587,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -59626,6 +59733,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 78ba00d4f5bb7474d97e2f2aa97363b6, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -59674,6 +59782,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -59743,6 +59852,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -60885,6 +60995,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -61023,6 +61134,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -61128,6 +61240,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -61176,6 +61289,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -61669,6 +61783,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 78ba00d4f5bb7474d97e2f2aa97363b6, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -62124,6 +62239,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -62373,6 +62489,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -62692,6 +62809,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -62830,6 +62948,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -62878,6 +62997,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -63004,6 +63124,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -63084,6 +63205,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -63649,6 +63771,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -63734,6 +63857,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -64689,6 +64813,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -64799,6 +64924,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -64992,6 +65118,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -65040,6 +65167,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -65119,6 +65247,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -65351,6 +65480,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -65592,6 +65722,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -66328,6 +66459,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -66466,6 +66598,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -67337,6 +67470,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -67897,6 +68031,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -68475,6 +68610,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -68710,6 +68846,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 0}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -69143,6 +69280,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 78ba00d4f5bb7474d97e2f2aa97363b6, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -69407,6 +69545,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -69455,6 +69594,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -69503,6 +69643,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 78ba00d4f5bb7474d97e2f2aa97363b6, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -69662,6 +69803,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -69924,6 +70066,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -70397,6 +70540,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -70566,6 +70710,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -70759,6 +70904,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -71535,6 +71681,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -72019,6 +72166,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -72732,6 +72880,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -73228,6 +73377,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -73354,6 +73504,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -74210,6 +74361,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -74341,6 +74493,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -75285,6 +75438,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -76377,6 +76531,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -76754,6 +76909,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -76891,6 +77047,9 @@ MonoBehaviour:
   finalMessage: The Nightmare is over... for now.
   fadeDuration: 3
   timeBeforeFade: 6
+  appearSting: {fileID: 0}
+  sunBurstSound: {fileID: 0}
+  heartbeatLoop: {fileID: 0}
 --- !u!65 &1819610021
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -77387,6 +77546,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -77711,6 +77871,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -77822,6 +77983,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -77870,6 +78032,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -78794,6 +78957,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -79112,6 +79276,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -79287,6 +79452,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -79855,6 +80021,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -80756,6 +80923,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -81292,6 +81460,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -81415,6 +81584,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -81705,6 +81875,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -81843,6 +82014,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -81944,6 +82116,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -81992,6 +82165,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -82162,6 +82336,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -82346,6 +82521,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -87906,6 +88082,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -93042,6 +93219,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -93090,6 +93268,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -93228,6 +93407,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -93276,6 +93456,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -93324,6 +93505,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -94006,6 +94188,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -94177,6 +94360,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -94356,6 +94540,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -94735,6 +94920,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -95137,6 +95323,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -100802,6 +100989,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -101096,6 +101284,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -101213,6 +101402,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -117302,6 +117492,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DeadBodyPuzzle
   isCorrectBody: 0
   cutDuration: 4
+  cancelDistance: 3.5
   rustyCrank: {fileID: 0}
   examRoomKey: {fileID: 0}
   squelchingSound: {fileID: 8300000, guid: 7de490b357461ec469860f9decd47cf5, type: 3}
@@ -131294,6 +131485,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DeadBodyPuzzle
   isCorrectBody: 0
   cutDuration: 4
+  cancelDistance: 3.5
   rustyCrank: {fileID: 0}
   examRoomKey: {fileID: 0}
   squelchingSound: {fileID: 8300000, guid: 7de490b357461ec469860f9decd47cf5, type: 3}
@@ -197763,6 +197955,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   openSound: {fileID: 8300000, guid: 92a000575aed4df4aa57444403721bcd, type: 3}
   closeSound: {fileID: 0}
+  roomNameOverride: 
   onDoorOpen:
     m_PersistentCalls:
       m_Calls: []
@@ -292831,6 +293024,8 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+  skipKey: 32
+  safetyExtraSeconds: 10
 --- !u!328 &7274435397030709645
 VideoPlayer:
   m_ObjectHideFlags: 0
@@ -305110,6 +305305,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DeadBodyPuzzle
   isCorrectBody: 0
   cutDuration: 4
+  cancelDistance: 3.5
   rustyCrank: {fileID: 0}
   examRoomKey: {fileID: 0}
   squelchingSound: {fileID: 8300000, guid: 7de490b357461ec469860f9decd47cf5, type: 3}
@@ -305941,6 +306137,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DeadBodyPuzzle
   isCorrectBody: 1
   cutDuration: 4
+  cancelDistance: 3.5
   rustyCrank: {fileID: 1985263238}
   examRoomKey: {fileID: 1210525052}
   squelchingSound: {fileID: 8300000, guid: 7de490b357461ec469860f9decd47cf5, type: 3}
