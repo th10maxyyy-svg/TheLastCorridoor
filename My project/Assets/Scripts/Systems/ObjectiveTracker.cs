@@ -277,8 +277,9 @@ public class ObjectiveTracker : MonoBehaviour
         }
 
         // ---------------------------------------------------------------- 4. the end
-        Add("Escape", "Escape the asylum through the main gate",
+        Objective esc = Add("Escape", "Main gate: find the Main Gate Key and the 8-digit code, then escape",
             () => SaveManager.instance != null && SaveManager.instance.HasEvent(DonePrefix + "Escape"));
+        esc.progressText = MainGateLock.ProgressText;
 
         // silent trackers for the achievements (Codebreaker, Let There Be Light)
         keypadFlags.Clear();

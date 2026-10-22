@@ -25,6 +25,7 @@ public class PlayerStats : MonoBehaviour
     [SerializeField] private AudioSource breathingAudioSource;
     [SerializeField] private AudioClip heavyBreathingSound;
     private bool isBreathing = false;
+    [HideInInspector] public bool muteBreathing = false;   // cinematics that must not have the player's breathing (escape ending)
     private float forceBreatheTimer = 0f; // NEW: Jab stamina bhara ho lekin darr se saans phoolay
 
     private bool isDead = false;
@@ -132,6 +133,13 @@ public class PlayerStats : MonoBehaviour
         }
 
         if (breathingAudioSource == null || isDead) return;
+
+        if (muteBreathing)
+        {
+            if (isBreathing || breathingAudioSource.isPlaying) { breathingAudioSource.Stop(); isBreathing = false; }
+            forceBreatheTimer = 0f;
+            return;
+        }
 
         if (forceBreatheTimer > 0)
         {

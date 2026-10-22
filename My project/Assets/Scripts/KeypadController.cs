@@ -15,6 +15,10 @@ public class KeypadController : MonoBehaviour, IInteractable
     private bool isError = false;
     private float messageTimer = 0f;
     private bool isUnlocked = false;
+
+    /// <summary>True once the right code was entered (also after loading - it is saved).</summary>
+    public bool IsUnlocked => isUnlocked;
+    private int CodeLength => Mathf.Max(1, string.IsNullOrEmpty(passcode) ? 4 : passcode.Length);
     private float autoCloseTime = -1f;
 
     /// <summary>True while any keypad UI is on screen (other scripts use this to ignore G / mouse clicks).</summary>
@@ -187,12 +191,14 @@ public class KeypadController : MonoBehaviour, IInteractable
     {
         TLCCanvas ui = TLCCanvas.Instance;
         if (ui == null || ui.keypadDisplay == null) return;
+        ui.keypadDisplay.fontSize = CodeLength > 4 ? 30 : 46;   // an 8-digit code must fit the display
         if (isSuccess) { ui.keypadDisplay.text = "ACCEPTED"; ui.keypadDisplay.color = Color.green; }
         else if (isError) { ui.keypadDisplay.text = "ERROR"; ui.keypadDisplay.color = Color.red; }
         else
         {
             string displayStr = "";
-            for (int d = 0; d < 4; d++) displayStr += (d < currentInput.Length ? currentInput[d].ToString() : "_") + (d < 3 ? " " : "");
+            int len = CodeLength;
+            for (int d = 0; d < len; d++) displayStr += (d < currentInput.Length ? currentInput[d].ToString() : "_") + (d < len - 1 ? " " : "");
             ui.keypadDisplay.text = displayStr;
             ui.keypadDisplay.color = Color.white;
         }
@@ -207,7 +213,7 @@ public class KeypadController : MonoBehaviour, IInteractable
     {
         if (isSuccess || isError) return;
 
-        if (currentInput.Length < 4)
+        if (currentInput.Length < CodeLength)
         {
             currentInput += digit;
         }
