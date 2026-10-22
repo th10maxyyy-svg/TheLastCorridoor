@@ -19,7 +19,7 @@ public static class UIHierarchyBuilder
 {
     private const string PrefabFolder = "Assets/Resources/UI";
     private const string PrefabPath = PrefabFolder + "/TLC_UI.prefab";
-    private const string PrefKey = "TLC_UIHierarchy_v1_";
+    private const string PrefKey = "TLC_UIHierarchy_v2_";   // v2: rebuild once after TLCCard / TLCRefs / TLCButtonFX moved to their own files
     private static readonly string[] Scenes = { "neww", "main menue", "Intro" };
     private static bool triedThisSession;
 

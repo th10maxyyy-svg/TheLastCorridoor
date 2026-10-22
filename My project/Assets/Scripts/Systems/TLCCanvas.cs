@@ -172,8 +172,10 @@ public class TLCCanvas : MonoBehaviour
         }
     }
 
+    /// <summary>Copies a list template. Returns null (and leaves nothing behind) if the template is broken.</summary>
     public static T Spawn<T>(GameObject template, Transform parent) where T : Component
     {
+        if (template == null || parent == null || template.GetComponent<T>() == null) return null;
         GameObject g = Instantiate(template, parent, false);
         g.name = template.name.Replace("Template", "");
         g.SetActive(true);
@@ -238,48 +240,6 @@ public class TLCCanvas : MonoBehaviour
         }
         bloodTex.SetPixels32(px); bloodTex.Apply();
         return bloodTex;
-    }
-}
-
-/// <summary>Dark card with a rust (or ember-gold when highlighted) outline and stripe.</summary>
-public class TLCCard : MonoBehaviour
-{
-    public Image background, stripe;
-    public Image[] lines;
-    public void Set(bool hi)
-    {
-        if (background != null) background.color = hi ? TLCUIFactory.CardHi : TLCUIFactory.CardBg;
-        if (stripe != null) stripe.color = hi ? new Color(1f, 0.70f, 0.22f, 1f) : new Color(0.50f, 0.20f, 0.10f, 1f);
-        if (lines != null) foreach (Image l in lines) if (l != null) l.color = hi ? new Color(0.90f, 0.62f, 0.20f, 0.55f) : new Color(0.45f, 0.22f, 0.11f, 0.60f);
-    }
-}
-
-/// <summary>References inside a list row / cell template, so scripts can fill it without searching by name.</summary>
-public class TLCRefs : MonoBehaviour
-{
-    public Text[] texts;
-    public Image[] images;
-    public RectTransform[] rects;
-    public TLCCard card;
-    public Button button;
-}
-
-/// <summary>Button label turns bright on hover (like the menu buttons) and dim when the button is disabled.</summary>
-public class TLCButtonFX : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
-{
-    public Text label;
-    public Color normal = new Color(0.82f, 0.66f, 0.54f), hover = new Color(1f, 0.93f, 0.85f), disabled = new Color(0.45f, 0.40f, 0.36f);
-    private Button button;
-    private bool over;
-    void Awake() { button = GetComponent<Button>(); }
-    public void OnPointerEnter(PointerEventData e) { over = true; }
-    public void OnPointerExit(PointerEventData e) { over = false; }
-    void OnDisable() { over = false; }
-    void LateUpdate()
-    {
-        if (label == null) return;
-        Color c = button != null && !button.interactable ? disabled : over ? hover : normal;
-        if (label.color != c) label.color = c;
     }
 }
 

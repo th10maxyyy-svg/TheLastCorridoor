@@ -312,12 +312,19 @@ public class GameUI : MonoBehaviour
         }
     }
 
+    private float lastUiError = -10f;
+
     void LateUpdate()
     {
         if (mode == Mode.None) return;
         if (ui == null) BindUI();
         if (ui == null) return;
-        RefreshUI();
+        try { RefreshUI(); }
+        catch (System.Exception e)
+        {
+            // a broken UI piece must never freeze the game: log at most once every 5 s and carry on
+            if (Time.unscaledTime - lastUiError > 5f) { lastUiError = Time.unscaledTime; Debug.LogWarning("[TLC] UI problem (game keeps running): " + e.Message); }
+        }
     }
 
     private void Message(string text)
@@ -457,6 +464,12 @@ public class GameUI : MonoBehaviour
             if (t.view == null)
             {
                 TLCRefs r = TLCCanvas.Spawn<TLCRefs>(ui.toastTemplate, ui.topRight);
+                if (r == null || r.texts == null || r.texts.Length < 2 || r.images == null || r.images.Length < 1 || r.GetComponent<CanvasGroup>() == null)
+                {
+                    if (r != null) Destroy(r.gameObject);
+                    toasts.RemoveAt(i); i--;          // broken template: drop the pop-up instead of trying again every frame
+                    continue;
+                }
                 r.texts[0].text = t.title;
                 r.texts[0].color = t.gold ? TLCUIFactory.Gold : TLCUIFactory.Blood;
                 r.texts[1].text = t.text;
@@ -506,7 +519,7 @@ public class GameUI : MonoBehaviour
             TLCCanvas.SetActive(row.root, visible);
             if (!visible) continue;
             SaveSlots.SlotInfo info = SaveSlots.GetInfo(slot);
-            row.card.Set(info.exists);
+            if (row.card != null) row.card.Set(info.exists);
             row.label.text = info.label;
             row.details.text = info.details;
             if (saving)
@@ -577,6 +590,7 @@ public class GameUI : MonoBehaviour
         foreach (GameProgress.AchievementDef a in list)
         {
             TLCRefs c = TLCCanvas.Spawn<TLCRefs>(ui.achTemplate, ui.achContent);
+            if (c == null || c.card == null || c.texts == null || c.texts.Length < 5) { if (c != null) Destroy(c.gameObject); break; }
             bool got = GameProgress.IsUnlocked(a.id);
             bool secret = !got && a.hidden;
             c.card.Set(got);
@@ -625,6 +639,7 @@ public class GameUI : MonoBehaviour
         foreach (ObjectiveTracker.Objective o in shown)
         {
             TLCRefs r = TLCCanvas.Spawn<TLCRefs>(ui.jObjTemplate, ui.jObjContent);
+            if (r == null) break;
             r.images[0].color = o.done ? TLCUIFactory.RedDark : TLCUIFactory.Gray;
             r.texts[0].text = o.done ? "DONE" : "OPEN";
             r.texts[0].color = o.done ? TLCUIFactory.Dim : TLCUIFactory.Blood;
@@ -662,6 +677,7 @@ public class GameUI : MonoBehaviour
         for (int i = 0; i < items.Count; i++)
         {
             Button b = TLCCanvas.Spawn<Button>(ui.jItemTemplate, ui.jItemsContent);
+            if (b == null) break;
             bool held = string.Equals(items[i], inHand, System.StringComparison.OrdinalIgnoreCase);
             b.GetComponentInChildren<Text>().text = (held ? "> " : "") + items[i];
             TLCUIFactory.SetButtonColors(b, i == selectedItem);
@@ -725,6 +741,7 @@ public class GameUI : MonoBehaviour
             string preview = notes[i].title ?? notes[i].text.Replace("\n", " ");
             if (preview.Length > 30) preview = preview.Substring(0, 30) + "...";
             Button b = TLCCanvas.Spawn<Button>(ui.jNoteTemplate, ui.jNotesContent);
+            if (b == null) break;
             b.GetComponentInChildren<Text>().text = notes[i].title != null ? "*  " + preview : (i + 1) + ".  " + preview;
             TLCUIFactory.SetButtonColors(b, i == selectedNote);
             int k = i;
@@ -763,6 +780,7 @@ public class GameUI : MonoBehaviour
     private static void AddRow(Transform parent, GameObject template, int i, string label, string value)
     {
         TLCRefs r = TLCCanvas.Spawn<TLCRefs>(template, parent);
+        if (r == null) return;
         r.images[0].color = i % 2 == 0 ? TLCUIFactory.Gray : TLCUIFactory.RedDark;
         r.texts[0].text = label;
         r.texts[1].text = value;
