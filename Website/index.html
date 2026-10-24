@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Last Corridor — Official Game by HollowVein Studios</title>
+    <meta name="description" content="The Last Corridor by HollowVein Studios. A psychological survival horror experience set inside a decaying asylum with an adaptive AI stalker.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32.png">
+    <link rel="apple-touch-icon" href="images/favicon-180.png">
+    <meta property="og:title" content="The Last Corridor — HollowVein Studios">
+    <meta property="og:description" content="Three lives. One relentless hunter. Every time you hide, he learns. Download free for Windows.">
+    <meta property="og:image" content="images/tlc_banner.png">
+</head>
+<body>
+    <!-- Scroll Progress Bar -->
+    <div id="scroll-progress"></div>
+
+    <!-- HollowVein Studios Preloader -->
+    <div id="preloader">
+        <div class="preloader-content">
+            <div class="preloader-studio">
+                <span class="hv-hollow">HOLLOW</span><span class="hv-vein">VEIN</span>
+            </div>
+            <div class="preloader-studios-sub">S &nbsp; T &nbsp; U &nbsp; D &nbsp; I &nbsp; O &nbsp; S</div>
+            <svg class="preloader-ecg" viewBox="0 0 320 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path class="ecg-line" d="M0 24 H110 L122 16 L132 34 L144 4 L156 44 L166 18 L176 24 H320" stroke="#c81e14" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <p class="preloader-status">CONNECTING TO ASYLUM FEED // CAM-04...</p>
+            <div class="loading-bar"><div class="loading-progress"></div></div>
+        </div>
+    </div>
+
+    <!-- Subtle Bottom Surveillance HUD (Never overlaps navbar) -->
+    <div class="camcorder-hud">
+        <div class="hud-bottom-left">
+            <div class="hud-rec-pill">
+                <span class="rec-dot"></span>
+                <span>CAM 04 // WARD B</span>
+            </div>
+            <div class="hud-bpm">
+                <svg class="bpm-ecg" viewBox="0 0 90 24" fill="none">
+                    <path d="M0 12 H26 L32 7 L37 18 L43 2 L49 22 L55 9 L60 12 H90" stroke="#e0241a" stroke-width="1.8"/>
+                </svg>
+                <span id="bpm-value">74</span> <small>BPM</small>
+            </div>
+        </div>
+        <div class="hud-bottom-right">
+            <span class="hud-timecode" id="timecode">00:00:00:00</span>
+        </div>
+    </div>
+
+    <!-- Atmospheric Overlays -->
+    <div class="scanlines"></div>
+    <div class="noise-overlay"></div>
+    <canvas id="ember-canvas"></canvas>
+    <canvas id="webgl-canvas"></canvas>
+    <div class="cursor-glow" id="cursor-glow"></div>
+    <div id="headlamp-overlay"></div>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <a href="#home" class="logo">
+            <img src="images/tlc_logo.png" alt="The Last Corridor" class="logo-img">
+            <div class="logo-text-wrap">
+                <span class="logo-title">THE LAST CORRIDOR</span>
+                <span class="logo-studio">HOLLOW<b>VEIN</b> STUDIOS</span>
+            </div>
+        </a>
+        <ul class="nav-links">
+            <li><a href="#about">Dossier</a></li>
+            <li><a href="#features">Gameplay</a></li>
+            <li><a href="#endings">Endings</a></li>
+            <li><a href="#teaser">Teaser</a></li>
+            <li><a href="#media">Evidence</a></li>
+            <li><button id="headlamp-toggle" class="btn-headlamp" type="button">Flashlight: OFF</button></li>
+            <li><a href="#download" class="cta-nav">Download Free</a></li>
+        </ul>
+    </nav>
+
+    <!-- Hero Section -->
+    <header id="home" class="hero">
+        <div class="hero-bg"></div>
+        <div class="vignette"></div>
+        <div class="hero-content">
+            <div class="studio-pill">
+                <span class="pulse-dot"></span>
+                <span>A <strong>HOLLOW<em>VEIN</em> STUDIOS</strong> PRODUCTION</span>
+            </div>
+            <h1 class="glitch" data-text="THE LAST CORRIDOR">THE LAST CORRIDOR</h1>
+            <p class="subtitle">Three lives. One relentless hunter. Every time you hide, he learns.</p>
+            <div class="hero-buttons">
+                <a href="#download" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg>
+                    <span>Download for Windows</span>
+                </a>
+                <a href="#teaser" class="btn btn-secondary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    <span>Watch Official Teaser</span>
+                </a>
+            </div>
+            <div class="hero-meta-tags">
+                <span>Windows 10/11 (64-bit)</span>
+                <span class="dot-sep">&bull;</span>
+                <span>Version 1.0 Release</span>
+                <span class="dot-sep">&bull;</span>
+                <span>955 MB</span>
+                <span class="dot-sep">&bull;</span>
+                <span>100% Free</span>
+            </div>
+        </div>
+
+        <!-- Bottom Feature Strip -->
+        <div class="hero-stats-bar">
+            <div class="stat-item">
+                <span class="stat-num">ADAPTIVE AI</span>
+                <span class="stat-label">Learns Your Hiding Spots</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+                <span class="stat-num">3 LIVES</span>
+                <span class="stat-label">Every Death Has Consequences</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+                <span class="stat-num">4 ENDINGS</span>
+                <span class="stat-label">Shaped By How You Survive</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+                <span class="stat-num">8 DIGITS</span>
+                <span class="stat-label">Hidden Across The Asylum</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- About / Case File Dossier Section -->
+    <section id="about" class="about-section fade-in-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-kicker">CASE FILE // WARD B PROTOCOL</span>
+                <h2 class="section-title">No Memory. No Backup. No Mercy.</h2>
+            </div>
+            <div class="about-grid">
+                <div class="about-text">
+                    <div class="dossier-stamp">CLASSIFIED // STAGE 3</div>
+                    <p class="lead-p">You awaken inside a locked cell of a decaying psychiatric facility. The corridors above are pitch-black, the exits are sealed behind an <strong>8-digit master lock</strong>, and something wearing a dead man's grin is prowling the halls.</p>
+                    <p>Developed by <strong>HollowVein Studios</strong>, <em>The Last Corridor</em> blends claustrophobic first-person psychological horror with an <strong>Adaptive AI Director</strong>. The stalker listens for every creaking door and dropped tool, tracks how quickly you solve puzzles, and remembers the lockers you hide in most.</p>
+                    <div class="dossier-quote">
+                        "The Protocol does not cure them. It empties them — and something else moves in. Don't hide in the same place twice. He learns. He always learns."
+                        <span>— Night Shift Voicemail, Ward B</span>
+                    </div>
+                </div>
+                <div class="about-visuals">
+                    <div class="monitor-frame card-tilt">
+                        <div class="monitor-bar">
+                            <span>CAM 02 // BASEMENT CORRIDOR</span>
+                            <span class="live-tag">LIVE</span>
+                        </div>
+                        <img src="images/about_visual.jpg" alt="Abandoned Asylum Corridor" class="about-image">
+                        <div class="monitor-caption">Subject last seen near the Morgue double doors — 02:14 AM</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Core Gameplay Pillars -->
+    <section id="features" class="features-section fade-in-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-kicker">SURVIVAL MECHANICS</span>
+                <h2 class="section-title">Every Shadow Watches Back</h2>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card card-tilt">
+                    <div class="feature-icon-box">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </div>
+                    <span class="feature-tag">DYNAMIC DIFFICULTY &amp; MEMORY</span>
+                    <h3>Adaptive Stalker AI</h3>
+                    <p>He adapts across 5 aggression tiers in real time. Hide in the same locker repeatedly and he will walk straight to it and drag you out.</p>
+                </div>
+
+                <div class="feature-card card-tilt">
+                    <div class="feature-icon-box">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    </div>
+                    <span class="feature-tag">THREE CHANCES TO ESCAPE</span>
+                    <h3>Three-Life Basement Loop</h3>
+                    <p>He doesn't kill you on your first mistake — he throws you down into the basement. Lose all three lives and witness the grim <em>Consumed</em> ending.</p>
+                </div>
+
+                <div class="feature-card card-tilt">
+                    <div class="feature-icon-box">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                    </div>
+                    <span class="feature-tag">HIGH-TENSION PUZZLES</span>
+                    <h3>Autopsies, Traps &amp; Power</h3>
+                    <p>Perform a surgery autopsy with a scalpel, hand-crank loud X-ray machines, drain acid baths, and restore fuse boxes before toxic gas fills the room.</p>
+                </div>
+
+                <div class="feature-card card-tilt">
+                    <div class="feature-icon-box">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    </div>
+                    <span class="feature-tag">SINGLE-ITEM TACTICAL INVENTORY</span>
+                    <h3>Headlamp &amp; Stun Taser</h3>
+                    <p>Your hands can only hold one item at a time. Choose between carrying a key, a puzzle part, or a high-voltage taser to stun him in a dead end.</p>
+                </div>
+
+                <div class="feature-card card-tilt">
+                    <div class="feature-icon-box">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </div>
+                    <span class="feature-tag">PARANORMAL EVENTS</span>
+                    <h3>Shifting Rooms &amp; Illusions</h3>
+                    <p>Doors vanish behind fake walls in the Classroom, weeping statues block your path, and repairing the Office Grandfather Clock summons him to your door.</p>
+                </div>
+
+                <div class="feature-card card-tilt">
+                    <div class="feature-icon-box">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    </div>
+                    <span class="feature-tag">INVESTIGATIVE JOURNAL</span>
+                    <h3>Toe Tags &amp; The 8-Digit Code</h3>
+                    <p>Inspect morgue drawers for patient toe-tags, answer ringing phones, and collect 8 scattered code notes to unlock the Main Gate.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4 Endings Showcase Section -->
+    <section id="endings" class="endings-section fade-in-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-kicker">CONSEQUENCE SYSTEM</span>
+                <h2 class="section-title">Four Endings. Your Run Decides.</h2>
+            </div>
+            <div class="endings-grid">
+                <div class="ending-card">
+                    <span class="ending-num">ENDING 01</span>
+                    <h3>DAYLIGHT</h3>
+                    <p>Unlock the Main Gate with the key and 8-digit code and sprint into the dawn before he catches you at the threshold.</p>
+                </div>
+                <div class="ending-card">
+                    <span class="ending-num">ENDING 02</span>
+                    <h3>GHOST</h3>
+                    <p>Escape the asylum without dying a single time and without ever firing the stun taser — a pure stealth master run.</p>
+                </div>
+                <div class="ending-card">
+                    <span class="ending-num">ENDING 03</span>
+                    <h3>THE HIDDEN TRUTH</h3>
+                    <p>Uncover the asylum's classified notes, morgue toe-tags, and night-shift voicemail before escaping to expose the Director's Protocol.</p>
+                </div>
+                <div class="ending-card ending-danger">
+                    <span class="ending-num">ENDING 04</span>
+                    <h3>CONSUMED</h3>
+                    <p>Lose all three lives inside the asylum and become the newest permanent resident of Ward B.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Official Teaser Section -->
+    <section id="teaser" class="teaser-section fade-in-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-kicker">SURVEILLANCE ARCHIVE // TAPE 01</span>
+                <h2 class="section-title">Official Gameplay Teaser</h2>
+            </div>
+            <div class="teaser-container">
+                <div class="monitor-bar">
+                    <span>ARCHIVE PLAYBACK // THE LAST CORRIDOR</span>
+                    <span class="live-tag">1080P HD</span>
+                </div>
+                <div class="video-responsive">
+                    <iframe src="https://www.youtube.com/embed/jLLmDkk1qkE" title="The Last Corridor - Official Teaser" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gallery / Evidence Section -->
+    <section id="media" class="media-section fade-in-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-kicker">RECOVERED FOOTAGE</span>
+                <h2 class="section-title">Inside The Asylum</h2>
+            </div>
+            <div class="media-grid">
+                <div class="media-item">
+                    <div class="media-cam-label">CAM 01 // SECLUSION CELL</div>
+                    <img src="images/media_1.jpg" alt="Asylum Seclusion Cell" class="media-img">
+                </div>
+                <div class="media-item">
+                    <div class="media-cam-label">CAM 02 // SURGERY &amp; MORGUE</div>
+                    <img src="images/media_2.jpg" alt="Decaying Skeleton in Asylum" class="media-img">
+                </div>
+                <div class="media-item">
+                    <div class="media-cam-label">CAM 03 // MAIN ATRIUM</div>
+                    <img src="images/media_3.jpg" alt="Karlheinz Asylum Atrium" class="media-img">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download Section -->
+    <section id="download" class="download-section fade-in-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-kicker">OFFICIAL WINDOWS RELEASE</span>
+                <h2 class="section-title">Download The Last Corridor</h2>
+            </div>
+            <div class="download-grid">
+                <div class="download-card card-tilt">
+                    <div class="release-badge">VERIFIED BUILD &middot; v1.0</div>
+                    <img src="images/tlc_logo.png" alt="The Last Corridor Logo" class="download-logo">
+                    <h3>The Last Corridor</h3>
+                    <p class="download-studio">By <strong>HollowVein Studios</strong></p>
+                    <p class="download-meta" id="download-meta">Windows (64-bit) &middot; 955 MB &middot; Free Download (ZIP)</p>
+                    <a href="https://github.com/th10maxyyy-svg/TheLastCorridoor/releases/download/v1.0/TheLastCorridor_Windows.zip" class="btn btn-primary btn-download" id="download-link">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                        <span>Download for Windows (955 MB)</span>
+                    </a>
+                    <div class="download-steps">
+                        <div><span>1</span> Download <strong>TheLastCorridor_Windows.zip</strong></div>
+                        <div><span>2</span> Right-click &rarr; <strong>Extract All</strong> (Unzip folder)</div>
+                        <div><span>3</span> Launch <strong>The Last Corridor.exe</strong></div>
+                    </div>
+                    <p class="download-note">If Windows SmartScreen appears, click <em>More info &rarr; Run anyway</em>.</p>
+                </div>
+
+                <div class="download-info">
+                    <div class="info-panel">
+                        <h3>System Requirements</h3>
+                        <ul class="specs-list">
+                            <li><span>OS</span><strong>Windows 10 / 11 (64-bit)</strong></li>
+                            <li><span>Processor</span><strong>Intel Core i5 / AMD Ryzen 5 or better</strong></li>
+                            <li><span>Memory</span><strong>8 GB RAM</strong></li>
+                            <li><span>Graphics</span><strong>DirectX 11 / 12 GPU with 2 GB+ VRAM</strong></li>
+                            <li><span>Storage</span><strong>2.5 GB available space</strong></li>
+                        </ul>
+                    </div>
+
+                    <div class="info-panel">
+                        <h3>Controls &amp; Keybindings</h3>
+                        <div class="controls-grid">
+                            <div class="ctrl-row"><kbd>W A S D</kbd><span>Move</span></div>
+                            <div class="ctrl-row"><kbd>Shift</kbd><span>Sprint</span></div>
+                            <div class="ctrl-row"><kbd>Ctrl</kbd><span>Crouch / Stealth</span></div>
+                            <div class="ctrl-row"><kbd>E</kbd><span>Interact / Hide</span></div>
+                            <div class="ctrl-row"><kbd>F</kbd><span>Toggle Headlamp</span></div>
+                            <div class="ctrl-row"><kbd>G</kbd><span>Drop Held Item</span></div>
+                            <div class="ctrl-row"><kbd>TAB</kbd><span>Journal &amp; Notes</span></div>
+                            <div class="ctrl-row"><kbd>Mouse 1</kbd><span>Fire Taser</span></div>
+                        </div>
+                    </div>
+
+                    <div class="content-warning-box">
+                        <strong>MATURE HORROR WARNING:</strong> Contains blood, autopsy gore, flashing lights, disturbing audio, and intense jump scares. Best experienced in the dark with headphones.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <div class="footer-hv-logo">
+                    <span class="hv-hollow">HOLLOW</span><span class="hv-vein">VEIN</span>
+                </div>
+                <div class="footer-hv-sub">S &nbsp; T &nbsp; U &nbsp; D &nbsp; I &nbsp; O &nbsp; S</div>
+            </div>
+            <p class="footer-game-title">THE LAST CORRIDOR &mdash; OFFICIAL WEBSITE</p>
+            <div class="footer-nav">
+                <a href="#home">Home</a>
+                <a href="#about">Dossier</a>
+                <a href="#features">Gameplay</a>
+                <a href="#endings">Endings</a>
+                <a href="#teaser">Teaser</a>
+                <a href="#download">Download</a>
+            </div>
+            <div class="footer-contact">
+                <p>Press, support &amp; inquiries:</p>
+                <a href="mailto:tayyabghazi567@gmail.com" class="contact-email">tayyabghazi567@gmail.com</a>
+            </div>
+            <p class="footer-copy">&copy; 2026 <strong>HollowVein Studios</strong>. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Lightbox Modal for Gallery -->
+    <div id="lightbox-modal" class="modal">
+        <span class="close-modal" id="close-lightbox">&times;</span>
+        <img id="lightbox-img" src="" alt="Enlarged Evidence" class="lightbox-image">
+    </div>
+
+    <!-- 3D Library (Three.js) -->
+    <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+          "fflate": "https://unpkg.com/fflate@0.8.0/esm/browser.js"
+        }
+      }
+    </script>
+
+    <script src="script.js"></script>
+    <script type="module" src="three-setup.js"></script>
+</body>
+</html>

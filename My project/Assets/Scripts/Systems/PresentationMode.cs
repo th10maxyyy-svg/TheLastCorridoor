@@ -114,6 +114,9 @@ public class PresentationMode : MonoBehaviour
             bool f = GUILayout.Toggle(frozenEnemy, "  Freeze the clown (hidden)");
             if (f != frozenEnemy) { frozenEnemy = f; e.gameObject.SetActive(!f); }
         }
+        // VIVA: open every locked room door for the demo (nothing is saved; untick to lock them again)
+        bool doors = GUILayout.Toggle(TestDoorUnlock.IsOn, "  Unlock all room doors (viva demo - not saved)");
+        if (doors != TestDoorUnlock.IsOn) TestDoorUnlock.SetNow(doors);
         GUILayout.Space(8f);
         if (GUILayout.Button("Play the escape ending (test - nothing is saved)", btn)) { Toggle(false); EscapeCinematicManager.PlayNow(); }
         GUILayout.Label("Objectives, the map and notes are in the journal (TAB).");

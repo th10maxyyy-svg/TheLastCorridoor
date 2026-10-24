@@ -1,0 +1,11 @@
+Model Information:
+* title:	Creepy headless statue
+* source:	https://sketchfab.com/3d-models/creepy-headless-statue-dafcc83828814524b88751266f353b24
+* author:	Aliosa (https://sketchfab.com/aliosa123)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Creepy headless statue" (https://sketchfab.com/3d-models/creepy-headless-statue-dafcc83828814524b88751266f353b24) by Aliosa (https://sketchfab.com/aliosa123) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

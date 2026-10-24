@@ -15,6 +15,9 @@ public class TestDoorUnlock : MonoBehaviour
     private static bool hooked;
     private GUIStyle style;
 
+    /// <summary>True while the doors are unlocked right now (Editor switch or the F9 presentation panel).</summary>
+    public static bool IsOn => inst != null;
+
     public static bool Enabled
     {
         get
@@ -81,6 +84,6 @@ public class TestDoorUnlock : MonoBehaviour
     void OnGUI()
     {
         if (style == null) style = new GUIStyle(GUI.skin.label) { fontSize = 13, fontStyle = FontStyle.Bold, normal = { textColor = new Color(1f, 0.25f, 0.2f) } };
-        GUI.Label(new Rect(10f, 6f, 420f, 24f), "TEST: ALL DOORS UNLOCKED  (Ctrl+Shift+U to lock again)", style);
+        GUI.Label(new Rect(10f, 6f, 420f, 24f), "TEST: ALL DOORS UNLOCKED  (F9 panel / Ctrl+Shift+U to lock again)", style);
     }
 }
