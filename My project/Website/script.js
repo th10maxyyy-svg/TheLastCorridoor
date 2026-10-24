@@ -66,36 +66,30 @@ setInterval(() => {
     }
 }, 2000);
 
-// Coming Soon Modal Logic
+// Download: the "Download" buttons scroll to the download section.
+// Direct 1-click download from GitHub Releases (v1.0):
+const DOWNLOAD_URL = 'https://github.com/th10maxyyy-svg/TheLastCorridoor/releases/download/v1.0/TheLastCorridor_Windows.zip';
 const modal = document.getElementById('coming-soon-modal');
 const closeBtn = document.querySelector('.close-modal');
-const downloadBtns = document.querySelectorAll('a[href="#download"]');
+const downloadLink = document.getElementById('download-link');
+if (downloadLink) downloadLink.href = DOWNLOAD_URL;
 
-downloadBtns.forEach(btn => {
+document.querySelectorAll('a[href="#download"]').forEach(btn => {
     btn.addEventListener('click', (e) => {
-        e.preventDefault(); // Prevent scrolling
-        modal.classList.add('show');
+        e.preventDefault();
+        document.getElementById('download').scrollIntoView({ behavior: 'smooth' });
     });
 });
 
-closeBtn.addEventListener('click', () => {
-    modal.classList.remove('show');
-});
+if (closeBtn) closeBtn.addEventListener('click', () => modal.classList.remove('show'));
+window.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('show'); });
 
-// Close modal when clicking outside the box
-window.addEventListener('click', (e) => {
-    if (e.target === modal) {
-        modal.classList.remove('show');
-    }
-});
-
-// Scroll Progress Bar
+// Scroll Progress Bar (only if the page has one)
 const progressBar = document.getElementById('scroll-progress');
-window.addEventListener('scroll', () => {
+if (progressBar) window.addEventListener('scroll', () => {
     const totalScroll = document.documentElement.scrollTop;
     const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-    const scroll = `${totalScroll / windowHeight * 100}%`;
-    progressBar.style.width = scroll;
+    progressBar.style.width = `${totalScroll / windowHeight * 100}%`;
 });
 // ==========================================
 // THE LAST CORRIDOR - INSANE HORROR UPGRADES
