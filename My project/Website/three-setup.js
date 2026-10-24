@@ -90,6 +90,7 @@ gltfLoader.load(
     },
     (error) => {
         console.error('An error happened while loading the GLTF', error);
+        document.body.classList.add('loaded');
     }
 );
 

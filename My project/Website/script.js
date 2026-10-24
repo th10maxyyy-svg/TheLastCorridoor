@@ -1,6 +1,17 @@
 // Custom Cursor Logic
 const cursorGlow = document.getElementById('cursor-glow');
 
+// Preloader failsafe: ensure the website always opens even when launched directly from a local folder (file://)
+window.addEventListener('DOMContentLoaded', () => {
+    const progressBar = document.querySelector('.loading-progress');
+    if (progressBar) {
+        setTimeout(() => { if (!progressBar.style.width) progressBar.style.width = '100%'; }, 150);
+    }
+    setTimeout(() => {
+        document.body.classList.add('loaded');
+    }, 1200);
+});
+
 document.addEventListener('mousemove', (e) => {
     // Update cursor position to follow the mouse
     cursorGlow.style.left = e.clientX + 'px';
