@@ -57,7 +57,7 @@ public class MicrowavePuzzle : MonoBehaviour, IInteractable
         if (inventory != null && inventory.HasItem(requiredItemName))
         {
             // Player has the ice block!
-            inventory.RemoveItem(requiredItemName); // Take the ice block away
+            inventory.RemoveItem(requiredItemName, false); // USED UP: the ice melted - it never comes back
             StartCoroutine(RunMicrowaveSequence());
         }
         else

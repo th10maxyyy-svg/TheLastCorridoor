@@ -122,8 +122,18 @@ public class InteractionRaycast : MonoBehaviour
             IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
             if (interactable != null) return interactable;
 
-            // A solid wall/object blocks everything behind it; a plain trigger volume doesn't
-            if (!hit.collider.isTrigger) return null;
+            // A solid wall/object blocks everything behind it; a plain trigger volume doesn't.
+            // Exception: a small item lying ON that surface (scalpel on a shelf) whose box starts just behind the hit point.
+            if (!hit.collider.isTrigger)
+            {
+                foreach (RaycastHit h2 in hits)
+                {
+                    if (h2.distance <= hit.distance || h2.distance > hit.distance + 0.2f) continue;
+                    KeyItem item = h2.collider.GetComponentInParent<KeyItem>();
+                    if (item != null) return item;
+                }
+                return null;
+            }
         }
         return null;
     }

@@ -4,7 +4,7 @@ using UnityEngine.AI;
 [RequireComponent(typeof(NavMeshAgent))]
 public class EnemyAI : MonoBehaviour
 {
-    public enum AIState { Dormant, Patrol, Chase, Search, InvestigateSound, Tease, LeaveTease, VanishAfterKill, Stunned, CinematicEscape }
+    public enum AIState { Dormant, Patrol, Chase, Search, InvestigateSound, Tease, LeaveTease, VanishAfterKill, Stunned, CinematicEscape, BasementRefuse }
 
     [Header("State")]
     [SerializeField] private AIState currentState = AIState.Dormant; // Starts asleep!
@@ -397,7 +397,7 @@ public class EnemyAI : MonoBehaviour
         }
 
         // Ensure agent is not stopped (unless dormant, teasing or stunned)
-        if (agent.isStopped && currentState != AIState.Dormant && currentState != AIState.Tease && currentState != AIState.LeaveTease && currentState != AIState.Stunned && currentState != AIState.VanishAfterKill && currentState != AIState.CinematicEscape && (playerStats == null || !playerStats.IsDead()))
+        if (agent.isStopped && currentState != AIState.Dormant && currentState != AIState.Tease && currentState != AIState.LeaveTease && currentState != AIState.Stunned && currentState != AIState.VanishAfterKill && currentState != AIState.CinematicEscape && currentState != AIState.BasementRefuse && (playerStats == null || !playerStats.IsDead()))
         {
             agent.isStopped = false;
         }
@@ -448,6 +448,8 @@ public class EnemyAI : MonoBehaviour
             return;
         }
 
+        BasementStory();
+
         switch (currentState)
         {
             case AIState.Dormant:
@@ -480,6 +482,9 @@ public class EnemyAI : MonoBehaviour
                 break;
             case AIState.CinematicEscape:
                 CinematicEscapeBehavior();
+                break;
+            case AIState.BasementRefuse:
+                BasementRefuseBehavior();
                 break;
         }
     }
@@ -947,6 +952,143 @@ public class EnemyAI : MonoBehaviour
     private float trappedTimer;
     private float nextDoorCheck;
 
+    // ------------------------------------------------------------------ basement fake-out
+    // After the basement chapter, the FIRST time the player goes back down he stops at the top of the stairs, laughs
+    // and walks off - the player thinks out loud that he must be afraid of the basement. It's a lie: from the next
+    // visit on he comes down after the player, every single time.
+    public const string FlagBasementFakeOut = "Basement_FakeOutDone";
+    public const string FlagBasementInvaded = "Basement_Invaded";
+    private static bool HasStoryFlag(string f) => SaveManager.instance != null && SaveManager.instance.HasFlag(f);
+    private static void SetStoryFlag(string f) { if (SaveManager.instance != null) SaveManager.instance.SetFlag(f); }
+    private bool fakeOutVisit;             // this basement visit is the one where he pretends he can't follow
+    private Vector3 lastAboveBasement;     // where the player was before going down (the top of the stairs)
+    private bool haveAboveBasement;
+    private float playerDownTime;
+    private Vector3 refuseGate;
+    private int refusePhase;
+    private float refuseTimer;
+    private bool refuseStaged;
+
+    /// <summary>May he go into the basement right now?</summary>
+    private bool BasementOpenToHim => BasementCleared && HasStoryFlag(FlagBasementFakeOut) && !fakeOutVisit;
+
+    private void BasementStory()
+    {
+        if (playerTransform == null) return;
+        Vector3 pl = playerTransform.position;
+        if (!IsInBasement(pl))
+        {
+            if (pl.y > BasementY + 4f) { lastAboveBasement = pl; haveAboveBasement = true; }
+            fakeOutVisit = false;
+            playerDownTime = 0f;
+            return;
+        }
+        playerDownTime += Time.deltaTime;
+        if (!BasementCleared) return;   // the first basement chapter works exactly as before
+        if (currentState == AIState.Dormant || currentState == AIState.Stunned || currentState == AIState.CinematicEscape ||
+            currentState == AIState.VanishAfterKill || currentState == AIState.Tease || currentState == AIState.LeaveTease) return;
+
+        if (!HasStoryFlag(FlagBasementFakeOut))
+        {
+            if (currentState == AIState.BasementRefuse) return;
+            bool hunting = currentState == AIState.Chase || currentState == AIState.Search || currentState == AIState.InvestigateSound;
+            if (hunting || playerDownTime > 6f) BeginBasementRefuse(!hunting);
+            return;
+        }
+
+        // the second visit: he comes down
+        if (!fakeOutVisit && !HasStoryFlag(FlagBasementInvaded) && IsInBasement(transform.position))
+        {
+            SetStoryFlag(FlagBasementInvaded);
+            PlayerMonologue.Say(0.3f,
+                "TLC_Player_Basement_Coming|No... no, no, no. He's coming down here!",
+                "TLC_Player_Basement_Lied|He was never afraid... He was just playing with me.");
+        }
+    }
+
+    private void BeginBasementRefuse(bool staged)
+    {
+        SetStoryFlag(FlagBasementFakeOut);
+        fakeOutVisit = true;
+        refuseStaged = staged;
+        Vector3 pl = playerTransform.position;
+        Vector3 gate = haveAboveBasement ? lastAboveBasement : new Vector3(pl.x, 0f, pl.z);
+        NavMeshHit hit;
+        bool ok = NavMesh.SamplePosition(gate, out hit, 4f, NavMesh.AllAreas) && !IsInBasement(hit.position);
+        if (!ok) ok = NavMesh.SamplePosition(new Vector3(gate.x, Mathf.Max(gate.y, 0f), gate.z), out hit, 25f, NavMesh.AllAreas) && !IsInBasement(hit.position);
+        refuseGate = ok ? hit.position : transform.position;
+
+        // not around: he turns up (out of sight) a few metres from the stairs
+        NavMeshPath path = new NavMeshPath();
+        bool canWalk = agent.isOnNavMesh && agent.CalculatePath(refuseGate, path) && path.status == NavMeshPathStatus.PathComplete;
+        if (ok && (!canWalk || Vector3.Distance(transform.position, refuseGate) > 30f))
+        {
+            for (int i = 0; i < 16; i++)
+            {
+                Vector2 c = Random.insideUnitCircle.normalized * Random.Range(5f, 10f);
+                if (!NavMesh.SamplePosition(refuseGate + new Vector3(c.x, 0f, c.y), out NavMeshHit h2, 2.5f, NavMesh.AllAreas)) continue;
+                if (IsInBasement(h2.position) || Mathf.Abs(h2.position.y - refuseGate.y) > 1.5f) continue;
+                if (agent.Warp(h2.position)) break;
+            }
+        }
+
+        currentState = AIState.BasementRefuse;
+        refusePhase = 0;
+        refuseTimer = 14f;
+        agent.isStopped = false;
+        agent.stoppingDistance = 0f;
+        agent.updateRotation = true;
+        agent.speed = staged ? patrolSpeed * 1.2f : chaseSpeed;
+        agent.SetDestination(refuseGate);
+        Debug.Log("EnemyAI: basement fake-out - he stops at the stairs and pretends he can't follow.");
+    }
+
+    private void BasementRefuseBehavior()
+    {
+        Vector3 pl = playerTransform.position;
+        if (refusePhase == 0)
+        {
+            HandleFootsteps(refuseStaged ? -1f : 0.3f);
+            refuseTimer -= Time.deltaTime;
+            bool arrived = !agent.pathPending && (agent.remainingDistance < 1.2f || !agent.hasPath);
+            if (arrived || refuseTimer <= 0f || IsInBasement(transform.position))
+            {
+                refusePhase = 1;
+                refuseTimer = 5f;
+                agent.isStopped = true;
+                agent.ResetPath();
+                if (patrolVoiceLines != null && patrolVoiceLines.Length > 0 && enemyAudioSource != null)
+                {
+                    AudioClip vl = patrolVoiceLines[Random.Range(0, patrolVoiceLines.Length)];
+                    enemyAudioSource.PlayOneShot(vl); Subtitles.ForClip(vl);
+                }
+                voiceMuteUntil = Time.time + 25f;
+                if (refuseStaged)
+                    PlayerMonologue.Say(2.2f,
+                        "TLC_Player_Basement_UpThere|He's up there... Why isn't he coming down?",
+                        "TLC_Player_Basement_Afraid|It's like he's afraid of the basement... There's something down here.");
+                else
+                    PlayerMonologue.Say(1.6f,
+                        "TLC_Player_Basement_Stopped|He stopped... He's not coming down.",
+                        "TLC_Player_Basement_Afraid|It's like he's afraid of the basement... There's something down here.");
+            }
+            return;
+        }
+
+        // stands at the top of the stairs, staring down at the player
+        if (!IsInBasement(pl)) refuseTimer = Mathf.Min(refuseTimer, 0.4f);   // the player came back up: the act is over
+        Vector3 look = pl - transform.position; look.y = 0f;
+        if (look.sqrMagnitude > 0.01f) transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(look), Time.deltaTime * 4f);
+        refuseTimer -= Time.deltaTime;
+        if (refuseTimer <= 0f)
+        {
+            agent.isStopped = false;
+            ignorePlayerTimer = 12f;
+            currentState = AIState.Patrol;
+            GetNewPatrolTarget();
+        }
+    }
+
     /// <summary>
     /// He is in a part of the level from which the player cannot be reached (old NavMesh islands, a blocked doorway...).
     /// Instead of standing and staring he leaves: as soon as the player is not looking at him he slips away and comes
@@ -956,7 +1098,7 @@ public class EnemyAI : MonoBehaviour
     {
         if (playerTransform == null) return false;
         Vector3 pl = playerTransform.position;
-        if (IsInBasement(pl) && !BasementCleared) return false;
+        if (IsInBasement(pl) && !BasementOpenToHim) return false;
 
         // never vanish in front of the player's eyes: only when the player is not looking at him
         Camera cam = Camera.main;
@@ -1020,16 +1162,18 @@ public class EnemyAI : MonoBehaviour
     private bool KeepNearPlayer()
     {
         if (playerTransform == null || !agent.isOnNavMesh) return false;
-        if (IsInBasement(playerTransform.position) && !BasementCleared) { awayTimer = 0f; return false; } // the basement is the player's alone until he escapes it
+        if (IsInBasement(playerTransform.position) && !BasementOpenToHim) { awayTimer = 0f; return false; } // the basement is the player's alone until he escapes it
         Vector3 me = transform.position, pl = playerTransform.position;
         float dy = Mathf.Abs(pl.y - me.y);
         float flat = new Vector2(pl.x - me.x, pl.z - me.z).magnitude;
         bool away = flat > 28f || dy > 2.6f;
         awayTimer = away ? awayTimer + Time.deltaTime : 0f;
-        if (awayTimer < maxTimeAway || Time.time < nextRelocateTime) return false;
+        // once he has broken into the basement, he comes down every time the player goes there - and quickly
+        float limit = IsInBasement(pl) ? Mathf.Min(maxTimeAway, 8f) : maxTimeAway;
+        if (awayTimer < limit || Time.time < nextRelocateTime) return false;
 
         awayTimer = 0f;
-        nextRelocateTime = Time.time + maxTimeAway + 10f;
+        nextRelocateTime = Time.time + limit + 10f;
         NavMeshPath path = new NavMeshPath();
         Vector3 eye = pl + Vector3.up * 0.7f;
 
@@ -1332,6 +1476,9 @@ public class EnemyAI : MonoBehaviour
         
         if (playerController != null && playerController.isHidden) return false; // Enemy cannot see hidden player
 
+        // he "won't" follow into the basement (until his fake-out is over)
+        if (BasementCleared && !BasementOpenToHim && IsInBasement(playerTransform.position) && !IsInBasement(transform.position)) return false;
+
         // Do not spot the player through floors/ceilings on a different level
         float heightDiff = Mathf.Abs(playerTransform.position.y - transform.position.y);
         if (heightDiff > 2.8f) return false;
@@ -1474,10 +1621,10 @@ public class EnemyAI : MonoBehaviour
 
         
         NavMeshHit hit;
-        if (!BasementCleared && !IsInBasement(transform.position) && IsInBasement(randomDirection))
+        if (!BasementOpenToHim && !IsInBasement(transform.position) && IsInBasement(randomDirection))
             randomDirection.y = transform.position.y;   // the player is in the basement: keep wandering upstairs
         // Search distance barha diya (30f) taake fail na ho
-        if (NavMesh.SamplePosition(randomDirection, out hit, 30f, NavMesh.AllAreas) && (BasementCleared || IsInBasement(transform.position) || !IsInBasement(hit.position)))
+        if (NavMesh.SamplePosition(randomDirection, out hit, 30f, NavMesh.AllAreas) && (BasementOpenToHim || IsInBasement(transform.position) || !IsInBasement(hit.position)))
         {
             // only places he can really walk to (not inside a room the player has not opened yet)
             NavMeshPath p = new NavMeshPath();

@@ -212,22 +212,23 @@ public class ToxicGasTrap : MonoBehaviour
         }
     }
 
+    private int hallucinationCount;
+
+    /// <summary>
+    /// The gas makes the player see the clown - the REAL animated clown model (not a stiff puppet):
+    /// the first time he lunges out of the fog at the player's face; after that he may also be standing right beside
+    /// the player (gone the moment he is looked at) or far off in the gas, staring.
+    /// </summary>
     private void SpawnHallucination()
     {
-        if (fakeJokerPrefab == null || mainCam == null) return;
+        if (mainCam == null) return;
+        JokerPhantom.Kind kind = hallucinationCount == 0 ? JokerPhantom.Kind.Lunge
+            : (JokerPhantom.Kind)Random.Range(0, 3);
+        hallucinationCount++;
+        if (JokerPhantom.Run(this, mainCam, kind, fakeJokerPrefab, hallucinationSound)) return;
+        if (kind != JokerPhantom.Kind.Behind && JokerPhantom.Run(this, mainCam, JokerPhantom.Kind.Behind, fakeJokerPrefab, hallucinationSound)) return;
 
-        // Spawn right in front of the camera, but slightly to the side or directly ahead
-        Vector3 spawnPos = mainCam.transform.position + mainCam.transform.forward * spawnDistance;
-        spawnPos.y = mainCam.transform.position.y - 1f; // Adjust height slightly down
-
-        GameObject fakeJoker = Instantiate(fakeJokerPrefab, spawnPos, Quaternion.LookRotation(mainCam.transform.position - spawnPos));
-
-        if (hallucinationSound != null && myAudioSource != null)
-        {
-            myAudioSource.PlayOneShot(hallucinationSound);
-        }
-
-        // Destroy it after a split second
-        Destroy(fakeJoker, 0.4f);
+        // no room in front of the player: just the sound
+        if (hallucinationSound != null && myAudioSource != null) myAudioSource.PlayOneShot(hallucinationSound);
     }
 }

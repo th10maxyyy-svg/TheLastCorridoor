@@ -384,6 +384,24 @@ public class DoorController : MonoBehaviour, IInteractable
     }
     private float smoothBoostUntil;
 
+    // --- TESTING ONLY (The Last Corridor > Testing > Unlock All Doors): nothing here is ever saved ---
+    private bool testUnlocked;
+    /// <summary>on = unlock for testing (not saved); off = lock again every door that the test mode had unlocked.</summary>
+    public void SetTestUnlocked(bool on)
+    {
+        if (isInvalidDoorComponent) return;
+        if (on)
+        {
+            if (isLocked) { testUnlocked = true; isLocked = false; }
+            return;
+        }
+        if (!testUnlocked) return;
+        testUnlocked = false;
+        if (SaveManager.instance != null && SaveManager.instance.IsDoorUnlocked(GetDoorID())) return;   // really unlocked meanwhile
+        if (isOpen) SlamShut();
+        isLocked = true;
+    }
+
     // External method to unlock the door from puzzles (like a Generator)
     public void ForceUnlock()
     {

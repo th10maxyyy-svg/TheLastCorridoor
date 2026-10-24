@@ -33,6 +33,7 @@ public class CrankGeneratorPuzzle : MonoBehaviour, IInteractable
     void Start()
     {
         audioSource = GetComponent<AudioSource>();
+        if (powerOnSound == null) powerOnSound = Resources.Load<AudioClip>("HorrorAudio/TLC_Generator_Start");   // was empty: power came on silently
 
         if (SaveManager.instance != null && SaveManager.instance.HasFlag(SaveFlag))
         {
@@ -114,6 +115,8 @@ public class CrankGeneratorPuzzle : MonoBehaviour, IInteractable
     {
         isPowered = true;
         if (SaveManager.instance != null) SaveManager.instance.SetFlag(SaveFlag);
+        Inventory inv = FindAnyObjectByType<Inventory>();
+        if (inv != null) inv.RemoveItem("Rusty Crank", false);   // USED UP: the crank stays on the X-ray machine
         
         // Reset pitch and play power on sound
         audioSource.pitch = 1f;

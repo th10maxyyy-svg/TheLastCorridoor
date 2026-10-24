@@ -57,7 +57,7 @@ public class GateKeyReveal : MonoBehaviour
         {
             if (h.collider.transform.IsChildOf(key.transform)) continue;
             if (h.collider.GetComponentInParent<PlayerController>() != null || h.collider.GetComponentInParent<EnemyAI>() != null) continue;
-            p = h.point + Vector3.up * 0.04f;
+            p = h.point + Vector3.up * 0.005f;   // the key model rests on its bottom
             break;
         }
         key.transform.position = p;

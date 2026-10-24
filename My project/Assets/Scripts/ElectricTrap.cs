@@ -16,6 +16,8 @@ public class ElectricTrap : MonoBehaviour
 
     private void Start()
     {
+        KeepTriggerOnOneFloor();
+
         // WORLD STATE: keypad se band kiya gaya trap respawn ke baad dobara chalu na ho
         saveFlag = "TrapDisabled_" + SaveManager.GetSceneObjectId(transform);
         if (SaveManager.instance != null && SaveManager.instance.HasFlag(saveFlag))
@@ -36,6 +38,11 @@ public class ElectricTrap : MonoBehaviour
 
         if (other.CompareTag("Player"))
         {
+            // BUG FIX: the trigger box used to reach up through the ceiling into the room above, so walking in the
+            // (empty) room upstairs electrocuted the player. Only someone standing on THIS floor gets hit.
+            Collider trap = GetComponent<Collider>();
+            if (trap != null && other.bounds.min.y > trap.bounds.min.y + 2.2f) return;
+
             PlayerStats stats = other.GetComponent<PlayerStats>();
             if (stats != null)
             {
@@ -55,6 +62,20 @@ public class ElectricTrap : MonoBehaviour
                 }
             }
         }
+    }
+
+    /// <summary>The barrier's trigger box was ~4.3 m tall (basement floor up into the ground floor). Clamp it to 2.6 m, keeping its bottom.</summary>
+    private void KeepTriggerOnOneFloor()
+    {
+        BoxCollider bc = GetComponent<BoxCollider>();
+        if (bc == null || !bc.isTrigger) return;
+        float sy = Mathf.Abs(transform.lossyScale.y);
+        if (sy < 1e-5f || Vector3.Dot(transform.up, Vector3.up) < 0.95f) return;
+        if (bc.size.y * sy <= 2.8f) return;
+        float bottom = bc.center.y - bc.size.y * 0.5f;
+        float h = 2.6f / sy;
+        bc.size = new Vector3(bc.size.x, h, bc.size.z);
+        bc.center = new Vector3(bc.center.x, bottom + h * 0.5f, bc.center.z);
     }
 
     public void DisableTrap()

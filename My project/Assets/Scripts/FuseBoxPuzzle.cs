@@ -42,6 +42,11 @@ public class FuseBoxPuzzle : MonoBehaviour, IInteractable
             insertedFuses = requiredFuses;
             onPuzzleComplete?.Invoke();
         }
+        else if (SaveManager.instance != null)
+        {
+            // fuses already put in stay in the box (they are used up and never lie around again)
+            while (insertedFuses < requiredFuses && SaveManager.instance.HasFlag(SaveFlag + "_" + (insertedFuses + 1))) insertedFuses++;
+        }
     }
 
     public string GetInteractPrompt()
@@ -60,7 +65,8 @@ public class FuseBoxPuzzle : MonoBehaviour, IInteractable
         {
             // Insert one fuse
             insertedFuses++;
-            inventory.RemoveItem(fuseItemName); 
+            inventory.RemoveItem(fuseItemName, false);   // USED UP: the fuse stays in the box
+            if (SaveManager.instance != null) SaveManager.instance.SetFlag(SaveFlag + "_" + insertedFuses);
             
             if (insertFuseSound != null) audioSource.PlayOneShot(insertFuseSound);
 

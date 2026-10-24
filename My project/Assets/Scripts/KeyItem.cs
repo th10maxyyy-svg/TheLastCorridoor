@@ -23,7 +23,52 @@ public class KeyItem : MonoBehaviour, IInteractable
         {
             Destroy(gameObject);
             Debug.Log("[WorldState] KeyItem deleted because it was already collected: " + keyName);
+            return;
         }
+        FitColliderToModel();
+    }
+
+    /// <summary>
+    /// BUG FIX (scalpel etc.): the pick-up box sometimes sat beside / inside the shelf instead of around the model,
+    /// so the crosshair hit the shelf and the item could not be grabbed. If the box doesn't wrap the visible model,
+    /// it is refitted around it (a little padded, never thinner than 10 cm).
+    /// </summary>
+    private void FitColliderToModel()
+    {
+        BoxCollider bc = GetComponent<BoxCollider>();
+        if (bc == null) return;
+        bool any = false; Vector3 mn = Vector3.zero, mx = Vector3.zero;
+        void Add(Vector3 world)
+        {
+            Vector3 l = transform.InverseTransformPoint(world);
+            if (!any) { mn = mx = l; any = true; } else { mn = Vector3.Min(mn, l); mx = Vector3.Max(mx, l); }
+        }
+        foreach (Renderer r in GetComponentsInChildren<Renderer>(true))
+        {
+            if (r is ParticleSystemRenderer || r is TrailRenderer || r is LineRenderer) continue;
+            MeshFilter mf = r.GetComponent<MeshFilter>();
+            Bounds b; Transform t;
+            if (mf != null && mf.sharedMesh != null) { b = mf.sharedMesh.bounds; t = mf.transform; }
+            else if (r is SkinnedMeshRenderer sk && sk.sharedMesh != null) { b = sk.sharedMesh.bounds; t = sk.transform; }
+            else continue;
+            for (int i = 0; i < 8; i++)
+                Add(t.TransformPoint(b.center + Vector3.Scale(b.extents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1))));
+        }
+        if (!any) return;
+
+        Vector3 size = mx - mn, center = (mn + mx) * 0.5f;
+        Vector3 ls = transform.lossyScale;
+        float Vol(Vector3 v) => Mathf.Abs(v.x * ls.x * v.y * ls.y * v.z * ls.z);
+        Bounds cur = new Bounds(bc.center, bc.size);
+        bool wraps = cur.Contains(center) && Vol(bc.size) <= Mathf.Max(Vol(size) * 8f, 0.002f) && Vol(bc.size) >= Vol(size) * 0.5f;
+        if (wraps) return;
+
+        for (int a = 0; a < 3; a++)
+        {
+            float s = Mathf.Abs(ls[a]) < 1e-5f ? 1f : Mathf.Abs(ls[a]);
+            size[a] = Mathf.Max(size[a] * 1.2f, 0.1f / s);
+        }
+        bc.center = center; bc.size = size;
     }
 
     public string GetKeyName()

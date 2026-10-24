@@ -18,6 +18,7 @@ public class Inventory : MonoBehaviour
     private readonly List<Collider> disabledColliders = new List<Collider>();
     private PlayerController playerController;
     private CharacterController characterController;
+    private HandGrip grip;   // real palm grip + curled fingers (falls back to the old hold point if the hand has no bones)
 
     void Start()
     {
@@ -33,6 +34,10 @@ public class Inventory : MonoBehaviour
         // Is se cheez hamesha haath mein rahegi. Agar aap oopar dekhenge, to cheez aur haath dono neechay rahenge.
         Animator anim = transform.root.GetComponentInChildren<Animator>();
         Transform rHand = null;
+
+        grip = GetComponent<HandGrip>();
+        if (grip == null) grip = gameObject.AddComponent<HandGrip>();
+        grip.Init(anim);
 
         if (anim != null && anim.isHuman)
         {
@@ -115,6 +120,7 @@ public class Inventory : MonoBehaviour
         // NOTE: Cursor.lockState / cinematic flags are NOT checked - in the Unity Editor the cursor unlocks after ESC,
         // and a stale flag must never make the G key silently stop working.
         if (KeypadController.IsAnyKeypadOpen) return "keypad open";
+        if (DeadBodyPuzzle.AnyCutting) return "cutting";
         if (playerController != null && playerController.isDead) return "player dead";
         if (playerController != null && playerController.isHidden) return "hidden";   // the item would fall inside the locker and could never be picked up
         return null;
@@ -160,8 +166,11 @@ public class Inventory : MonoBehaviour
             }
         }
 
-        // Attach to hold position
-        if (holdPosition != null)
+        // Attach: held properly in the palm with the fingers closed around it
+        if (grip != null && grip.Ready && grip.Hold(currentItem))
+        {
+        }
+        else if (holdPosition != null)
         {
             currentItem.transform.SetParent(holdPosition);
 
@@ -205,6 +214,7 @@ public class Inventory : MonoBehaviour
         }
 
         item.transform.SetParent(null);
+        if (grip != null) grip.Release(item);   // real size back (big items are shown smaller in the hand)
 
         // Make sure the item is not inside a wall: if a wall is between the camera and the hand, pull it back
         Camera cam = GetComponentInChildren<Camera>();
@@ -305,6 +315,7 @@ public class Inventory : MonoBehaviour
         GameObject item = currentItem;
         currentItem = null;
         disabledColliders.Clear();
+        if (grip != null) grip.Release(null);
 
         if (SaveManager.instance != null)
         {
