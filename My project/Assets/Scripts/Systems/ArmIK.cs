@@ -16,6 +16,12 @@ public class ArmIK : MonoBehaviour
     public Vector3 tipInHand;                    // the item's tip in the hand bone's local space
     public Vector3 dirInHand = Vector3.forward;  // the item's direction in the hand bone's local space
     public float tremble = 0.0015f;              // a slightly unsteady hand
+    [Tooltip("Direct mode: put the hand bone exactly at handPose (used to hold the taser)")]
+    public bool useHandPose;
+    public Vector3 handPosition;
+    public Quaternion handRotation = Quaternion.identity;
+    /// <summary>Who is driving the arm right now (a scene, the taser...). Others leave it alone.</summary>
+    public Object owner;
 
     public static ArmIK For(GameObject player, Transform handBone)
     {
@@ -32,10 +38,15 @@ public class ArmIK : MonoBehaviour
         Quaternion u0 = upper.rotation, l0 = lower.rotation, h0 = hand.rotation;
 
         // the hand rotation that makes the item point the right way (smallest turn from the animated pose)
-        Vector3 curDir = hand.TransformDirection(dirInHand);
-        Quaternion handRot = Quaternion.FromToRotation(curDir, tipDirection.normalized) * hand.rotation;
+        Quaternion handRot; Vector3 handPos;
         Vector3 shake = new Vector3(Mathf.PerlinNoise(Time.time * 7f, 0.3f) - 0.5f, Mathf.PerlinNoise(0.7f, Time.time * 6f) - 0.5f, Mathf.PerlinNoise(Time.time * 5f, 1.9f) - 0.5f) * (tremble * 2f);
-        Vector3 handPos = tipTarget + shake - handRot * Vector3.Scale(tipInHand, hand.lossyScale);
+        if (useHandPose) { handRot = handRotation; handPos = handPosition + shake; }
+        else
+        {
+            Vector3 curDir = hand.TransformDirection(dirInHand);
+            handRot = Quaternion.FromToRotation(curDir, tipDirection.normalized) * hand.rotation;
+            handPos = tipTarget + shake - handRot * Vector3.Scale(tipInHand, hand.lossyScale);
+        }
 
         Solve(upper, lower, hand, handPos, poleHint);
         hand.rotation = handRot;

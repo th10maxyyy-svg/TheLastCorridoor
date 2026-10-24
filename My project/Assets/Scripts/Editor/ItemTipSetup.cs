@@ -13,7 +13,7 @@ using UnityEngine.SceneManagement;
 [InitializeOnLoad]
 public static class ItemTipSetup
 {
-    private const string PrefKey = "TLC_ItemTips_v1_";
+    private const string PrefKey = "TLC_ItemTips_v2_";
     private const string SceneName = "neww";
     private static bool triedThisSession;
 
@@ -52,17 +52,19 @@ public static class ItemTipSetup
         List<string> done = new List<string>();
         try
         {
-            foreach (KeyItem k in Object.FindObjectsByType<KeyItem>(FindObjectsInactive.Include))
+            System.Collections.Generic.List<GameObject> all = new System.Collections.Generic.List<GameObject>();
+            foreach (KeyItem k in Object.FindObjectsByType<KeyItem>(FindObjectsInactive.Include)) all.Add(k.gameObject);
+            foreach (TaserGun g in Object.FindObjectsByType<TaserGun>(FindObjectsInactive.Include)) all.Add(g.gameObject);
+            foreach (GameObject item in all)
             {
-                GameObject item = k.gameObject;
                 if (item.scene != scene) continue;
                 if (!ItemTip.Compute(item, out Vector3 local, true)) continue;
                 ItemTip t = item.GetComponent<ItemTip>();
                 if (t == null) t = Undo.AddComponent<ItemTip>(item);
-                t.localTip = local; t.measured = true;
+                t.localTip = local; t.measured = true; t.localUp = ItemTip.lastUp;
                 EditorUtility.SetDirty(t);
                 PrefabUtility.RecordPrefabInstancePropertyModifications(t);
-                done.Add(k.GetKeyName() + " " + local);
+                done.Add(item.name + " " + local);
             }
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);

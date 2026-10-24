@@ -46,6 +46,22 @@ public class HandGrip : MonoBehaviour
     }
 
     public GameObject Held => held;
+    /// <summary>Close the fingers although no inventory item is held (e.g. around the taser grip).</summary>
+    public bool ExternalGrip { get; set; }
+    private bool externalReady;
+
+    /// <summary>The palm in the hand bone's own space: centre point, fingers direction, little-to-index direction, palm normal.</summary>
+    public bool PalmInHand(out Vector3 centerL, out Vector3 alongL, out Vector3 acrossL, out Vector3 palmNL)
+    {
+        centerL = alongL = acrossL = palmNL = Vector3.zero;
+        if (hand == null) return false;
+        Palm(out Vector3 c, out Vector3 pn, out Vector3 ac, out Vector3 al);
+        centerL = hand.InverseTransformPoint(c);
+        alongL = hand.InverseTransformDirection(al).normalized;
+        acrossL = hand.InverseTransformDirection(ac).normalized;
+        palmNL = hand.InverseTransformDirection(pn).normalized;
+        return true;
+    }
     /// <summary>Set by short scenes that move the held item themselves (e.g. cutting): the hand keeps its grip.</summary>
     public bool KeepWhileDetached { get; set; }
     public Transform Hand => hand;
@@ -232,7 +248,12 @@ public class HandGrip : MonoBehaviour
         if (hand == null) return;
         bool holding = held != null && (KeepWhileDetached || held.transform.IsChildOf(hand));
         if (!holding) held = null;
-        float target = holding ? 1f : 0f;
+        if (!holding && ExternalGrip)
+        {
+            if (!externalReady) { Palm(out _, out Vector3 pn, out _, out _); palmNLocal = hand.InverseTransformDirection(pn); thickness = 0.035f; small = false; externalReady = true; }
+        }
+        else externalReady = false;
+        float target = holding || ExternalGrip ? 1f : 0f;
         if (weight <= 0f && target <= 0f) { RestoreIfStuck(); return; }
         weight = Mathf.MoveTowards(weight, target, Time.deltaTime * 7f);
 

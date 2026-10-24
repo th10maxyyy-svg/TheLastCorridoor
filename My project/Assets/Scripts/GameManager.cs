@@ -85,14 +85,14 @@ public class GameManager : MonoBehaviour
 
         if (SaveManager.instance != null)
         {
-            // HARDCORE MECHANIC: Drop item on death (Inventory saves where it lands)
+            // Item in the hand on death: it goes back to where it was first found (it used to be lost wherever the player fell)
             GameObject player = GameObject.FindGameObjectWithTag("Player");
             if (player != null)
             {
                 Inventory inv = player.GetComponent<Inventory>();
                 if (inv != null && inv.HasItem())
                 {
-                    inv.DropCurrentItem();
+                    inv.ReturnHeldItemHome();
                 }
             }
 

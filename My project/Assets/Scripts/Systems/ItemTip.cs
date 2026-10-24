@@ -13,6 +13,16 @@ public class ItemTip : MonoBehaviour
     public Vector3 localTip = Vector3.forward;
     [Tooltip("Ticked by the editor tool when the tip was found from the model itself")]
     public bool measured;
+    [Tooltip("Local 'up' of the item (for a gun: from the grip towards the top of the barrel)")]
+    public Vector3 localUp = Vector3.zero;
+
+    public static bool TryGetUp(GameObject item, out Vector3 up)
+    {
+        up = Vector3.zero;
+        ItemTip t = item != null ? item.GetComponent<ItemTip>() : null;
+        if (t == null || !t.measured || t.localUp.sqrMagnitude < 0.5f) return false;
+        up = t.localUp.normalized; return true;
+    }
 
     /// <summary>Local tip axis of this item (from the component, or worked out now if the mesh can be read).</summary>
     public static bool TryGetLocal(GameObject item, out Vector3 local)
@@ -24,7 +34,7 @@ public class ItemTip : MonoBehaviour
         if (Compute(item, out local, false))
         {
             if (t == null) t = item.AddComponent<ItemTip>();
-            t.localTip = local; t.measured = true;
+            t.localTip = local; t.measured = true; t.localUp = lastUp;
             return true;
         }
         return false;
@@ -73,6 +83,30 @@ public class ItemTip : MonoBehaviour
         }
         Vector3 axis = Vector3.zero; axis[ax] = 1f;
         local = rHigh <= rLow ? axis : -axis;
+        lastUp = UpOf(pts, b, ls, ax, rHigh <= rLow);
         return true;
+    }
+
+    /// <summary>The 'up' found by the last Compute (Vector3.zero if unknown).</summary>
+    public static Vector3 lastUp;
+
+    // a gun / tool: the taller of the two short sides is vertical; the grip hangs down at the back (away from the tip)
+    private static Vector3 UpOf(List<Vector3> pts, Bounds b, Vector3 ls, int ax, bool tipAtHigh)
+    {
+        int a1 = (ax + 1) % 3, a2 = (ax + 2) % 3;
+        int vert = Mathf.Abs(b.size[a1] * ls[a1]) >= Mathf.Abs(b.size[a2] * ls[a2]) ? a1 : a2;
+        if (Mathf.Abs(b.size[vert] * ls[vert]) < Mathf.Abs(b.size[ax] * ls[ax]) * 0.2f) return Vector3.zero;   // flat thing: no up
+        float min = b.min[ax], len = b.size[ax];
+        double sum = 0; int n = 0;
+        foreach (Vector3 p in pts)
+        {
+            float t = (p[ax] - min) / len;
+            bool rear = tipAtHigh ? t < 0.45f : t > 0.55f;
+            if (!rear) continue;
+            sum += p[vert] - b.center[vert]; n++;
+        }
+        if (n == 0) return Vector3.zero;
+        Vector3 up = Vector3.zero; up[vert] = sum / n < 0 ? 1f : -1f;   // the grip is below the centre
+        return up;
     }
 }

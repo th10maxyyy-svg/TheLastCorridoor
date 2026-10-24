@@ -76,7 +76,9 @@ public class DoorController : MonoBehaviour, IInteractable
         if (isInvalidDoorComponent) return;
 
         closedRotation = transform.localRotation;
-        
+        closedLocalPos = transform.localPosition;
+        SetupSafeHinge();
+
         // Calculate target rotation based on the chosen axis
         openRotation = closedRotation * Quaternion.AngleAxis(openAngle, rotationAxis);
 
@@ -95,7 +97,7 @@ public class DoorController : MonoBehaviour, IInteractable
         {
             isLocked = false;
             isOpen = true;
-            transform.localRotation = openRotation; // Snap to open immediately
+            ApplyRotation(openRotation); // Snap to open immediately
         }
 
         // double doors: if the other leaf (or parent container in an older save) was already opened with the shared key, this leaf is unlocked too
@@ -105,7 +107,7 @@ public class DoorController : MonoBehaviour, IInteractable
             {
                 isLocked = false;
                 isOpen = true;
-                transform.localRotation = openRotation;
+                ApplyRotation(openRotation);
             }
             else
             {
@@ -125,7 +127,121 @@ public class DoorController : MonoBehaviour, IInteractable
     {
         if (isInvalidDoorComponent) return;
         Quaternion targetRotation = isOpen ? openRotation : closedRotation;
-        transform.localRotation = Quaternion.Slerp(transform.localRotation, targetRotation, Time.deltaTime * (Time.time < smoothBoostUntil ? smoothSpeed * 4f : smoothSpeed));
+        ApplyRotation(Quaternion.Slerp(transform.localRotation, targetRotation, Time.deltaTime * (Time.time < smoothBoostUntil ? smoothSpeed * 4f : smoothSpeed)));
+        if (safeContents != null) UpdateSafeContents();
+    }
+
+    // ------------------------------------------------------------------ things inside a CLOSED safe can not be reached
+    // (the note / the taser in the safe could be read or picked up straight through the closed door)
+    private System.Collections.Generic.List<Collider> safeContents;
+    private Bounds safeBounds;
+    private bool contentsOpen = true;
+
+    private static readonly System.Collections.Generic.List<DoorController> safes = new System.Collections.Generic.List<DoorController>();
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetSafes() { safes.Clear(); }
+    void OnDestroy() { safes.Remove(this); }
+
+    /// <summary>True when this thing lies inside a safe that is still closed (it can not be reached through the door).</summary>
+    public static bool BlockedBySafe(Component c)
+    {
+        if (c == null) return false;
+        foreach (DoorController s in safes)
+        {
+            if (s == null || (s.isOpen && !s.isLocked)) continue;
+            if (c.transform.IsChildOf(s.transform)) continue;          // the door / its keypad
+            Bounds b = s.safeBounds; b.Expand(0.12f);
+            if (b.Contains(c.transform.position)) return true;
+            Collider col = c.GetComponent<Collider>();
+            if (col != null && b.Contains(col.bounds.center)) return true;
+            Renderer r = c.GetComponentInChildren<Renderer>();
+            if (r != null && b.Contains(r.bounds.center)) return true;
+        }
+        return false;
+    }
+
+    private void CollectSafeContents()
+    {
+        Transform safe = transform.parent;
+        bool any = false;
+        foreach (Renderer r in safe.GetComponentsInChildren<Renderer>())
+        {
+            if (!any) { safeBounds = r.bounds; any = true; } else safeBounds.Encapsulate(r.bounds);
+        }
+        if (!any) return;
+        if (!safes.Contains(this)) safes.Add(this);
+        safeContents = new System.Collections.Generic.List<Collider>();
+        foreach (Collider c in Physics.OverlapBox(safeBounds.center, safeBounds.extents * 0.98f, Quaternion.identity, ~0, QueryTriggerInteraction.Collide))
+        {
+            if (c == null || c.transform.IsChildOf(transform)) continue;   // the door itself and its keypad
+            if (c.GetComponentInParent<IInteractable>() == null) continue;
+            if (!safeBounds.Contains(c.bounds.center)) continue;
+            safeContents.Add(c);
+        }
+        contentsOpen = true;
+        UpdateSafeContents();
+    }
+
+    private void UpdateSafeContents()
+    {
+        bool open = isOpen && !isLocked;
+        if (open == contentsOpen) return;
+        contentsOpen = open;
+        for (int i = safeContents.Count - 1; i >= 0; i--)
+        {
+            Collider c = safeContents[i];
+            if (c == null || !safeBounds.Contains(c.transform.position)) { safeContents.RemoveAt(i); continue; }   // taken out
+            c.enabled = open;
+        }
+    }
+
+    // ------------------------------------------------------------------ safe doors swing on a side hinge
+    // The safe models' door pivots sit in the middle of the safe and their axis was horizontal, so the door flipped UP
+    // like a lid. A safe door now swings sideways around its own vertical edge, outwards.
+    private Vector3 closedLocalPos;
+    private bool useHinge;
+    private Vector3 hingeLocal;   // hinge point in the door's own space
+
+    private void ApplyRotation(Quaternion localRot)
+    {
+        transform.localRotation = localRot;
+        if (!useHinge) return;
+        Vector3 hingeParent = closedLocalPos + closedRotation * Vector3.Scale(hingeLocal, transform.localScale);
+        transform.localPosition = hingeParent + (localRot * Quaternion.Inverse(closedRotation)) * (closedLocalPos - hingeParent);
+    }
+
+    private void SetupSafeHinge()
+    {
+        if (transform.parent == null || !transform.parent.name.ToLowerInvariant().StartsWith("safe")) return;
+        BoxCollider box = GetComponent<BoxCollider>();
+        if (box == null) return;
+        Vector3 c = box.center, sz = box.size;
+        int thin = sz.x <= sz.y && sz.x <= sz.z ? 0 : sz.y <= sz.z ? 1 : 2;
+        // of the two other axes: the one pointing up in the world is the hinge axis, the other one runs across the door
+        int a1 = (thin + 1) % 3, a2 = (thin + 2) % 3;
+        Vector3 v1 = Vector3.zero; v1[a1] = 1f; Vector3 v2 = Vector3.zero; v2[a2] = 1f;
+        bool firstUp = Mathf.Abs(Vector3.Dot(transform.TransformDirection(v1).normalized, Vector3.up)) >= Mathf.Abs(Vector3.Dot(transform.TransformDirection(v2).normalized, Vector3.up));
+        int up = firstUp ? a1 : a2, across = firstUp ? a2 : a1;
+        Vector3 axis = Vector3.zero; axis[up] = 1f;
+        Vector3 acr = Vector3.zero; acr[across] = 1f;
+        // the hinge is on the side away from the keypad
+        float side = 1f;
+        KeypadController pad = GetComponentInChildren<KeypadController>(true);
+        if (pad != null && pad.transform != transform)
+        {
+            float k = transform.InverseTransformPoint(pad.transform.position)[across] - c[across];
+            side = k > 0f ? -1f : 1f;
+        }
+        hingeLocal = c + acr * (sz[across] * 0.5f * side);
+        rotationAxis = axis;
+        useHinge = true;
+        CollectSafeContents();
+        // open OUTWARDS: the free edge must move to the front (the side of the door away from the pivot / safe body)
+        Vector3 front = Vector3.zero; front[thin] = Mathf.Sign(c[thin]) == 0f ? 1f : Mathf.Sign(c[thin]);
+        Vector3 freeEdge = c - acr * (sz[across] * 0.5f * side) - hingeLocal;
+        float ang = Mathf.Max(90f, Mathf.Abs(openAngle));
+        Vector3 plus = Quaternion.AngleAxis(ang, axis) * freeEdge;
+        openAngle = Vector3.Dot(plus, front) >= 0f ? ang : -ang;
     }
     
     // Can be called by KeypadController's OnUnlock Event
@@ -386,10 +502,21 @@ public class DoorController : MonoBehaviour, IInteractable
 
     // --- TESTING ONLY (The Last Corridor > Testing > Unlock All Doors): nothing here is ever saved ---
     private bool testUnlocked;
+    /// <summary>Unlocked only by the testing switch (counts as LOCKED for objectives, saves and achievements).</summary>
+    public bool IsTestUnlocked => testUnlocked;
+    private bool IsSafeOrCodeLock()
+    {
+        string k = (requiredKey ?? "").ToLowerInvariant();
+        if (k.Contains("code")) return true;
+        for (Transform t = transform; t != null; t = t.parent) if (t.name.ToLowerInvariant().StartsWith("safe")) return true;
+        return false;
+    }
     /// <summary>on = unlock for testing (not saved); off = lock again every door that the test mode had unlocked.</summary>
     public void SetTestUnlocked(bool on)
     {
         if (isInvalidDoorComponent) return;
+        // safes and code locks keep their puzzle: the testing switch only opens room doors
+        if (on && (IsSafeOrCodeLock())) return;
         if (on)
         {
             if (isLocked) { testUnlocked = true; isLocked = false; }

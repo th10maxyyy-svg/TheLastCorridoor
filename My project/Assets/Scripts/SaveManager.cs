@@ -12,6 +12,7 @@ public class SaveData
 
     // ID of the item currently in the player's hand ("" = empty hand)
     public string heldItemName = "";
+    public string itemHomesCSV = "";          // where each item was first found (id|x|y|z;) - items come back here when the player dies holding them
 
     // Every item lying on the floor away from its original spot: "id|x|y|z;id|x|y|z;"
     public string droppedItemsCSV = "";
@@ -325,6 +326,14 @@ public class SaveManager : MonoBehaviour
         WriteToFile();
     }
 
+    public void ClearFlag(string flag)
+    {
+        flag = Sanitize(flag);
+        if (!HasFlag(flag)) return;
+        currentSaveData.flagsCSV = ListRemove(currentSaveData.flagsCSV, flag);
+        WriteToFile();
+    }
+
     // ------------------------------------------------------------------ item registry
     private void BuildItemRegistry()
     {
@@ -440,6 +449,33 @@ public class SaveManager : MonoBehaviour
         list.RemoveAll(e => e.Key == itemId);
         if (!remove) list.Add(new KeyValuePair<string, Vector3>(itemId, pos));
         SetDroppedItems(list);
+    }
+
+    /// <summary>Remembers where an item was FIRST found (only the first time).</summary>
+    public void RecordItemHome(GameObject item)
+    {
+        if (item == null || currentSaveData == null) return;
+        string id = GetItemId(item);
+        if (string.IsNullOrEmpty(id) || TryGetItemHome(id, out _)) return;
+        Vector3 p = item.transform.position;
+        var ci = System.Globalization.CultureInfo.InvariantCulture;
+        currentSaveData.itemHomesCSV = (currentSaveData.itemHomesCSV ?? "") + id + "|" + p.x.ToString(ci) + "|" + p.y.ToString(ci) + "|" + p.z.ToString(ci) + ";";
+    }
+
+    public bool TryGetItemHome(string id, out Vector3 pos)
+    {
+        pos = Vector3.zero;
+        if (currentSaveData == null || string.IsNullOrEmpty(currentSaveData.itemHomesCSV)) return false;
+        var ci = System.Globalization.CultureInfo.InvariantCulture;
+        foreach (string e in currentSaveData.itemHomesCSV.Split(new[] { ';' }, System.StringSplitOptions.RemoveEmptyEntries))
+        {
+            string[] p = e.Split('|');
+            if (p.Length < 4 || p[0] != id) continue;
+            if (float.TryParse(p[1], System.Globalization.NumberStyles.Float, ci, out float x) &&
+                float.TryParse(p[2], System.Globalization.NumberStyles.Float, ci, out float y) &&
+                float.TryParse(p[3], System.Globalization.NumberStyles.Float, ci, out float z)) { pos = new Vector3(x, y, z); return true; }
+        }
+        return false;
     }
 
     public void OnItemPickedUp(GameObject item)
@@ -611,6 +647,7 @@ public class SaveManager : MonoBehaviour
         if (d.playerPosition == null || d.playerPosition.Length < 3) d.playerPosition = new float[3];
         if (d.playerRotation == null || d.playerRotation.Length < 4) d.playerRotation = new float[4];
         if (d.heldItemName == null) d.heldItemName = "";
+        if (d.itemHomesCSV == null) d.itemHomesCSV = "";
         if (d.droppedItemsCSV == null) d.droppedItemsCSV = "";
         if (d.unlockedDoorsCSV == null) d.unlockedDoorsCSV = "";
         if (d.collectedItemsCSV == null) d.collectedItemsCSV = "";

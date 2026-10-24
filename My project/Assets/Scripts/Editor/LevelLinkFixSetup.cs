@@ -9,8 +9,8 @@ using UnityEngine.SceneManagement;
 /// <summary>
 /// ROOM LINKING FIX for the game level (neww). The bug check found rooms whose key existed but whose door was never
 /// locked, so every key after the basement was useless and the story could be skipped:
-///   Surgery (surgery key), Exam Room (exam room key), Office/ground floor (pharmacy key), Visiting Room (visit room key),
-///   Dining Room (dining room key), Classroom (class room key), Head Office (office key),
+///   Surgery (surgery key), Exam Room (exam room key), Office/ground floor (office key), Visiting Room (visit room key),
+///   Dining Room (dining room key), Classroom (class room key), Head Office (head office key),
 ///   Bathroom inner door (opened by the Bathroom fuse box - no key).
 /// It also makes the Head Office safe open with the clock code 0315 (that keypad opened nothing before).
 /// Runs once by itself and saves the scene; run again from: The Last Corridor / Fix Room Locks (bug check).
@@ -29,13 +29,13 @@ public static class LevelLinkFixSetup
         { "2ndFloor/Surgery/DoorD_V1/DoorD_Right",        "surgery key" },
         { "2ndFloor/Surgery/DoorD_V1/DoorD_Left",         "surgery key" },
         { "2ndFloor/ExamRoom/Door_V1 (7)/Door",           "exam room key" },
-        { "1stFloor/OfficeA/Door_V1 (1)/Door",            "pharmacy key" },
+        { "1stFloor/OfficeA/Door_V1 (1)/Door",            "office key" },
         { "2ndFloor/Bedroom/DoorD_V2/DoorD_V2_Right",      "visit room key" },
         { "2ndFloor/Bedroom/DoorD_V2/DoorD_V2_Left",       "visit room key" },
         { "1stFloor/DiningRoom/DoorD_V2 (1)/DoorD_V2_Right", "dining room key" },
         { "1stFloor/DiningRoom/DoorD_V2 (1)/DoorD_V2_Left",  "dining room key" },
         { "2ndFloor/Classroom/Door_V1 (6)/Door",          "class room key" },
-        { "2ndFloor/Office/Door_V1 (4)/Door",             "office key" },
+        { "2ndFloor/Office/Door_V1 (4)/Door",             "head office key" },
         { "2ndFloor/Bathroom/Door_V2 (4)/Door",           "" },
     };
 

@@ -120,6 +120,7 @@ public class InteractionRaycast : MonoBehaviour
             if (playerRoot != null && hit.transform.IsChildOf(playerRoot)) continue;
 
             IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
+            if (interactable != null && DoorController.BlockedBySafe(interactable as Component)) continue;   // inside a closed safe
             if (interactable != null) return interactable;
 
             // A solid wall/object blocks everything behind it; a plain trigger volume doesn't.
@@ -130,7 +131,7 @@ public class InteractionRaycast : MonoBehaviour
                 {
                     if (h2.distance <= hit.distance || h2.distance > hit.distance + 0.2f) continue;
                     KeyItem item = h2.collider.GetComponentInParent<KeyItem>();
-                    if (item != null) return item;
+                    if (item != null && !DoorController.BlockedBySafe(item)) return item;
                 }
                 return null;
             }

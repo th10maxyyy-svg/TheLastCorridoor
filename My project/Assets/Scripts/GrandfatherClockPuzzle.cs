@@ -48,8 +48,7 @@ public class GrandfatherClockPuzzle : MonoBehaviour, IInteractable
             if (glassPane != null) glassPane.SetActive(false);
             if (stockRoomKey != null)
             {
-                stockRoomKey.transform.position = transform.position + transform.forward * 0.5f;
-                stockRoomKey.SetActive(true);
+                PlaceReward();
             }
             UpdateVisualHands();
             return;
@@ -192,8 +191,7 @@ public class GrandfatherClockPuzzle : MonoBehaviour, IInteractable
         
         if (stockRoomKey != null)
         {
-            stockRoomKey.transform.position = transform.position + transform.forward * 0.5f;
-            stockRoomKey.SetActive(true);
+            PlaceReward();
         }
         
         if (tickSound != null) AudioSource.PlayClipAtPoint(tickSound, transform.position); 
@@ -201,5 +199,25 @@ public class GrandfatherClockPuzzle : MonoBehaviour, IInteractable
         isSolved = true;
         isShifting = false;
         if (SaveManager.instance != null) SaveManager.instance.SetFlag(DoneFlag);
+    }
+
+    /// <summary>The reward (the stock room key) lies on the floor in front of the clock, where the glass fell.</summary>
+    private void PlaceReward()
+    {
+        if (stockRoomKey == null) return;
+        Vector3 fwd = Vector3.ProjectOnPlane(transform.forward, Vector3.up);
+        if (fwd.sqrMagnitude < 0.01f) fwd = Vector3.forward;
+        Vector3 p = transform.position + fwd.normalized * 0.5f;
+        stockRoomKey.transform.SetParent(transform.parent, true);
+        stockRoomKey.SetActive(true);
+        stockRoomKey.transform.position = p + Vector3.up * 1.5f;
+        Physics.SyncTransforms();
+        if (Physics.Raycast(p + Vector3.up * 1.5f, Vector3.down, out RaycastHit hit, 4f, ~0, QueryTriggerInteraction.Ignore) && !hit.transform.IsChildOf(stockRoomKey.transform))
+        {
+            Bounds b = new Bounds(stockRoomKey.transform.position, Vector3.zero); bool any = false;
+            foreach (Renderer r in stockRoomKey.GetComponentsInChildren<Renderer>()) { if (!any) { b = r.bounds; any = true; } else b.Encapsulate(r.bounds); }
+            stockRoomKey.transform.position += Vector3.up * (hit.point.y + 0.004f - (any ? b.min.y : stockRoomKey.transform.position.y));
+        }
+        else stockRoomKey.transform.position = p;
     }
 }

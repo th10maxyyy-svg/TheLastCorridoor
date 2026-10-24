@@ -26,6 +26,7 @@ public class KeyItem : MonoBehaviour, IInteractable
             return;
         }
         FitColliderToModel();
+        if (GetComponent<ItemGlint>() == null) gameObject.AddComponent<ItemGlint>();   // a small glint so it can be spotted
     }
 
     /// <summary>

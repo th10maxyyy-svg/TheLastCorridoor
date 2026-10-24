@@ -149,6 +149,7 @@ public class DeadBodyPuzzle : MonoBehaviour, IInteractable
         Vector3 tipP = Vector3.zero, tipD = Vector3.forward;
         bool handOk = grip != null && grip.Ready && grip.Held != null && grip.HeldTip(out tipP, out tipD);
         ArmIK ik = handOk ? ArmIK.For(player.gameObject, grip.Hand) : null;
+        if (ik != null) { ik.useHandPose = false; ik.owner = this; }
         List<Renderer> hiddenR = new List<Renderer>();
         Transform blade = null; float bladeLen = 0.15f;
         if (ik != null)
@@ -348,7 +349,7 @@ public class DeadBodyPuzzle : MonoBehaviour, IInteractable
         if (grip != null) grip.KeepWhileDetached = false;
         if (model != null) model.localPosition = modelLocal0;
         ct.localPosition = camLocalPos0; ct.localRotation = camLocalRot0;
-        if (ik != null) ik.weight = 0f;
+        if (ik != null) { ik.weight = 0f; if (ik.owner == this) ik.owner = null; }
         foreach (Renderer r in hiddenR) if (r != null) r.enabled = true;
         if (cc != null) cc.enabled = true;
         if (pc != null) pc.isCinematicPlaying = false;

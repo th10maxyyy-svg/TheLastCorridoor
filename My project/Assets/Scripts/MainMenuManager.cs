@@ -10,6 +10,15 @@ public class MainMenuManager : MonoBehaviour
     {
         PlayClickSound();
         IntroState.ResetForNewGame(); // fresh game = intro plays again
+#if UNITY_EDITOR
+        // a NEW GAME is a real game: the "unlock all doors" testing switch is turned off
+        if (UnityEditor.EditorPrefs.GetBool(TestDoorUnlock.PrefKey, false))
+        {
+            UnityEditor.EditorPrefs.SetBool(TestDoorUnlock.PrefKey, false);
+            TestDoorUnlock.SetNow(false);
+            Debug.Log("[TEST] 'Unlock All Doors' was on - turned off for the new game.");
+        }
+#endif
 
         // Nayi game shuru karte hue purani save delete kar do taake fresh start ho
         // (SaveManager memory mein bhi zinda ho sakta hai, us ka data bhi reset karo)

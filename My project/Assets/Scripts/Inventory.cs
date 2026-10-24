@@ -22,6 +22,7 @@ public class Inventory : MonoBehaviour
 
     void Start()
     {
+        if (!string.IsNullOrEmpty(ReturnedNote)) { StartCoroutine(ShowReturnedNote(ReturnedNote)); ReturnedNote = null; }
         playerController = GetComponent<PlayerController>();
         characterController = GetComponent<CharacterController>();
 
@@ -90,6 +91,12 @@ public class Inventory : MonoBehaviour
         }
     }
 
+    private IEnumerator ShowReturnedNote(string note)
+    {
+        yield return new WaitForSeconds(3.5f);   // after the wake-up
+        InteractionRaycast.Notify(this, note, 4.5f);
+    }
+
     void Update()
     {
         // Drop item on pressing G
@@ -97,7 +104,10 @@ public class Inventory : MonoBehaviour
         {
             if (currentItem == null)
             {
-                InteractionRaycast.Notify(this, "Haath mein kuch nahi hai.", 1.5f);
+                // nothing from the inventory in the hand: drop the taser if it is held, otherwise say so
+                TaserGun taser = TaserGun.Equipped;
+                if (taser != null && GetDropBlockedReason() == null) taser.Drop();
+                else InteractionRaycast.Notify(this, "There is nothing in your hand.", 1.5f);
             }
             else
             {
@@ -131,6 +141,9 @@ public class Inventory : MonoBehaviour
     public void PickUpItem(GameObject item, bool silent)
     {
         if (item == null || item == currentItem) return;
+
+        // remember where it was first found (it comes back there if the player dies holding it)
+        if (SaveManager.instance != null && !item.transform.IsChildOf(transform)) SaveManager.instance.RecordItemHome(item);
 
         // If already holding an item, drop it first
         if (currentItem != null)
@@ -324,6 +337,33 @@ public class Inventory : MonoBehaviour
 
         Destroy(item);
         Debug.Log("Removed and destroyed item: " + itemName);
+    }
+
+    /// <summary>Message shown after the respawn ("the key is back where you found it").</summary>
+    public static string ReturnedNote;
+
+    /// <summary>
+    /// The player died holding something: instead of lying wherever he fell (hard to find in the dark), it goes back to
+    /// the exact place where it was first found. Falls back to a normal drop if that place is unknown.
+    /// </summary>
+    public void ReturnHeldItemHome()
+    {
+        if (currentItem == null) return;
+        GameObject item = currentItem;
+        SaveManager sm = SaveManager.instance;
+        string id = sm != null ? sm.GetItemId(item) : "";
+        if (sm == null || !sm.TryGetItemHome(id, out Vector3 home)) { DropCurrentItem(); return; }
+
+        currentItem = null;
+        item.transform.SetParent(null, true);
+        if (grip != null) grip.Release(item);
+        item.transform.position = home;
+        foreach (Collider col in disabledColliders) if (col != null) col.enabled = true;
+        disabledColliders.Clear();
+        Rigidbody rb = item.GetComponent<Rigidbody>();
+        if (rb != null) { rb.isKinematic = true; rb.useGravity = false; }
+        sm.OnItemDropped(item);   // saved as lying at its first spot - the reload puts it there
+        ReturnedNote = "The " + GameProgress.DisplayNameOf(item) + " is back where you found it.";
     }
 
     public GameObject GetCurrentItem()

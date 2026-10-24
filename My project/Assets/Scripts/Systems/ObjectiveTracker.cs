@@ -100,7 +100,7 @@ public class ObjectiveTracker : MonoBehaviour
     {
         foreach (DoorController d in FindObjectsByType<DoorController>(FindObjectsInactive.Include))
         {
-            if (!d.IsLocked) continue;
+            if (!d.IsLocked && !d.IsTestUnlocked) continue;   // a door opened by the testing switch is still 'locked' for the story
             if (key != null && (d.RequiredKey == null || d.RequiredKey.ToLower() != key.ToLower())) continue;
             for (Transform t = d.transform; t != null; t = t.parent)
                 if (t.name == room) return d;
@@ -110,7 +110,7 @@ public class ObjectiveTracker : MonoBehaviour
 
     private static bool DoorOpened(DoorController d, string id)
     {
-        if (d != null && !d.IsLocked) return true;
+        if (d != null && !d.IsLocked && !d.IsTestUnlocked) return true;
         return SaveManager.instance != null && !string.IsNullOrEmpty(id) && SaveManager.instance.IsDoorUnlocked(id);
     }
 
@@ -214,8 +214,13 @@ public class ObjectiveTracker : MonoBehaviour
             CrankGeneratorPuzzle x = xray;
             Add("Crank_Xray", "Exam Room: power the X-ray machine with the rusty crank", () => x != null && x.IsSolved);
         }
-        if (KeyExists("pharmacy key"))
-            Add("PharmacyKey", "Exam Room: open the locked cabinet and take the key", () => KeyTaken("pharmacy key"));
+        // the Exam Room cabinet key opens the ground-floor Office ("office key"); the Classroom key opens the Head Office
+        // (old scenes: "pharmacy key" / "office key")
+        bool renamed = KeyExists("head office key");
+        string cabinetKey = renamed ? "office key" : "pharmacy key";
+        string classroomKey = renamed ? "head office key" : "office key";
+        if (KeyExists(cabinetKey))
+            Add("PharmacyKey", "Exam Room: open the locked cabinet and take the Office key", () => KeyTaken(cabinetKey));
 
         KeypadController kitchenPad = InRoom<KeypadController>("Kitchen");
         if (kitchenPad != null)
@@ -231,10 +236,12 @@ public class ObjectiveTracker : MonoBehaviour
         }
         if (KeyExists("dining room key"))
             Add("Phone_Visit", "Visiting Room: answer the phone and take the Dining Room key", () => KeyTaken("dining room key"));
-        if (KeyExists("stock room key"))
+        // the Dining Room key opens the ground-floor Kitchen ("kitchen key"; older scenes called it "stock room key")
+        string kitchenKey = KeyExists("kitchen key") ? "kitchen key" : "stock room key";
+        if (KeyExists(kitchenKey))
         {
-            DoorController kd = LockedDoor("KitchenA", "stock room key"); string kid = kd != null ? kd.DoorID : null;
-            Add("StockKey", "Dining Room: find the Stock Room key", () => KeyTaken("stock room key") || (kd != null && DoorOpened(kd, kid)));
+            DoorController kd = LockedDoor("KitchenA", kitchenKey); string kid = kd != null ? kd.DoorID : null;
+            Add("StockKey", "Dining Room: find the Kitchen key", () => KeyTaken(kitchenKey) || (kd != null && DoorOpened(kd, kid)));
         }
 
         ToxicGasTrap gas = InRoom<ToxicGasTrap>("KitchenA");
@@ -252,8 +259,8 @@ public class ObjectiveTracker : MonoBehaviour
             OvenPuzzleManager ov = oven;
             Add("Oven_KitchenA", "Kitchen: set the three ovens to the right temperatures", () => ov != null && ov.IsSolved);
         }
-        if (KeyExists("office key"))
-            Add("OfficeKey", "Classroom: find the Office key", () => KeyTaken("office key"));
+        if (KeyExists(classroomKey))
+            Add("OfficeKey", "Classroom: find the Head Office key", () => KeyTaken(classroomKey));
 
         GrandfatherClockPuzzle clock = InRoom<GrandfatherClockPuzzle>("Office");
         if (clock != null)
@@ -265,14 +272,22 @@ public class ObjectiveTracker : MonoBehaviour
         if (bathBox != null)
         {
             FuseBoxPuzzle f = bathBox; string fuseName = f.fuseItemName;
+            // the body bags lie in the STOCK ROOM, which is locked; its key is down in the basement (a note in the Kitchen says where)
+            DoorController sd = LockedDoor("Stock", "stock room key"); string sid = sd != null ? sd.DoorID : null;
+            if (sd != null && KeyExists("stock room key"))
+                Add("StockRoomKey", "Stock Room: find the Stock Room key", () => KeyTaken("stock room key") || DoorOpened(sd, sid) || (f != null && f.IsSolved));
             if (KeyExists(fuseName))
-                Add("BathFuse", "Head Office: search the body bags for a fuse", () => KeyTaken(fuseName) || (f != null && f.IsSolved));
+                Add("BathFuse", "Stock Room: search the body bags for a fuse", () => KeyTaken(fuseName) || (f != null && f.IsSolved));
             Add("Fuse_Bathroom", "Bathroom: put the fuse in the control box", () => f != null && f.IsSolved);
         }
         AcidDrainPuzzle acid = InRoom<AcidDrainPuzzle>("Bathroom");
         if (acid != null)
         {
             AcidDrainPuzzle a = acid;
+            // the valve is in the Gatehouse, which is locked; its key lies in the basement (Seclusion Room A)
+            DoorController gh = LockedDoor("Gatehouse", "gatehouse key"); string ghid = gh != null ? gh.DoorID : null;
+            if (gh != null && KeyExists("gatehouse key"))
+                Add("GatehouseKey", "Gatehouse: find the Gatehouse key", () => KeyTaken("gatehouse key") || DoorOpened(gh, ghid) || (a != null && a.IsSolved));
             Add("Acid_Bathroom", "Bathroom: find the valve and drain the acid bath", () => a != null && a.IsSolved);
         }
 
