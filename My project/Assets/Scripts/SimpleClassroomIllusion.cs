@@ -24,6 +24,8 @@ public class SimpleClassroomIllusion : MonoBehaviour, IInteractable
     private bool hasTriggered = false;
     private bool keyAssigned = false;
     private Collider keyCollider;
+    private const string DoneFlag = "ClassroomIllusion_Done";
+    private bool Done => SaveManager.instance != null && SaveManager.instance.HasFlag(DoneFlag);
 
     void Start()
     {
@@ -65,6 +67,9 @@ public class SimpleClassroomIllusion : MonoBehaviour, IInteractable
         // Phir hum fake wall ko hata kar darwaza wapas le ayenge!
         if (isKeyPickedUp && fakeWall != null && fakeWall.activeSelf)
         {
+            // BUG FIX: remember it, so the radio can never trap the player in here again (e.g. after the key was dropped outside)
+            if (SaveManager.instance != null) SaveManager.instance.SetFlag(DoneFlag);
+
             // Darwaza theek karo
             fakeWall.SetActive(false);
             if (realDoor != null) realDoor.SetActive(true);
@@ -83,13 +88,13 @@ public class SimpleClassroomIllusion : MonoBehaviour, IInteractable
 
     public string GetInteractPrompt()
     {
-        if (hasTriggered) return "";
+        if (hasTriggered || Done) return "";
         return "Press E to Turn On Radio";
     }
 
     public void Interact(PlayerStats playerStats)
     {
-        if (hasTriggered) return;
+        if (hasTriggered || Done) return;
         hasTriggered = true;
         
         StartCoroutine(NightmareSequence());

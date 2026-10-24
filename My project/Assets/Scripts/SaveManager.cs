@@ -248,8 +248,8 @@ public class SaveManager : MonoBehaviour
                 Vector3 e = enemy.transform.position;
                 currentSaveData.enemyPosition = new float[] { e.x, e.y, e.z };
                 currentSaveData.hasEnemyPosition = true;
+                break;
             }
-            break;
         }
 
         // RespawnManager adds +1m on load (for the floor-level basement point) - compensate so we come back where we stood
@@ -627,6 +627,9 @@ public class SaveManager : MonoBehaviour
 
     public void LoadGame()
     {
+        // BUG FIX: forget the old position, so a checkpoint in the same frame cannot write it into the save just loaded
+        hasLastGood = false;
+        restoredSceneLoad = -1;
         currentSaveData = null;
         if (!TryReadSaveFile(SaveFilePath, out currentSaveData))
         {

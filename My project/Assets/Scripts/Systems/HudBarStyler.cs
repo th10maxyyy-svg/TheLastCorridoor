@@ -34,6 +34,15 @@ public class HudBarStyler : MonoBehaviour
         styled = true;
         if (health == null && stamina == null) return;
 
+        // the new VITALS monitor on TLC_UI replaces the two old scene sliders (they keep running, just hidden)
+        TLCCanvas ui = TLCCanvas.Ensure();
+        if (ui != null && ui.vitals != null)
+        {
+            if (health != null) health.gameObject.SetActive(false);
+            if (stamina != null) stamina.gameObject.SetActive(false);
+            return;
+        }
+
         float k = Mathf.Clamp(Screen.height / 1080f, 0.7f, 2.5f); // HUD canvas uses constant pixel size
         try
         {

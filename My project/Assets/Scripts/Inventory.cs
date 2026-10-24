@@ -116,6 +116,7 @@ public class Inventory : MonoBehaviour
         // and a stale flag must never make the G key silently stop working.
         if (KeypadController.IsAnyKeypadOpen) return "keypad open";
         if (playerController != null && playerController.isDead) return "player dead";
+        if (playerController != null && playerController.isHidden) return "hidden";   // the item would fall inside the locker and could never be picked up
         return null;
     }
 

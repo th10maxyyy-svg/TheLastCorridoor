@@ -145,11 +145,11 @@ public class PlayerController : MonoBehaviour
 
         if (isHidden)
         {
-            if (Time.time > hideTime + 0.2f && Input.GetKeyDown(KeyCode.E))
+            if (!hideMoving && Time.time > hideTime + 0.6f && Input.GetKeyDown(KeyCode.E))
             {
                 ExitHiding();
             }
-            HandleMouseLook(); // Allows looking around while hiding
+            if (!hideMoving) HandleHidingLook(); // looks around a little, through the gap - never out of the hiding spot
             return;
         }
 
@@ -163,22 +163,112 @@ public class PlayerController : MonoBehaviour
         UpdateBodyAnimations();
     }
 
+    // ------------------------------------------------------------------ HIDING
+    // HIDING FIX: the player used to be teleported in standing up (head out of the locker, body clipping through it)
+    // and could turn round freely. Now he slides in, crouches down low, faces out through the gap, his own body is hidden
+    // and he can only look around a little. The clown cannot see a hidden player (EnemyAI checks isHidden).
+    [Header("Hiding")]
+    [Tooltip("Camera height while hidden. -1 = the normal crouch height (he sits down in the hiding spot)")]
+    [SerializeField] private float hideCameraHeight = -1f;
+    private float HideCamY => hideCameraHeight >= 0f ? hideCameraHeight : crouchingCameraPosition.y;
+    [SerializeField] private float hideLookYaw = 55f;          // how far he can turn his head left / right while hidden
+    private bool hideMoving;
+    private float hideYawCenter, hideYaw;
+    private Vector3 hideSavedCamPos;
+    private Coroutine hideRoutine;
+    private readonly System.Collections.Generic.List<Renderer> hiddenBody = new System.Collections.Generic.List<Renderer>();
+
     public void EnterHiding(Transform hidePos, Transform exitPos)
     {
+        if (isHidden) return;
         isHidden = true;
         hideTime = Time.time;
         currentExitPos = exitPos;
         characterController.enabled = false;
-        transform.position = hidePos.position;
-        // Keep camera rotation intact so player isn't disoriented
+        if (crouchRoutine != null) { StopCoroutine(crouchRoutine); crouchRoutine = null; }
+
+        // face OUT of the hiding spot (towards where he came in)
+        Vector3 outDir = exitPos != null ? exitPos.position - hidePos.position : -transform.forward;
+        outDir.y = 0f;
+        if (outDir.sqrMagnitude < 0.0001f) outDir = transform.forward;
+        hideYawCenter = Quaternion.LookRotation(outDir.normalized).eulerAngles.y;
+        hideYaw = 0f;
+
+        // his own body would poke through the locker walls
+        hiddenBody.Clear();
+        foreach (Renderer r in GetComponentsInChildren<Renderer>())
+            if (r.enabled && (playerCamera == null || !r.transform.IsChildOf(playerCamera.transform))) { r.enabled = false; hiddenBody.Add(r); }
+
+        if (playerCamera != null) hideSavedCamPos = playerCamera.transform.localPosition;
+        if (hideRoutine != null) StopCoroutine(hideRoutine);
+        hideRoutine = StartCoroutine(HideMoveRoutine(hidePos.position, Quaternion.Euler(0f, hideYawCenter, 0f), HideCamY, 0.45f, false));
+        InteractionRaycast.Notify(playerStats, "Hidden. Stay quiet...  (E to come out)", 2.5f);
     }
 
     public void ExitHiding()
     {
-        if (currentExitPos != null) transform.position = currentExitPos.position;
+        if (!isHidden) return;
+        if (hideRoutine != null) { StopCoroutine(hideRoutine); hideRoutine = null; }
+        Vector3 target = currentExitPos != null ? currentExitPos.position : transform.position;
+        currentExitPos = null;
+        float camY = isCrouching ? crouchingCameraPosition.y : standingCameraPosition.y;
+        if (gameObject.activeInHierarchy) hideRoutine = StartCoroutine(HideMoveRoutine(target, transform.rotation, camY, 0.35f, true));
+        else FinishExitHiding(target, camY);
+    }
+
+    private System.Collections.IEnumerator HideMoveRoutine(Vector3 pos, Quaternion rot, float camY, float time, bool exiting)
+    {
+        hideMoving = true;
+        Vector3 p0 = transform.position; Quaternion r0 = transform.rotation;
+        Vector3 c0 = playerCamera != null ? playerCamera.transform.localPosition : Vector3.zero;
+        float pitch0 = rotationX;
+        for (float t = 0f; t < time; t += Time.deltaTime)
+        {
+            float k = Mathf.SmoothStep(0f, 1f, t / time);
+            transform.SetPositionAndRotation(Vector3.Lerp(p0, pos, k), Quaternion.Slerp(r0, rot, k));
+            if (playerCamera != null)
+            {
+                Vector3 c = c0; c.y = Mathf.Lerp(c0.y, camY, k);
+                playerCamera.transform.localPosition = c;
+                rotationX = Mathf.Lerp(pitch0, exiting ? pitch0 : 5f, k);
+                playerCamera.transform.localRotation = Quaternion.Euler(rotationX, 0f, 0f);
+            }
+            yield return null;
+        }
+        hideRoutine = null;
+        hideMoving = false;
+        if (exiting) FinishExitHiding(pos, camY);
+        else
+        {
+            transform.SetPositionAndRotation(pos, rot);
+            if (playerCamera != null) { Vector3 c = playerCamera.transform.localPosition; c.y = camY; playerCamera.transform.localPosition = c; }
+        }
+    }
+
+    private void FinishExitHiding(Vector3 pos, float camY)
+    {
+        transform.position = pos;
+        if (playerCamera != null) { Vector3 c = playerCamera.transform.localPosition; c.y = camY; playerCamera.transform.localPosition = c; }
+        defaultYPos = camY;
+        foreach (Renderer r in hiddenBody) if (r != null) r.enabled = true;
+        hiddenBody.Clear();
         characterController.enabled = true;
         isHidden = false;
-        currentExitPos = null;
+        hideMoving = false;
+    }
+
+    private void HandleHidingLook()
+    {
+        if (playerCamera == null) return;
+        float sens = mouseSensitivity * GameSettings.MouseSensitivity;
+        hideYaw = Mathf.Clamp(hideYaw + Input.GetAxis("Mouse X") * sens, -hideLookYaw, hideLookYaw);
+        transform.rotation = Quaternion.Euler(0f, hideYawCenter + hideYaw, 0f);
+        rotationX = Mathf.Clamp(rotationX - Input.GetAxis("Mouse Y") * sens, -35f, 35f);
+        playerCamera.transform.localRotation = Quaternion.Euler(rotationX, 0f, 0f);
+        // calm, slow breathing sway while hiding
+        Vector3 c = playerCamera.transform.localPosition;
+        c.y = HideCamY + Mathf.Sin(Time.time * 1.4f) * 0.006f;
+        playerCamera.transform.localPosition = c;
     }
 
     private void HandleMovementInput()
@@ -214,9 +304,11 @@ public class PlayerController : MonoBehaviour
     {
         if (playerCamera == null) return;
 
-        transform.Rotate(Vector3.up * Input.GetAxis("Mouse X") * mouseSensitivity);
+        // BUG FIX: the Mouse Sensitivity slider in SETTINGS was never applied
+        float sens = mouseSensitivity * GameSettings.MouseSensitivity;
+        transform.Rotate(Vector3.up * Input.GetAxis("Mouse X") * sens);
 
-        rotationX -= Input.GetAxis("Mouse Y") * mouseSensitivity;
+        rotationX -= Input.GetAxis("Mouse Y") * sens;
         rotationX = Mathf.Clamp(rotationX, upperLookLimit, lowerLookLimit);
         
         playerCamera.transform.localRotation = Quaternion.Euler(rotationX, 0, 0);
@@ -311,7 +403,7 @@ public class PlayerController : MonoBehaviour
             timer += Time.deltaTime * (isCrouching ? crouchBobSpeed : isSprinting ? sprintBobSpeed : walkBobSpeed);
             playerCamera.transform.localPosition = new Vector3(
                 playerCamera.transform.localPosition.x,
-                defaultYPos + Mathf.Sin(timer) * (isCrouching ? crouchBobAmount : isSprinting ? sprintBobAmount : walkBobAmount),
+                defaultYPos + Mathf.Sin(timer) * (isCrouching ? crouchBobAmount : isSprinting ? sprintBobAmount : walkBobAmount) * GameSettings.EffectsIntensity, // BUG FIX: "Camera Effects" setting was never applied
                 playerCamera.transform.localPosition.z);
         }
         else
@@ -393,6 +485,7 @@ public class PlayerController : MonoBehaviour
     public Animator BodyAnimator => bodyAnimator;
     public bool IsSprinting => isSprinting && currentInput.magnitude > 0;
     public bool IsCrouching => isCrouching;
+    public bool IsWakingUp => isWakingUp;
     public float GetCurrentSpeed() => characterController.velocity.magnitude;
 
     /// <summary>
@@ -406,6 +499,10 @@ public class PlayerController : MonoBehaviour
         isWakingUp = false;
         isCinematicPlaying = false;
         isHidden = false;
+        hideMoving = false;
+        hideRoutine = null;
+        foreach (Renderer r in hiddenBody) if (r != null) r.enabled = true;
+        hiddenBody.Clear();
         enabled = true;
         if (characterController == null) characterController = GetComponent<CharacterController>();
         if (characterController != null) characterController.enabled = true;

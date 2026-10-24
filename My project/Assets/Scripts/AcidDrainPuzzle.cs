@@ -30,12 +30,22 @@ public class AcidDrainPuzzle : MonoBehaviour, IInteractable
     private bool isSolved = false;
     /// <summary>Read by the objective / achievement system (GameProgress).</summary>
     public bool IsSolved => isSolved;
+    private string SaveFlag => "AcidDrained_" + SaveManager.GetSceneObjectId(transform);
 
     void Start()
     {
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
         
+        if (SaveManager.instance != null && SaveManager.instance.HasFlag(SaveFlag))
+        {
+            isSolved = true;
+            if (valveMesh != null) valveMesh.gameObject.SetActive(true);
+            if (acidMesh != null) acidMesh.position += new Vector3(0, drainAmountY, 0);
+            onDrainComplete?.Invoke();
+            return;
+        }
+
         // Shuru mein pipe par valve nahi hona chahiye
         if (valveMesh != null) valveMesh.gameObject.SetActive(false);
     }
@@ -60,7 +70,8 @@ public class AcidDrainPuzzle : MonoBehaviour, IInteractable
         if (inventory.HasItem(requiredValveItem))
         {
             isSolved = true;
-            inventory.RemoveItem(requiredValveItem); // Hath se nikal lo
+            if (SaveManager.instance != null) SaveManager.instance.SetFlag(SaveFlag);
+            inventory.RemoveItem(requiredValveItem, false); // Hath se nikal lo
             
             // Pipe par laga hua valve show kar do
             if (valveMesh != null) valveMesh.gameObject.SetActive(true);

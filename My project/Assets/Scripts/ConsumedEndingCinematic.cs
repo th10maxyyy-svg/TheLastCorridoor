@@ -419,7 +419,7 @@ public class ConsumedEndingCinematic : MonoBehaviour
         IsPlaying = false;
         Time.timeScale = 1f;
         IntroState.skipIntro = false;
-        SceneManager.LoadScene(menuScene);
+        SceneLoader.Load(menuScene);
     }
 
     // ------------------------------------------------------------------ setup

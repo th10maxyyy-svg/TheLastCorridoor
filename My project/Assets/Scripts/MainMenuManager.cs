@@ -31,7 +31,7 @@ public class MainMenuManager : MonoBehaviour
         EnemyRestore.RestoreOnNextLoad = false;   // a new game never restores the enemy's old position
         Debug.Log("Old save deleted for New Game.");
 
-        SceneManager.LoadScene(gameSceneName);
+        SceneLoader.Load(gameSceneName);
     }
 
     [Header("UI Screens")]
@@ -103,7 +103,7 @@ public class MainMenuManager : MonoBehaviour
         // Make sure the save is (re)read from disk
         if (SaveManager.instance != null) SaveManager.instance.LoadGame();
 
-        SceneManager.LoadScene(gameSceneName);
+        SceneLoader.Load(gameSceneName);
     }
 
     // LOAD GAME / ACHIEVEMENTS / OPTIONS buttons (they open the panels of GameUI)

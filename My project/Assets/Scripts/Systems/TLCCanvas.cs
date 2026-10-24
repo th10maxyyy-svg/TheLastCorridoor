@@ -26,6 +26,29 @@ public class TLCCanvas : MonoBehaviour
     public Image crosshair;
     public Text notification, roomName, floorName, prompt;
 
+    [Header("Vitals (bottom-left health / stamina monitor)")]
+    public CanvasGroup vitals;
+    public RawImage vitalsEcg;
+    public Text vitalsBpm, vitalsHp, vitalsLabel;
+    public RectTransform hpFill, hpGhost, stFill;
+    public Image hpFillImage, hpFrame;
+    public CanvasGroup staminaGroup;
+
+    [Header("Overlays")]
+    public RawImage dangerVignette;
+    public Text hiddenLabel;
+    public CanvasGroup subtitleGroup;
+    public Image subtitleBack;
+    public Text subtitleText;
+
+    [Header("Controls screen")]
+    public GameObject controlsPanel;
+    public Button controlsContinue;
+
+    [Header("Journal map")]
+    public Text[] mapColumns;
+    public Text mapLegend;
+
     [Header("Top-right: objective + pop-ups")]
     public RectTransform topRight;
     public GameObject objectivePanel;
@@ -46,6 +69,8 @@ public class TLCCanvas : MonoBehaviour
     public GameObject settingsPanel;
     public SettingRow[] settingRows;
     public Button settingsReset, settingsBack;
+    public OptionRow[] graphicsRows;
+    public Text graphicsInfo;
 
     public GameObject achievementsPanel;
     public Text achSummary;
@@ -97,6 +122,7 @@ public class TLCCanvas : MonoBehaviour
 
     [System.Serializable] public class SlotRow { public GameObject root; public TLCCard card; public Text badge, label, details, buttonLabel; public Button button; }
     [System.Serializable] public class SettingRow { public Text label, value; public Slider slider; }
+    [System.Serializable] public class OptionRow { public Text label, value; public Button prev, next; }
 
     // ------------------------------------------------------------------ lifetime
     /// <summary>The canvas of the current scene. Uses the one in the Hierarchy; only if it is missing a copy of the prefab is created.</summary>
@@ -142,6 +168,8 @@ public class TLCCanvas : MonoBehaviour
         SetActive(aiPanel, false);
         SetActive(cinematic, false);
         SetActive(objectivePanel, false);
+        SetActive(controlsPanel, false);
+        if (subtitleGroup != null) subtitleGroup.alpha = 0f;
         if (deathGroup != null) deathGroup.gameObject.SetActive(false);
         if (introSkipHint != null) introSkipHint.gameObject.SetActive(false);
         SetText(notification, ""); SetText(roomName, ""); SetText(floorName, ""); SetText(prompt, "");
@@ -524,6 +552,7 @@ public static class TLCUIFactory
         Transform t = root.transform;
 
         BuildHud(ui, t);
+        BuildSubtitles(ui, t);
         BuildTopRight(ui, t);
         BuildAIPanel(ui, t);
         RectTransform panels = Panel(t, "Panels");
@@ -534,6 +563,7 @@ public static class TLCUIFactory
         BuildAchievements(ui, panels);
         BuildJournal(ui, panels);
         BuildConfirm(ui, panels);
+        BuildControls(ui, panels);
         BuildSummary(ui, t);
         BuildKeypad(ui, t);
         BuildDeath(ui, t);
@@ -562,6 +592,151 @@ public static class TLCUIFactory
         Center(ui.floorName.rectTransform, 0f, 53f, 800f, 22f);
         ui.prompt = Txt(hud, "InteractPrompt", "", 22, Color.white, TextAnchor.MiddleCenter, FontStyle.Bold, true);
         Center(ui.prompt.rectTransform, 0f, -70f, 700f, 40f);
+
+        // danger / hiding vignette (texture made at runtime) - behind everything else on the HUD
+        RectTransform vg = Make("DangerVignette", hud);
+        Stretch(vg);
+        ui.dangerVignette = vg.gameObject.AddComponent<RawImage>();
+        ui.dangerVignette.raycastTarget = false;
+        ui.dangerVignette.color = new Color(1f, 1f, 1f, 0f);
+        vg.SetAsFirstSibling();
+
+        ui.hiddenLabel = Txt(hud, "HiddenLabel", "HIDDEN", 18, new Color(0.75f, 0.72f, 0.68f, 0.85f), TextAnchor.MiddleCenter, FontStyle.Bold, true);
+        RectTransform hl = ui.hiddenLabel.rectTransform;
+        hl.anchorMin = hl.anchorMax = new Vector2(0.5f, 0f); hl.pivot = new Vector2(0.5f, 0f);
+        hl.sizeDelta = new Vector2(500f, 30f); hl.anchoredPosition = new Vector2(0f, 150f);
+        ui.hiddenLabel.gameObject.SetActive(false);
+
+        BuildVitals(ui, hud);
+    }
+
+    // ------------------------------------------------------------------ VITALS: heart monitor + health + stamina (bottom-left)
+    private static Font vitalsFont;
+    private static Font VitalsFont { get { if (vitalsFont == null) vitalsFont = Resources.Load<Font>("Intro/Oswald"); return vitalsFont != null ? vitalsFont : UIFont; } }
+
+    private static RectTransform BL(RectTransform rt, float x, float y, float w, float h)
+    {
+        rt.anchorMin = rt.anchorMax = Vector2.zero; rt.pivot = Vector2.zero;
+        rt.anchoredPosition = new Vector2(x, y); rt.sizeDelta = new Vector2(w, h);
+        return rt;
+    }
+
+    private static void BuildVitals(TLCCanvas ui, Transform hud)
+    {
+        RectTransform root = BL(Make("Vitals", hud), 34f, 30f, 452f, 104f);
+        ui.vitals = root.gameObject.AddComponent<CanvasGroup>();
+        ui.vitals.interactable = false; ui.vitals.blocksRaycasts = false;
+
+        // glass panel: dark, a thin rusty frame and a red edge on the left
+        Image bg = Img(root, "Panel", new Color(0.02f, 0.015f, 0.015f, 0.62f));
+        Stretch(bg.rectTransform);
+        Outline ol = bg.gameObject.AddComponent<Outline>(); ol.effectColor = new Color(0.45f, 0.12f, 0.08f, 0.45f); ol.effectDistance = new Vector2(1f, -1f);
+        Image edge = Img(root, "Edge", new Color(0.62f, 0.07f, 0.05f, 0.9f));
+        BL(edge.rectTransform, 0f, 0f, 3f, 104f);
+
+        // heart monitor screen
+        Image scr = Img(root, "MonitorScreen", new Color(0f, 0.02f, 0.01f, 0.85f));
+        BL(scr.rectTransform, 12f, 12f, 120f, 80f);
+        Outline so = scr.gameObject.AddComponent<Outline>(); so.effectColor = new Color(0.2f, 0.05f, 0.04f, 0.8f);
+        RectTransform ecg = BL(Make("ECG", scr.transform), 2f, 2f, 116f, 76f);
+        ui.vitalsEcg = ecg.gameObject.AddComponent<RawImage>();
+        ui.vitalsEcg.raycastTarget = false;
+
+        ui.vitalsLabel = Txt(root, "Label", "VITALS", 15, new Color(0.62f, 0.58f, 0.54f), TextAnchor.LowerLeft, FontStyle.Bold);
+        ui.vitalsLabel.font = VitalsFont;
+        BL(ui.vitalsLabel.rectTransform, 146f, 66f, 140f, 24f);
+        ui.vitalsBpm = Txt(root, "BPM", "72 BPM", 15, new Color(0.85f, 0.2f, 0.16f), TextAnchor.LowerRight, FontStyle.Bold);
+        ui.vitalsBpm.font = VitalsFont;
+        BL(ui.vitalsBpm.rectTransform, 300f, 66f, 136f, 24f);
+
+        // health bar: track, "damage ghost" (shows what was just lost), fill with a highlight, segment marks, a frame
+        Image track = Img(root, "HealthTrack", new Color(0.06f, 0.01f, 0.01f, 0.9f));
+        BL(track.rectTransform, 146f, 38f, 290f, 22f);
+        Image ghost = Img(track.transform, "Ghost", new Color(0.95f, 0.62f, 0.35f, 0.75f));
+        ui.hpGhost = ghost.rectTransform; FillRect(ui.hpGhost);
+        Image fill = Img(track.transform, "Fill", new Color(0.62f, 0.04f, 0.04f, 1f));
+        ui.hpFill = fill.rectTransform; FillRect(ui.hpFill); ui.hpFillImage = fill;
+        Image shine = Img(fill.transform, "Shine", new Color(1f, 0.55f, 0.5f, 0.18f));
+        RectTransform sh = shine.rectTransform; sh.anchorMin = new Vector2(0f, 0.55f); sh.anchorMax = Vector2.one; sh.offsetMin = sh.offsetMax = Vector2.zero;
+        Image dark = Img(fill.transform, "Shade", new Color(0f, 0f, 0f, 0.25f));
+        RectTransform dk = dark.rectTransform; dk.anchorMin = Vector2.zero; dk.anchorMax = new Vector2(1f, 0.25f); dk.offsetMin = dk.offsetMax = Vector2.zero;
+        for (int i = 1; i < 10; i++)
+        {
+            Image tick = Img(track.transform, "Mark" + i, new Color(0f, 0f, 0f, 0.55f));
+            RectTransform tr = tick.rectTransform;
+            tr.anchorMin = new Vector2(i / 10f, 0f); tr.anchorMax = new Vector2(i / 10f, 1f); tr.pivot = new Vector2(0.5f, 0.5f);
+            tr.sizeDelta = new Vector2(2f, 0f); tr.anchoredPosition = Vector2.zero;
+        }
+        ui.hpFrame = Img(track.transform, "Frame", new Color(0f, 0f, 0f, 0f));
+        Stretch(ui.hpFrame.rectTransform);
+        Outline fo = ui.hpFrame.gameObject.AddComponent<Outline>(); fo.effectColor = new Color(0.75f, 0.68f, 0.6f, 0.35f); fo.effectDistance = new Vector2(1f, -1f);
+        ui.vitalsHp = Txt(track.transform, "Value", "100", 17, new Color(0.95f, 0.9f, 0.85f), TextAnchor.MiddleRight, FontStyle.Bold, true);
+        ui.vitalsHp.font = VitalsFont;
+        Stretch(ui.vitalsHp.rectTransform); ui.vitalsHp.rectTransform.offsetMax = new Vector2(-8f, 0f);
+
+        // stamina: thin pale bar, fades away when full
+        RectTransform st = BL(Make("Stamina", root), 146f, 16f, 290f, 14f);
+        ui.staminaGroup = st.gameObject.AddComponent<CanvasGroup>();
+        Image sl = Img(st, "Label", new Color(0, 0, 0, 0));
+        Stretch(sl.rectTransform);
+        Image strack = Img(st, "Track", new Color(0.05f, 0.05f, 0.06f, 0.85f));
+        BL(strack.rectTransform, 0f, 3f, 290f, 7f);
+        Image sfill = Img(strack.transform, "Fill", new Color(0.78f, 0.82f, 0.86f, 0.95f));
+        ui.stFill = sfill.rectTransform; FillRect(ui.stFill);
+        Image sshine = Img(sfill.transform, "Shine", new Color(1f, 1f, 1f, 0.25f));
+        RectTransform ss = sshine.rectTransform; ss.anchorMin = new Vector2(0f, 0.5f); ss.anchorMax = Vector2.one; ss.offsetMin = ss.offsetMax = Vector2.zero;
+    }
+
+    private static void FillRect(RectTransform r)
+    {
+        r.anchorMin = Vector2.zero; r.anchorMax = Vector2.one; r.pivot = new Vector2(0f, 0.5f);
+        r.offsetMin = Vector2.zero; r.offsetMax = Vector2.zero;
+    }
+
+    // ------------------------------------------------------------------ subtitles (bottom centre, also shown during cinematics)
+    private static void BuildSubtitles(TLCCanvas ui, Transform t)
+    {
+        RectTransform root = Make("Subtitles", t);
+        root.anchorMin = root.anchorMax = new Vector2(0.5f, 0f); root.pivot = new Vector2(0.5f, 0f);
+        root.sizeDelta = new Vector2(1300f, 60f); root.anchoredPosition = new Vector2(0f, 96f);
+        ui.subtitleGroup = root.gameObject.AddComponent<CanvasGroup>();
+        ui.subtitleGroup.alpha = 0f; ui.subtitleGroup.interactable = false; ui.subtitleGroup.blocksRaycasts = false;
+        ui.subtitleBack = Img(root, "Back", new Color(0f, 0f, 0f, 0.6f));
+        ui.subtitleBack.rectTransform.anchorMin = ui.subtitleBack.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+        ui.subtitleBack.rectTransform.sizeDelta = new Vector2(600f, 52f);
+        ui.subtitleText = Txt(root, "Text", "", 27, new Color(0.96f, 0.93f, 0.88f), TextAnchor.MiddleCenter, FontStyle.Normal, true);
+        Stretch(ui.subtitleText.rectTransform);
+    }
+
+    // ------------------------------------------------------------------ controls screen (first start + F1)
+    private static void BuildControls(TLCCanvas ui, Transform panels)
+    {
+        RectTransform p = Panel(panels, "ControlsPanel");
+        ui.controlsPanel = p.gameObject;
+        const float W = 1100f, H = 760f;
+        RectTransform win = Window(p, W, H);
+        Heading(win, "controls", "CONTROLS", 0f, 14f, W, 70f, 46);
+        string[,] keys =
+        {
+            { "W A S D", "Walk" }, { "SHIFT", "Run (uses stamina)" }, { "CTRL", "Crouch" }, { "MOUSE", "Look around" },
+            { "E", "Use / open / pick up / hide" }, { "G", "Drop the item in your hand" }, { "F", "Headlamp on / off" },
+            { "LEFT CLICK", "Taser (when you have it)" }, { "TAB", "Journal: objectives, items, notes, map" },
+            { "ESC", "Pause menu: save, load, settings" }, { "F1", "This screen" },
+        };
+        float y = 110f;
+        for (int i = 0; i < keys.GetLength(0); i++)
+        {
+            Image row = Img(win, "Row_" + i, i % 2 == 0 ? new Color(1f, 1f, 1f, 0.04f) : new Color(0f, 0f, 0f, 0f));
+            Place(row.rectTransform, 80f, y, W - 160f, 44f);
+            Text k = Txt(row.transform, "Key", keys[i, 0], 22, Gold, TextAnchor.MiddleLeft, FontStyle.Bold);
+            Place(k.rectTransform, 20f, 0f, 260f, 44f);
+            Text d = Txt(row.transform, "What", keys[i, 1], 22, Bone, TextAnchor.MiddleLeft);
+            Place(d.rectTransform, 300f, 0f, W - 160f - 320f, 44f);
+            y += 46f;
+        }
+        Text tip = Txt(win, "Tip", "Hide in lockers when you hear him. A hidden player cannot be seen - unless he watched you hide.", 19, Dim, TextAnchor.MiddleCenter);
+        Place(tip.rectTransform, 40f, y + 8f, W - 80f, 30f);
+        ui.controlsContinue = WindowButton(win, "ContinueButton", "CONTINUE", (W - 300f) * 0.5f, H - 84f, 300f, 58f);
     }
 
     // ------------------------------------------------------------------ objective + toasts (top-right)
@@ -673,11 +848,11 @@ public static class TLCUIFactory
     {
         RectTransform p = Panel(panels, "SettingsPanel");
         ui.settingsPanel = p.gameObject;
-        const float W = 900f, H = 640f;
+        const float W = 900f, H = 1010f;
         RectTransform win = Window(p, W, H);
-        Heading(win, "settings", "SETTINGS", 0f, 20f, W, 70f, 46);
+        Heading(win, "settings", "SETTINGS", 0f, 14f, W, 70f, 46);
         string[] names = { "Master Volume", "Brightness", "Camera Effects (head-bob)", "Mouse Sensitivity" };
-        float x = 60f, y = 120f, lw = 300f, sw = W - 120f - lw - 110f;
+        float x = 60f, y = 100f, lw = 300f, sw = W - 120f - lw - 110f;
         ui.settingRows = new TLCCanvas.SettingRow[names.Length];
         for (int i = 0; i < names.Length; i++)
         {
@@ -689,11 +864,38 @@ public static class TLCUIFactory
             Text value = Txt(card.transform, "Value", "", 24, Bone, TextAnchor.MiddleLeft);
             Place(value.rectTransform, 20f + lw + sw + 20f, 8f, 100f, 40f);
             ui.settingRows[i] = new TLCCanvas.SettingRow { label = label, slider = s, value = value };
-            y += 70f;
+            y += 66f;
         }
-        ui.settingsReset = WindowButton(win, "ResetButton", "RESET DEFAULTS", (W - 300f) * 0.5f, y + 10f, 300f, 52f);
-        Text info = Txt(win, "Info", "Settings are saved automatically.", 19, Dim, TextAnchor.MiddleCenter);
-        Place(info.rectTransform, 40f, y + 72f, W - 80f, 30f);
+
+        // ---- GRAPHICS: quality level, FPS limit, VSync, display mode, resolution  ( <  value  > )
+        Text gHead = Txt(win, "GraphicsHeading", "GRAPHICS", 28, Blood, TextAnchor.MiddleLeft, FontStyle.Bold);
+        Place(gHead.rectTransform, x - 10f, y + 2f, 400f, 40f);
+        y += 48f;
+        string[] gNames = { "Graphics Quality", "FPS Limit", "VSync", "Display Mode", "Resolution" };
+        ui.graphicsRows = new TLCCanvas.OptionRow[gNames.Length];
+        float rowW = lw + sw + 140f;
+        for (int i = 0; i < gNames.Length; i++)
+        {
+            TLCCard card = Card(win, "Gfx_" + gNames[i].Replace(" ", ""));
+            Place((RectTransform)card.transform, x - 20f, y - 8f, rowW, 58f);
+            Text label = Txt(card.transform, "Label", gNames[i], 24, Bone, TextAnchor.MiddleLeft);
+            Place(label.rectTransform, 20f, 8f, lw, 40f);
+            Button prev = Btn(card.transform, "Prev", "<", 26, out _);
+            Place((RectTransform)prev.transform, 20f + lw, 6f, 56f, 44f);
+            Text value = Txt(card.transform, "Value", "", 23, Gold, TextAnchor.MiddleCenter);
+            Place(value.rectTransform, 20f + lw + 62f, 8f, rowW - lw - 20f - 62f * 2f - 20f, 40f);
+            Button next = Btn(card.transform, "Next", ">", 26, out _);
+            Place((RectTransform)next.transform, rowW - 20f - 56f, 6f, 56f, 44f);
+            ui.graphicsRows[i] = new TLCCanvas.OptionRow { label = label, value = value, prev = prev, next = next };
+            y += 64f;
+        }
+        ui.graphicsInfo = Txt(win, "GraphicsInfo", "", 17, Dim, TextAnchor.MiddleCenter);
+        Place(ui.graphicsInfo.rectTransform, 30f, y - 4f, W - 60f, 28f);
+        y += 30f;
+
+        ui.settingsReset = WindowButton(win, "ResetButton", "RESET DEFAULTS", (W - 300f) * 0.5f, y + 6f, 300f, 52f);
+        Text info = Txt(win, "Info", "Settings are saved automatically.  AUTO quality adjusts itself if the game runs slowly.", 18, Dim, TextAnchor.MiddleCenter);
+        Place(info.rectTransform, 40f, y + 62f, W - 80f, 28f);
         ui.settingsBack = BackButton(win, W, H);
     }
 
@@ -747,14 +949,14 @@ public static class TLCUIFactory
         const float W = 1400f, H = 900f;
         RectTransform win = Window(p, W, H);
         Heading(win, "journal", "JOURNAL", 0f, 14f, W, 70f, 46);
-        string[] tabs = { "OBJECTIVES", "ITEMS", "NOTES", "STATISTICS" };
-        float tw = 260f, tx = (W - tabs.Length * (tw + 10f)) * 0.5f;
+        string[] tabs = { "OBJECTIVES", "ITEMS", "NOTES", "STATISTICS", "MAP" };
+        float tw = 250f, tx = (W - tabs.Length * (tw + 10f)) * 0.5f;
         ui.journalTabs = new Button[tabs.Length];
         for (int i = 0; i < tabs.Length; i++)
             ui.journalTabs[i] = WindowButton(win, "Tab_" + tabs[i], tabs[i], tx + i * (tw + 10f), 90f, tw, 48f, 22);
 
         float bx = 40f, by = 160f, bw = W - 80f, bh = H - 260f;
-        ui.journalPages = new GameObject[4];
+        ui.journalPages = new GameObject[5];
 
         // objectives
         RectTransform po = Make("Page_Objectives", win); Place(po, bx, by, bw, bh);
@@ -793,6 +995,26 @@ public static class TLCUIFactory
         Scroll(ps, "List", 0f, 0f, bw, bh, out RectTransform sc, 0, default, 4f);
         ui.jStatsContent = sc;
         ui.jStatTemplate = StatRow(sc, "StatTemplate", 520f, 42f);
+
+        // map: the three floors side by side, every room with its state
+        RectTransform pm = Make("Page_Map", win); Place(pm, bx, by, bw, bh);
+        ui.journalPages[4] = pm.gameObject;
+        string[] floors = { "FIRST FLOOR", "GROUND FLOOR", "BASEMENT" };
+        float cw = (bw - 40f) / 3f;
+        ui.mapColumns = new Text[3];
+        for (int i = 0; i < 3; i++)
+        {
+            Image col = Img(pm, "Floor_" + i, new Color(0f, 0f, 0f, 0.45f));
+            Place(col.rectTransform, i * (cw + 20f), 0f, cw, bh - 50f);
+            Image bar = Img(col.transform, "Bar", Red);
+            Place(bar.rectTransform, 0f, 0f, cw, 4f);
+            Text head = Txt(col.transform, "Title", floors[i], 24, Blood, TextAnchor.UpperLeft, FontStyle.Bold);
+            Place(head.rectTransform, 18f, 14f, cw - 36f, 34f);
+            ui.mapColumns[i] = Txt(col.transform, "Rooms", "", 21, Bone);
+            Place(ui.mapColumns[i].rectTransform, 18f, 58f, cw - 36f, bh - 120f);
+        }
+        ui.mapLegend = Txt(pm, "Legend", "", 18, Dim);
+        Place(ui.mapLegend.rectTransform, 0f, bh - 40f, bw, 34f);
 
         Text close = Txt(win, "CloseHint", "TAB  close", 19, Dim);
         Place(close.rectTransform, 40f, H - 70f, 420f, 40f);

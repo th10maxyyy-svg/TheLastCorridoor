@@ -12,6 +12,7 @@ public class CrankGeneratorPuzzle : MonoBehaviour, IInteractable
     /// <summary>Read by the objective / achievement system (GameProgress).</summary>
     public bool IsSolved => isPowered;
     private bool enemyAlerted = false;
+    private string SaveFlag => "CrankGenDone_" + SaveManager.GetSceneObjectId(transform);
 
     [Header("X-Ray Board Settings")]
     public Light xrayLight;
@@ -32,6 +33,20 @@ public class CrankGeneratorPuzzle : MonoBehaviour, IInteractable
     void Start()
     {
         audioSource = GetComponent<AudioSource>();
+
+        if (SaveManager.instance != null && SaveManager.instance.HasFlag(SaveFlag))
+        {
+            isPowered = true;
+            currentCharge = clicksRequired;
+            if (xrayLight != null) xrayLight.enabled = true;
+            if (xrayBoardRenderer != null && xrayMaterialOn != null)
+            {
+                Material[] mats = xrayBoardRenderer.materials;
+                mats[0] = xrayMaterialOn;
+                xrayBoardRenderer.materials = mats;
+            }
+            return;
+        }
         
         // Ensure X-ray is off initially
         if (xrayLight != null) xrayLight.enabled = false;
@@ -98,6 +113,7 @@ public class CrankGeneratorPuzzle : MonoBehaviour, IInteractable
     private void PowerOn(InteractionRaycast raycast)
     {
         isPowered = true;
+        if (SaveManager.instance != null) SaveManager.instance.SetFlag(SaveFlag);
         
         // Reset pitch and play power on sound
         audioSource.pitch = 1f;

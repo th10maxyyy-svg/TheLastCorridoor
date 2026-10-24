@@ -158,6 +158,6 @@ public class IntroSequence : MonoBehaviour
         if (loading) return;
         loading = true;
         Debug.Log("Intro: loading '" + nextScene + "' at " + t.ToString("0.0") + " s");
-        SceneManager.LoadScene(nextScene);
+        SceneLoader.Load(nextScene);
     }
 }

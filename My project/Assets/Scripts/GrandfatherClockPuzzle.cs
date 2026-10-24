@@ -33,11 +33,38 @@ public class GrandfatherClockPuzzle : MonoBehaviour, IInteractable
     /// <summary>Read by the objective / achievement system (GameProgress).</summary>
     public bool IsSolved => isSolved;
     private bool isShifting = false;
+    private string PendulumFlag => "ClockPendulum_" + SaveManager.GetSceneObjectId(transform);
+    private string DoneFlag => "ClockDone_" + SaveManager.GetSceneObjectId(transform);
 
     void Start()
     {
+        if (SaveManager.instance != null && SaveManager.instance.HasFlag(DoneFlag))
+        {
+            hasPendulum = true;
+            isSolved = true;
+            currentHour = targetHour;
+            currentMinute = targetMinute;
+            if (pendulumVisual != null) pendulumVisual.SetActive(true);
+            if (glassPane != null) glassPane.SetActive(false);
+            if (stockRoomKey != null)
+            {
+                stockRoomKey.transform.position = transform.position + transform.forward * 0.5f;
+                stockRoomKey.SetActive(true);
+            }
+            UpdateVisualHands();
+            return;
+        }
+
         if (stockRoomKey != null) stockRoomKey.SetActive(false);
-        if (pendulumVisual != null) pendulumVisual.SetActive(false);
+        if (SaveManager.instance != null && SaveManager.instance.HasFlag(PendulumFlag))
+        {
+            hasPendulum = true;
+            if (pendulumVisual != null) pendulumVisual.SetActive(true);
+        }
+        else
+        {
+            if (pendulumVisual != null) pendulumVisual.SetActive(false);
+        }
         if (clockHandsVisual != null) clockHandsVisual.SetActive(false);
         UpdateVisualHands();
     }
@@ -69,7 +96,8 @@ public class GrandfatherClockPuzzle : MonoBehaviour, IInteractable
             if (inventory.HasItem(pendulumName))
             {
                 hasPendulum = true;
-                inventory.RemoveItem(pendulumName);
+                if (SaveManager.instance != null) SaveManager.instance.SetFlag(PendulumFlag);
+                inventory.RemoveItem(pendulumName, false);
                 if (pendulumVisual != null) pendulumVisual.SetActive(true);
             }
             return;
@@ -172,5 +200,6 @@ public class GrandfatherClockPuzzle : MonoBehaviour, IInteractable
 
         isSolved = true;
         isShifting = false;
+        if (SaveManager.instance != null) SaveManager.instance.SetFlag(DoneFlag);
     }
 }

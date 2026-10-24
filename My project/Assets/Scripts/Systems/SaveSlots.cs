@@ -126,7 +126,7 @@ public static class SaveSlots
 
         Time.timeScale = 1f;
         AudioListener.pause = false;
-        SceneManager.LoadScene(GameSceneName);
+        SceneLoader.Load(GameSceneName);
         message = "Loading...";
         return true;
     }

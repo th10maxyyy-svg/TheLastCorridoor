@@ -11,6 +11,8 @@ public class ToxicGasTrap : MonoBehaviour
 
     [Header("References")]
     public DoorController entranceDoor;
+    [Tooltip("The fuse box that stops the gas (found automatically in the same room if empty)")]
+    public FuseBoxPuzzle fuseBox;
     public GameObject gasParticleSystem; // The green fog/gas visual
     public AudioClip gasHissingSound;
     public AudioClip hallucinationSound; // Random spooky noises
@@ -39,6 +41,7 @@ public class ToxicGasTrap : MonoBehaviour
     {
         // WORLD STATE: agar player pehle hi gas saaf kar chuka hai to trap dobara na chale
         saveFlag = "GasTrapCleared_" + SaveManager.GetSceneObjectId(transform);
+        if (fuseBox == null && transform.parent != null) fuseBox = transform.parent.GetComponentInChildren<FuseBoxPuzzle>(true);
         if (SaveManager.instance != null && SaveManager.instance.HasFlag(saveFlag))
         {
             Collider col = GetComponent<Collider>();
@@ -152,15 +155,21 @@ public class ToxicGasTrap : MonoBehaviour
         if (gasParticleSystem != null) gasParticleSystem.SetActive(false);
     }
 
+    private bool FusesDone => fuseBox != null && fuseBox.IsSolved;
+
     private IEnumerator GasTrapRoutine()
     {
         float timer = deathTimer;
+        float tick = 0f;
 
-        while (isTrapActive && timer > 0)
+        // BUG FIX: damage used to be applied (and logged, with a grunt + blood splash) EVERY FRAME - now once per second.
+        // The gas also stops hurting the moment the last fuse is in (the box still counts down 4 s before the fans start).
+        while (isTrapActive && timer > 0 && !FusesDone)
         {
-            timer -= Time.deltaTime;
+            float dt = Time.deltaTime;
+            timer -= dt;
 
-            if (playerStats != null)
+            if (playerStats != null && !playerStats.IsDead() && dt > 0f)
             {
                 // Force heavy breathing right away
                 playerStats.TriggerHeavyBreathing(2f);
@@ -168,7 +177,12 @@ public class ToxicGasTrap : MonoBehaviour
                 // Start doing damage when less than half time remaining
                 if (timer < (deathTimer / 2f))
                 {
-                    playerStats.TakeDamage(damagePerSecond * Time.deltaTime);
+                    tick += dt;
+                    if (tick >= 1f)
+                    {
+                        tick -= 1f;
+                        playerStats.TakeDamage(damagePerSecond);
+                    }
                 }
             }
 
@@ -176,7 +190,7 @@ public class ToxicGasTrap : MonoBehaviour
         }
 
         // If time runs out and trap is still active
-        if (isTrapActive && playerStats != null)
+        if (isTrapActive && timer <= 0f && !FusesDone && playerStats != null)
         {
             playerStats.TakeDamage(9999f); // Instant kill
         }
@@ -187,12 +201,12 @@ public class ToxicGasTrap : MonoBehaviour
         // Don't hallucinate immediately, give them 15 seconds to panic first
         yield return new WaitForSeconds(15f);
 
-        while (isTrapActive && mainCam != null)
+        while (isTrapActive && mainCam != null && !FusesDone && (playerStats == null || !playerStats.IsDead()))
         {
             // Random wait between hallucinations
             yield return new WaitForSeconds(Random.Range(5f, 12f));
 
-            if (!isTrapActive) break;
+            if (!isTrapActive || FusesDone || (playerStats != null && playerStats.IsDead())) break;
 
             SpawnHallucination();
         }

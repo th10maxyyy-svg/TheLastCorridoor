@@ -1,0 +1,9 @@
+# THE LAST CORRIDOR - subtitles for spoken lines
+# One line per voice clip:   ClipName | Text on screen | seconds (optional)
+# ClipName = the audio file name without .mp3 / .ogg. Lines starting with # are ignored.
+
+Peek_a_boo_I_finally_found | Peek-a-boo... I finally found you.
+Joker_Ab_Tu_Yahin_Band_Rahega | Ab tu yahin band rahega. (Now you stay locked in here.)
+
+# Add the joker's patrol line and the phone message here, for example:
+# sound_should_be_like_heath_ledg | (write what the joker says)

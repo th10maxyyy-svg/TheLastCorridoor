@@ -17,11 +17,20 @@ public class RingingPhone : MonoBehaviour, IInteractable
 
     private bool isRinging = true;
     private bool isCallFinished = false;
+    private string SaveFlag => "PhoneAnswered_" + SaveManager.GetSceneObjectId(transform);
 
     void Start()
     {
         if (audioSource == null) audioSource = GetComponent<AudioSource>();
         if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
+
+        if (SaveManager.instance != null && SaveManager.instance.HasFlag(SaveFlag))
+        {
+            isRinging = false;
+            isCallFinished = true;
+            onCallEnded?.Invoke();
+            return;
+        }
 
         // Start ringing immediately when the game (or room) loads
         StartRinging();
@@ -64,6 +73,7 @@ public class RingingPhone : MonoBehaviour, IInteractable
             audioSource.clip = voiceMessageSound;
             audioSource.loop = false;
             audioSource.Play();
+            Subtitles.ForClip(voiceMessageSound);
             
             // Wait for the creepy message to finish
             yield return new WaitForSeconds(voiceMessageSound.length);
@@ -76,6 +86,7 @@ public class RingingPhone : MonoBehaviour, IInteractable
 
         Debug.Log("Call ended. Triggering events (like opening a drawer).");
         isCallFinished = true;
+        if (SaveManager.instance != null) SaveManager.instance.SetFlag(SaveFlag);
         
         // Trigger whatever horror event or puzzle completion (like opening the drawer)
         onCallEnded?.Invoke();

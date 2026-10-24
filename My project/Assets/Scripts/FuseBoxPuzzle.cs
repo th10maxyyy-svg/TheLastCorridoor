@@ -28,10 +28,20 @@ public class FuseBoxPuzzle : MonoBehaviour, IInteractable
     /// <summary>Read by the objective / achievement system (GameProgress).</summary>
     public bool IsSolved => isComplete;
 
+    private string SaveFlag => "FuseBoxDone_" + SaveManager.GetSceneObjectId(transform);
+
     void Start()
     {
         if (audioSource == null) audioSource = GetComponent<AudioSource>();
         if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
+
+        // BUG FIX: a finished fuse box used to reset to 0 fuses after a death / load (objective and prompt went back)
+        if (SaveManager.instance != null && SaveManager.instance.HasFlag(SaveFlag))
+        {
+            isComplete = true;
+            insertedFuses = requiredFuses;
+            onPuzzleComplete?.Invoke();
+        }
     }
 
     public string GetInteractPrompt()
@@ -57,6 +67,7 @@ public class FuseBoxPuzzle : MonoBehaviour, IInteractable
             if (insertedFuses >= requiredFuses)
             {
                 isComplete = true; // Taake aur interact na ho
+                if (SaveManager.instance != null) SaveManager.instance.SetFlag(SaveFlag);
                 
                 InteractionRaycast raycast = playerStats.GetComponentInChildren<InteractionRaycast>();
                 StartCoroutine(CountdownRoutine(raycast));

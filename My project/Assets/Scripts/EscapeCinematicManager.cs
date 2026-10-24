@@ -444,6 +444,8 @@ public class EscapeCinematicManager : MonoBehaviour
             TestRun = false;
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
+#else
+            SceneLoader.Load("main menue");   // in a build (presentation mode test): back to the main menu
 #endif
             yield break;
         }
@@ -460,7 +462,7 @@ public class EscapeCinematicManager : MonoBehaviour
         Time.timeScale = 1f;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-        UnityEngine.SceneManagement.SceneManager.LoadScene(0);
+        SceneLoader.Load("main menue");
     }
 
     // ------------------------------------------------------------------ player

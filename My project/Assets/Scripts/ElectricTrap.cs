@@ -46,9 +46,12 @@ public class ElectricTrap : MonoBehaviour
                 CharacterController cc = other.GetComponent<CharacterController>();
                 if (cc != null && cc.enabled)
                 {
-                    Vector3 pushDirection = (other.transform.position - transform.position).normalized;
+                    // BUG FIX: push AGAINST the way the player was walking (pushing away from the centre threw a sprinting
+                    // player straight through the barrier)
+                    Vector3 v = cc.velocity; v.y = 0f;
+                    Vector3 pushDirection = v.sqrMagnitude > 0.01f ? -v.normalized : (other.transform.position - transform.position);
                     pushDirection.y = 0; // Keep push horizontal
-                    cc.Move(pushDirection * 2f);
+                    cc.Move(pushDirection.normalized * 2f);
                 }
             }
         }

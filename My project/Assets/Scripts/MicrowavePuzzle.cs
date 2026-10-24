@@ -21,11 +21,19 @@ public class MicrowavePuzzle : MonoBehaviour, IInteractable
     /// <summary>Read by the objective / achievement system (GameProgress).</summary>
     public bool IsSolved => isPuzzleCompleted;
     private AudioSource audioSource;
+    private string SaveFlag => "MicrowaveDone_" + SaveManager.GetSceneObjectId(transform);
 
     void Start()
     {
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
+
+        if (SaveManager.instance != null && SaveManager.instance.HasFlag(SaveFlag))
+        {
+            isPuzzleCompleted = true;
+            if (hiddenKeyObject != null) hiddenKeyObject.SetActive(true);
+            return;
+        }
         
         // Ensure the key is hidden at the start
         if (hiddenKeyObject != null)
@@ -92,6 +100,7 @@ public class MicrowavePuzzle : MonoBehaviour, IInteractable
 
         isPuzzleCompleted = true;
         isMicrowaveRunning = false;
+        if (SaveManager.instance != null) SaveManager.instance.SetFlag(SaveFlag);
 
         // Trigger any final horror events (like Enemy Ambush!)
         OnPuzzleComplete?.Invoke();

@@ -45,9 +45,13 @@ public class KeyItem : MonoBehaviour, IInteractable
             inventory.PickUpItem(this.gameObject);
 
             // Trigger custom events only the FIRST time (not every time the key is dropped and picked up again)
-            if (!hasFiredPickupEvent)
+            // BUG FIX: remembered in the save, so dropping it / dying and picking it up again never replays the event (ambush etc.)
+            SaveManager sm = SaveManager.instance;
+            string evtFlag = "KeyEvent_" + (sm != null ? sm.GetItemId(gameObject) : name);
+            if (!hasFiredPickupEvent && (sm == null || !sm.HasFlag(evtFlag)))
             {
                 hasFiredPickupEvent = true;
+                if (sm != null) sm.SetFlag(evtFlag);
                 onPickUpEvent?.Invoke();
             }
 

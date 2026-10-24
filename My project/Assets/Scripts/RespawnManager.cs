@@ -186,6 +186,11 @@ public class RespawnManager : MonoBehaviour
 
     private IEnumerator DeathRoutine(int livesRemaining, GameObject player)
     {
+        // BUG FIX: save the respawn point right away. Before, quitting during the 7 s death screen resumed the game
+        // at the spot where the player had just died (often next to the enemy), one life down.
+        if (SaveManager.instance != null && basementRespawn != null)
+            SaveManager.instance.SavePlayerTransform(basementRespawn.position, basementRespawn.rotation);
+
         // Fade to black
         if (blackScreen != null)
         {
@@ -243,7 +248,7 @@ public class RespawnManager : MonoBehaviour
         IntroState.skipIntro = true;
 
         // Reload Scene (It will auto-place the player and dropped items in Start)
-        UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
+        SceneLoader.Load(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
     }
 
     // ------------------------------------------------------------------ death message (1st and 2nd death)

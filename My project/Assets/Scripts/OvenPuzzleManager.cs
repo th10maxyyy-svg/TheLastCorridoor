@@ -27,11 +27,22 @@ public class OvenPuzzleManager : MonoBehaviour
     private bool isSolved = false;
     /// <summary>Read by the objective / achievement system (GameProgress).</summary>
     public bool IsSolved => isSolved;
+    private string SaveFlag => "OvenDone_" + SaveManager.GetSceneObjectId(transform);
 
     void Start()
     {
         if (audioSource == null) audioSource = GetComponent<AudioSource>();
         if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
+
+        if (SaveManager.instance != null && SaveManager.instance.HasFlag(SaveFlag))
+        {
+            isSolved = true;
+            if (oven1 != null) oven1.LockDial();
+            if (oven2 != null) oven2.LockDial();
+            if (oven3 != null) oven3.LockDial();
+            if (classroomKey != null) classroomKey.SetActive(true);
+            return;
+        }
         
         if (classroomKey != null) classroomKey.SetActive(false); // Hide the key initially
     }
@@ -51,6 +62,7 @@ public class OvenPuzzleManager : MonoBehaviour
     private void SolvePuzzle()
     {
         isSolved = true;
+        if (SaveManager.instance != null) SaveManager.instance.SetFlag(SaveFlag);
         Debug.Log("Oven Puzzle Solved! Burn them!");
 
         // Lock all dials so player can't mess with them anymore

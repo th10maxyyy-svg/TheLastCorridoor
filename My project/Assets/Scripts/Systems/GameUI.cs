@@ -36,7 +36,7 @@ public class GameUI : MonoBehaviour
     }
 
     private enum Mode { None, Menu, Game }
-    private enum Panel { None, Pause, Save, Load, Settings, Journal, Achievements, ConfirmMenu, ConfirmQuit }
+    private enum Panel { None, Pause, Save, Load, Settings, Journal, Achievements, ConfirmMenu, ConfirmQuit, Controls }
 
     private Mode mode = Mode.None;
     private Panel panel = Panel.None;
@@ -51,6 +51,7 @@ public class GameUI : MonoBehaviour
     private float panelMessageTime;
     private PlayerController player;
     private TLCCanvas ui;
+    private bool controlsChecked;
 
     void Awake()
     {
@@ -98,7 +99,11 @@ public class GameUI : MonoBehaviour
             go.AddComponent<ObjectiveTracker>();
             go.AddComponent<HorrorDirector>();
             go.AddComponent<HudBarStyler>();
+            go.AddComponent<ScareDirector>();
+            go.AddComponent<AmbientMusic>();
+            go.AddComponent<PresentationMode>();
         }
+        controlsChecked = false;
     }
 
     public static void OpenFromMenu(int which)
@@ -174,6 +179,7 @@ public class GameUI : MonoBehaviour
         if (KeypadController.IsAnyKeypadOpen || keypadOpenLastFrame) return false;
         if (GameManager.instance != null && GameManager.instance.IsGameOver()) return false;
         if (Time.timeScale <= 0f) return false;
+        if (PresentationMode.IsOpen || SceneLoader.IsLoading) return false;
         PlayerStats ps = player.GetComponent<PlayerStats>();
         if (ps != null && ps.IsDead()) return false;
         return true;
@@ -233,7 +239,7 @@ public class GameUI : MonoBehaviour
         if (panel == Panel.Settings) GameSettings.Save();
         if (mode == Mode.Game)
         {
-            if (panel == Panel.Pause || (panel == Panel.Journal && returnPanel == Panel.None)) Resume();
+            if (panel == Panel.Pause || panel == Panel.Controls || (panel == Panel.Journal && returnPanel == Panel.None)) Resume();
             else OpenPanel(Panel.Pause, Panel.Pause);
         }
         else panel = Panel.None;
@@ -252,7 +258,7 @@ public class GameUI : MonoBehaviour
         Time.timeScale = 1f;
         AudioListener.pause = false;
         GameSettings.Save();
-        SceneManager.LoadScene(0);
+        SceneLoader.Load("main menue");
     }
 
     private void QuitGame()
@@ -284,6 +290,21 @@ public class GameUI : MonoBehaviour
             {
                 if (paused) Back();
                 else Pause(Panel.Pause);
+            }
+            else if (Input.GetKeyDown(KeyCode.F1))
+            {
+                if (paused && panel == Panel.Controls) Resume();
+                else if (!paused && CanPause()) { Pause(Panel.Controls); returnPanel = Panel.None; }
+            }
+            else if (!controlsChecked && !paused && Time.timeSinceLevelLoad > 2f && CanPause() && !player.IsWakingUp)
+            {
+                // CONTROLS SCREEN: shown once, the first time the player is in control
+                controlsChecked = true;
+                if (PlayerPrefs.GetInt("TLC_ControlsSeen", 0) == 0)
+                {
+                    PlayerPrefs.SetInt("TLC_ControlsSeen", 1); PlayerPrefs.Save();
+                    Pause(Panel.Controls); returnPanel = Panel.None;
+                }
             }
             else if (Input.GetKeyDown(KeyCode.Tab) || Input.GetKeyDown(KeyCode.J))
             {
@@ -319,7 +340,7 @@ public class GameUI : MonoBehaviour
         if (mode == Mode.None) return;
         if (ui == null) BindUI();
         if (ui == null) return;
-        try { RefreshUI(); }
+        try { RefreshUI(); TLCHud.Tick(ui, player, mode == Mode.Game && ui.hud != null && ui.hud.activeInHierarchy); }
         catch (System.Exception e)
         {
             // a broken UI piece must never freeze the game: log at most once every 5 s and carry on
@@ -345,11 +366,19 @@ public class GameUI : MonoBehaviour
         Listen(ui.settingsBack, Back);
         Listen(ui.achBack, Back);
         Listen(ui.journalBack, Back);
-        Listen(ui.settingsReset, () => { GameSettings.ResetToDefaults(); SyncSettings(); });
+        Listen(ui.settingsReset, () => { GameSettings.ResetToDefaults(); GraphicsQuality.ResetToDefaults(); SyncSettings(); });
+        if (ui.graphicsRows != null)
+            for (int i = 0; i < ui.graphicsRows.Length; i++)
+            {
+                int k = i;
+                Listen(ui.graphicsRows[i].prev, () => { GraphicsQuality.Cycle(k, -1); RefreshSettingValues(); });
+                Listen(ui.graphicsRows[i].next, () => { GraphicsQuality.Cycle(k, +1); RefreshSettingValues(); });
+            }
         for (int i = 0; i < ui.journalTabs.Length; i++) { int k = i; Listen(ui.journalTabs[i], () => { journalTab = k; FillJournal(); }); }
         Listen(ui.confirmYes, () => { if (panel == Panel.ConfirmQuit) QuitGame(); else LeaveToMainMenu(); });
         Listen(ui.confirmNo, () => OpenPanel(Panel.Pause, Panel.Pause));
         Listen(ui.sumContinue, () => summary = null);
+        Listen(ui.controlsContinue, () => { if (mode == Mode.Game) Resume(); else panel = Panel.None; });
 
         float[,] ranges = { { 0f, 1f }, { -1f, 1.5f }, { 0f, 1f }, { 0.3f, 2.5f } };
         for (int i = 0; i < ui.settingRows.Length && i < 4; i++)
@@ -406,6 +435,7 @@ public class GameUI : MonoBehaviour
         TLCCanvas.SetActive(ui.achievementsPanel, showPanels && shown == Panel.Achievements);
         TLCCanvas.SetActive(ui.journalPanel, showPanels && shown == Panel.Journal);
         TLCCanvas.SetActive(ui.confirmPanel, showPanels && (shown == Panel.ConfirmMenu || shown == Panel.ConfirmQuit));
+        TLCCanvas.SetActive(ui.controlsPanel, showPanels && shown == Panel.Controls);
         TLCCanvas.SetActive(ui.summaryPanel, summary != null);
 
         RefreshObjective(game);
@@ -575,6 +605,10 @@ public class GameUI : MonoBehaviour
         ui.settingRows[1].value.text = (GameSettings.Brightness >= 0 ? "+" : "") + GameSettings.Brightness.ToString("0.0");
         ui.settingRows[2].value.text = Mathf.RoundToInt(GameSettings.EffectsIntensity * 100f) + "%";
         ui.settingRows[3].value.text = GameSettings.MouseSensitivity.ToString("0.0") + "x";
+        if (ui.graphicsRows != null)
+            for (int i = 0; i < ui.graphicsRows.Length; i++)
+                if (ui.graphicsRows[i] != null && ui.graphicsRows[i].value != null) ui.graphicsRows[i].value.text = GraphicsQuality.ValueText(i);
+        if (ui.graphicsInfo != null) ui.graphicsInfo.text = GraphicsQuality.InfoText();
     }
 
     // ---- achievements (FR_52, FR_53)
@@ -624,7 +658,51 @@ public class GameUI : MonoBehaviour
             case 1: FillItems(); break;
             case 2: FillNotes(); break;
             case 3: FillStats(); break;
+            case 4: FillMap(); break;
         }
+    }
+
+    // ---- MAP: every room of the asylum, floor by floor, with its state
+    private void FillMap()
+    {
+        if (ui.mapColumns == null || ui.mapColumns.Length < 3) return;
+        Inventory inv = player != null ? player.GetComponent<Inventory>() : null;
+        // room -> (floor, locked?, key, seen?)
+        Dictionary<string, string[]> rooms = new Dictionary<string, string[]>();
+        foreach (DoorController d in FindObjectsByType<DoorController>(FindObjectsInactive.Include))
+        {
+            string room = d.RoomName;
+            if (string.IsNullOrEmpty(room)) continue;
+            if (!rooms.TryGetValue(room, out string[] r)) rooms[room] = r = new[] { d.FloorName, "open", "", "" };
+            if (d.IsLocked) { r[1] = "locked"; r[2] = d.RequiredKey ?? ""; }
+            else if (r[1] != "locked" && (d.PlayerDiscovered || d.IsOpen)) r[3] = "seen";
+            if (d.PlayerDiscovered) r[3] = "seen";
+        }
+        string[] floors = { "First Floor", "Ground Floor", "Basement" };
+        for (int i = 0; i < 3; i++)
+        {
+            List<string> names = new List<string>();
+            foreach (var kv in rooms) if (kv.Value[0] == floors[i]) names.Add(kv.Key);
+            names.Sort(System.StringComparer.OrdinalIgnoreCase);
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            foreach (string n in names)
+            {
+                string[] r = rooms[n];
+                if (r[1] == "locked")
+                {
+                    string key = r[2];
+                    bool haveKey = inv != null && !string.IsNullOrEmpty(key) && !key.ToUpper().Contains("GATE") && inv.HasItem(key);
+                    string need = string.IsNullOrEmpty(key) ? "opened by a puzzle" : key.ToUpper().Contains("GATE") ? "key + 8-digit code" : "needs the " + key;
+                    sb.Append(haveKey ? "<color=#f2c040>■  " + n + "</color>   <size=17><color=#f2c040>key in hand!</color></size>\n"
+                                      : "<color=#c8503a>■  " + n + "</color>   <size=17><color=#8a7f76>" + need + "</color></size>\n");
+                }
+                else if (r[3] == "seen") sb.Append("<color=#e0d6c8>●  " + n + "</color>\n");
+                else sb.Append("<color=#8a7f76>○  " + n + "</color>\n");
+            }
+            ui.mapColumns[i].text = sb.Length > 0 ? sb.ToString() : "<color=#8a7f76>-</color>";
+        }
+        if (ui.mapLegend != null)
+            ui.mapLegend.text = "●  explored      ○  not explored yet      <color=#c8503a>■  locked</color>      <color=#f2c040>■  you have the key</color>";
     }
 
     private void FillObjectives()

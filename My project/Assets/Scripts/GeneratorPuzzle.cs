@@ -18,6 +18,30 @@ public class GeneratorPuzzle : MonoBehaviour, IInteractable
     [Header("Events")]
     public UnityEvent onGeneratorStarted;
 
+    private string SaveFlag => "GenStarted_" + SaveManager.GetSceneObjectId(transform);
+
+    void Start()
+    {
+        if (SaveManager.instance != null && SaveManager.instance.HasFlag(SaveFlag))
+        {
+            isGeneratorOn = true;
+            if (audioSource != null && runningLoopSound != null)
+            {
+                audioSource.clip = runningLoopSound;
+                audioSource.loop = true;
+                audioSource.Play();
+            }
+            if (generatorLights != null)
+            {
+                foreach (GameObject light in generatorLights)
+                {
+                    if (light != null) light.SetActive(true);
+                }
+            }
+            onGeneratorStarted?.Invoke();
+        }
+    }
+
     public string GetInteractPrompt()
     {
         if (isGeneratorOn) return "Generator is running smoothly.";
@@ -45,6 +69,7 @@ public class GeneratorPuzzle : MonoBehaviour, IInteractable
     private void StartGenerator()
     {
         isGeneratorOn = true;
+        if (SaveManager.instance != null) SaveManager.instance.SetFlag(SaveFlag);
 
         if (audioSource != null && startupSound != null)
         {

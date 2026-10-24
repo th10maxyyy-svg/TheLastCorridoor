@@ -30,11 +30,51 @@ public class DoorController : MonoBehaviour, IInteractable
     public CinematicAmbush ambushToTrigger;
 
     private bool isOpen = false;
+
+    /// <summary>Fired when the PLAYER opens a door (used by the one-time scares).</summary>
+    public static System.Action<DoorController> PlayerOpened;
     private Quaternion closedRotation;
     private Quaternion openRotation;
+    private bool isInvalidDoorComponent = false;
+    private string cachedDoorId;
+
+    void Awake()
+    {
+        // 1. Empty door-frame container (like DoorD_V1 (1) in the Morgue) that holds child DoorControllers on its leaves:
+        //    must NEVER rotate or unlock itself, otherwise the whole doorway moves out of place on respawn/reload.
+        if (GetComponent<Renderer>() == null && GetComponent<Collider>() == null)
+        {
+            foreach (DoorController d in GetComponentsInChildren<DoorController>(true))
+            {
+                if (d != this)
+                {
+                    isInvalidDoorComponent = true;
+                    isLocked = false;
+                    enabled = false;
+                    Destroy(this);
+                    return;
+                }
+            }
+        }
+
+        // 2. Child window pane inside a door leaf (like DoorD_V2_Window inside DoorD_V2_Left):
+        //    the parent leaf is the real door; the window pane must move with its parent leaf, not independently.
+        if (transform.parent != null && transform.parent.GetComponent<DoorController>() != null && transform.parent.GetComponent<Renderer>() != null)
+        {
+            isInvalidDoorComponent = true;
+            isLocked = false;
+            enabled = false;
+            Destroy(this);
+            return;
+        }
+
+        cachedDoorId = SaveManager.GetSceneObjectId(transform);
+    }
 
     void Start()
     {
+        if (isInvalidDoorComponent) return;
+
         closedRotation = transform.localRotation;
         
         // Calculate target rotation based on the chosen axis
@@ -58,13 +98,34 @@ public class DoorController : MonoBehaviour, IInteractable
             transform.localRotation = openRotation; // Snap to open immediately
         }
 
+        // double doors: if the other leaf (or parent container in an older save) was already opened with the shared key, this leaf is unlocked too
+        else if (isLocked && !string.IsNullOrEmpty(requiredKey) && transform.parent != null && SaveManager.instance != null)
+        {
+            if (SaveManager.instance.IsDoorUnlocked(SaveManager.GetSceneObjectId(transform.parent)))
+            {
+                isLocked = false;
+                isOpen = true;
+                transform.localRotation = openRotation;
+            }
+            else
+            {
+                foreach (DoorController d in transform.parent.GetComponentsInChildren<DoorController>(true))
+                {
+                    if (d == this || d.isInvalidDoorComponent) continue;
+                    if (!string.Equals((d.requiredKey ?? "").Trim(), requiredKey.Trim(), System.StringComparison.OrdinalIgnoreCase)) continue;
+                    if (SaveManager.instance.IsDoorUnlocked(d.GetDoorID())) { isLocked = false; break; }
+                }
+            }
+        }
+
         SetupEnemyBlocker();
     }
 
     void Update()
     {
+        if (isInvalidDoorComponent) return;
         Quaternion targetRotation = isOpen ? openRotation : closedRotation;
-        transform.localRotation = Quaternion.Slerp(transform.localRotation, targetRotation, Time.deltaTime * smoothSpeed);
+        transform.localRotation = Quaternion.Slerp(transform.localRotation, targetRotation, Time.deltaTime * (Time.time < smoothBoostUntil ? smoothSpeed * 4f : smoothSpeed));
     }
     
     // Can be called by KeypadController's OnUnlock Event
@@ -123,6 +184,7 @@ public class DoorController : MonoBehaviour, IInteractable
                 inventory.RemoveItem(requiredKey, false); // false = darwaza hamesha ke liye khul gaya, key wapas nahi aayegi
                 
                 SaveDoorState();
+                UnlockPartners();
 
                 // Auto-Trigger Cinematic Ambush! 
                 if (ambushToTrigger != null)
@@ -186,6 +248,7 @@ public class DoorController : MonoBehaviour, IInteractable
             // Naya code: Jab darwaza khulega to ye event trigger hoga
             if (onDoorOpen != null)
                 onDoorOpen.Invoke();
+            PlayerOpened?.Invoke(this);
         }
         else
         {
@@ -311,6 +374,16 @@ public class DoorController : MonoBehaviour, IInteractable
         SaveDoorState();
     }
 
+    /// <summary>Scare: the open door bangs shut on its own (it is not locked - the player can open it again).</summary>
+    public void SlamShut()
+    {
+        if (!isOpen || isLocked) return;
+        isOpen = false;
+        if (audioSource != null && closeSound != null) { audioSource.pitch = 0.8f; audioSource.PlayOneShot(closeSound, 1f); audioSource.pitch = 1f; }
+        smoothBoostUntil = Time.time + 0.6f;
+    }
+    private float smoothBoostUntil;
+
     // External method to unlock the door from puzzles (like a Generator)
     public void ForceUnlock()
     {
@@ -343,7 +416,26 @@ public class DoorController : MonoBehaviour, IInteractable
     // Helper to make a unique ID for this specific door, in case many doors are named "Door"
     private string GetDoorID()
     {
-        return SaveManager.GetSceneObjectId(transform);
+        if (string.IsNullOrEmpty(cachedDoorId)) cachedDoorId = SaveManager.GetSceneObjectId(transform);
+        return cachedDoorId;
+    }
+
+    /// <summary>
+    /// BUG FIX: double doors (Morgue, Surgery, Visiting Room, Dining Room) have one DoorController per leaf, all needing
+    /// the same key. The key is used up by the first leaf, so the other leaf stayed locked for ever. Now every leaf of
+    /// the same door (same parent / the door root) that needs the same key is unlocked too.
+    /// </summary>
+    private void UnlockPartners()
+    {
+        Transform top = transform.parent;
+        if (top == null) return;
+        foreach (DoorController d in top.GetComponentsInChildren<DoorController>(true))
+        {
+            if (d == this || d.isInvalidDoorComponent || !d.isLocked) continue;
+            if (!string.Equals((d.requiredKey ?? "").Trim(), (requiredKey ?? "").Trim(), System.StringComparison.OrdinalIgnoreCase)) continue;
+            d.isLocked = false;
+            d.SaveDoorState();
+        }
     }
 
     private void SaveDoorState()

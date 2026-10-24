@@ -175,7 +175,7 @@ public class GameManager : MonoBehaviour
         yield return new WaitForSeconds(3f);
         IntroState.skipIntro = true;
         Time.timeScale = 1f;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        SceneLoader.Load(SceneManager.GetActiveScene().buildIndex);
     }
 
     public void RestartGame()
@@ -183,7 +183,7 @@ public class GameManager : MonoBehaviour
         isGameOver = false;
         Time.timeScale = 1f;
         IntroState.ResetForNewGame(); // Permadeath = brand new game, so the intro plays again
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        SceneLoader.Load(SceneManager.GetActiveScene().buildIndex);
     }
 
     public bool IsGameOver() => isGameOver;

@@ -18,6 +18,8 @@ public class PlayerStats : MonoBehaviour
     [Header("Optional UI References")]
     [SerializeField] private Slider healthSlider;
     [SerializeField] private Slider staminaSlider;
+    public float MaxHealth => maxHealth;
+    public float MaxStamina => maxStamina;
     public Slider HealthSlider => healthSlider;   // read by HudBarStyler (only the look is changed)
     public Slider StaminaSlider => staminaSlider;
 
@@ -181,7 +183,7 @@ public class PlayerStats : MonoBehaviour
 
     public void TakeDamage(float amount)
     {
-        if (isDead || isInvulnerable) return;
+        if (isDead || isInvulnerable || amount <= 0f) return;
 
         currentHealth -= amount;
         currentHealth = Mathf.Max(currentHealth, 0f);

@@ -142,7 +142,7 @@ public class EnemyAI : MonoBehaviour
         if (enemyAudioSource != null && teaseVoiceLines != null && teaseVoiceLines.Length > 0 && teaseVoiceLines[0] != null)
         {
             enemyAudioSource.Stop();
-            enemyAudioSource.PlayOneShot(teaseVoiceLines[0]);
+            { enemyAudioSource.PlayOneShot(teaseVoiceLines[0]); Subtitles.ForClip(teaseVoiceLines[0]); }
         }
     }
 
@@ -250,10 +250,11 @@ public class EnemyAI : MonoBehaviour
     private void BeginChase()
     {
         currentState = AIState.Chase;
+        sawPlayerHide = false;
         stalkPauseUntil = 0f;
         if (Time.time >= nextSpottedLineTime && teaseVoiceLines != null && teaseVoiceLines.Length > 0 && enemyAudioSource != null)
         {
-            enemyAudioSource.PlayOneShot(teaseVoiceLines[0]);
+            { enemyAudioSource.PlayOneShot(teaseVoiceLines[0]); Subtitles.ForClip(teaseVoiceLines[0]); }
             nextSpottedLineTime = Time.time + 20f;
             // NO tease pose here: spotting the player only plays his voice - he keeps running straight at them.
             // (The tease / yell pose is reserved for the basement scene, see StartTeasing.)
@@ -576,7 +577,7 @@ public class EnemyAI : MonoBehaviour
         if (enemyAudioSource != null && teaseVoiceLines != null && teaseVoiceLines.Length > 0)
         {
             AudioClip clip = teaseVoiceLines[Random.Range(0, teaseVoiceLines.Length)];
-            if (clip != null) enemyAudioSource.PlayOneShot(clip);
+            if (clip != null) { enemyAudioSource.PlayOneShot(clip); Subtitles.ForClip(clip); }
         }
     }
 
@@ -641,7 +642,7 @@ public class EnemyAI : MonoBehaviour
                 
                 if (!silentCinematicVoice && enemyAudioSource != null && teaseVoiceLines != null && teaseVoiceLines.Length > 0)
                 {
-                    enemyAudioSource.PlayOneShot(teaseVoiceLines[0]); // Scream sound
+                    { enemyAudioSource.PlayOneShot(teaseVoiceLines[0]); Subtitles.ForClip(teaseVoiceLines[0]); } // Scream sound
                 }
             }
         }
@@ -716,6 +717,9 @@ public class EnemyAI : MonoBehaviour
     {
         if (!CanBeDistractedByNoise()) return;
         if (agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh) return;
+
+        // Ignore noises from a different floor (e.g. basement vs ground/upper floor)
+        if (Mathf.Abs(transform.position.y - noiseLocation.y) > 2.8f) return;
 
         // Don't hear it if it's too far away
         if (Vector3.Distance(transform.position, noiseLocation) > detectionRange * 2f) return;
@@ -887,7 +891,7 @@ public class EnemyAI : MonoBehaviour
             AudioClip voice = patrolVoiceLines[Random.Range(0, patrolVoiceLines.Length)];
             if (enemyAudioSource != null && voice != null)
             {
-                enemyAudioSource.PlayOneShot(voice); // Play without stopping ambient sound
+                enemyAudioSource.PlayOneShot(voice); Subtitles.ForClip(voice); // Play without stopping ambient sound
             }
             // Naya time set karein agli aawaz ke liye
             nextVoiceTime = Time.time + Random.Range(minVoiceDelay, maxVoiceDelay);
@@ -1096,7 +1100,7 @@ public class EnemyAI : MonoBehaviour
             stalkPauseUntil = Time.time + Random.Range(2.5f, 4f);
             if (patrolVoiceLines != null && patrolVoiceLines.Length > 0 && enemyAudioSource != null && Time.time >= voiceMuteUntil)
             {
-                enemyAudioSource.PlayOneShot(patrolVoiceLines[Random.Range(0, patrolVoiceLines.Length)]);
+                { AudioClip vl = patrolVoiceLines[Random.Range(0, patrolVoiceLines.Length)]; enemyAudioSource.PlayOneShot(vl); Subtitles.ForClip(vl); }
                 nextVoiceTime = Time.time + Random.Range(minVoiceDelay, maxVoiceDelay);
             }
             return true;
@@ -1155,6 +1159,8 @@ public class EnemyAI : MonoBehaviour
 
         if (playerHidden || distanceToPlayer > detectionRange * 1.6f || lostSightTimer > loseSightTime)
         {
+            // he only knows the hiding spot if he actually SAW the player slip into it (was in view a moment ago)
+            sawPlayerHide = playerHidden && lostSightTimer < 0.75f && distanceToPlayer < detectionRange;
             currentState = AIState.Search;
             searchTimer = searchDuration;
             ResetSearchPlan();
@@ -1276,7 +1282,8 @@ public class EnemyAI : MonoBehaviour
                 Vector3 look = favouriteSpot - transform.position; look.y = 0f;
                 if (look.sqrMagnitude > 0.01f) transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(look), Time.deltaTime * 4f);
 
-                bool playerInSpot = playerController != null && playerController.isHidden && playerTransform != null &&
+                // HIDING FIX: a hidden player is safe unless the clown watched him hide there
+                bool playerInSpot = sawPlayerHide && playerController != null && playerController.isHidden && playerTransform != null &&
                                     Vector3.Distance(playerTransform.position, favouriteSpot) < 2.0f;
                 if (playerInSpot && AggressionLevel >= 5 && spotLingerTimer < 1.2f)
                 {
@@ -1303,6 +1310,7 @@ public class EnemyAI : MonoBehaviour
         if (searchTimer <= 0)
         {
             currentState = AIState.Patrol;
+            sawPlayerHide = false;
             GetNewPatrolTarget();
             return;
         }
@@ -1324,11 +1332,15 @@ public class EnemyAI : MonoBehaviour
         
         if (playerController != null && playerController.isHidden) return false; // Enemy cannot see hidden player
 
+        // Do not spot the player through floors/ceilings on a different level
+        float heightDiff = Mathf.Abs(playerTransform.position.y - transform.position.y);
+        if (heightDiff > 2.8f) return false;
+
         float distanceToPlayer = Vector3.Distance(transform.position, playerTransform.position);
         if (distanceToPlayer > detectionRange) return false;
 
-        // right behind / next to him: he feels the player even without looking (needs a clear line, no walls)
-        if (distanceToPlayer < closeSenseRange && HasLineOfSightToPlayer()) return true;
+        // right behind / next to him: he feels the player even without looking (needs a clear line, no walls, same floor)
+        if (distanceToPlayer < closeSenseRange && heightDiff < 2.0f && HasLineOfSightToPlayer()) return true;
 
         Vector3 directionToPlayer = (playerTransform.position - transform.position).normalized;
         float angleToPlayer = Vector3.Angle(transform.forward, directionToPlayer);
@@ -1340,18 +1352,28 @@ public class EnemyAI : MonoBehaviour
     private bool HasLineOfSightToPlayer()
     {
         if (playerTransform == null) return false;
+        if (Mathf.Abs(playerTransform.position.y - transform.position.y) > 2.8f) return false;
 
         Vector3 eye = transform.position + Vector3.up;
-        Vector3 toPlayer = playerTransform.position - eye;
+        Vector3 playerEye = playerTransform.position + Vector3.up * 0.5f;
+        Vector3 toPlayer = playerEye - eye;
         float distance = toPlayer.magnitude;
         if (distance < 0.01f) return true;
 
+        Vector3 dir = toPlayer / distance;
         RaycastHit hit;
-        if (!Physics.Raycast(eye, toPlayer / distance, out hit, distance, obstacleMask, QueryTriggerInteraction.Ignore))
+        if (Physics.Raycast(eye, dir, out hit, distance, obstacleMask, QueryTriggerInteraction.Ignore))
         {
-            return true; // Raste mein koi deewar nahi
+            if (hit.transform != playerTransform && !hit.transform.IsChildOf(playerTransform))
+                return false;
         }
-        return hit.transform == playerTransform || hit.transform.IsChildOf(playerTransform); // Raycast player se takrai hai
+        // Reverse raycast as well so one-sided floor/wall MeshColliders block line of sight from both sides
+        if (Physics.Raycast(playerEye, -dir, out hit, distance, obstacleMask, QueryTriggerInteraction.Ignore))
+        {
+            if (hit.transform != transform && !hit.transform.IsChildOf(transform))
+                return false;
+        }
+        return true;
     }
 
     private void AttackPlayer()
@@ -1387,6 +1409,8 @@ public class EnemyAI : MonoBehaviour
     private bool slamOffsetCaptured;
     private const float SwipeHitDelay = 1.0f;   // zombie swipe: the claws hit ~1 s into the clip
     private const float SwipeLength = 1.85f;    // and the swing is over after ~1.85 s
+
+    private bool sawPlayerHide;
 
     private System.Collections.IEnumerator AttackHitRoutine(float hitDelay)
     {
@@ -1633,7 +1657,7 @@ public class EnemyAI : MonoBehaviour
         // the tease dialogue ("Peek-a-boo, I finally found you...")
         if (enemyAudioSource != null && teaseVoiceLines != null && teaseVoiceLines.Length > 0 && teaseVoiceLines[0] != null)
         {
-            enemyAudioSource.PlayOneShot(teaseVoiceLines[0]);
+            { enemyAudioSource.PlayOneShot(teaseVoiceLines[0]); Subtitles.ForClip(teaseVoiceLines[0]); }
             Debug.Log("Enemy says his tease line.");
         }
     }

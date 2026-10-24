@@ -93,6 +93,10 @@ public class LightShadowBudget : MonoBehaviour
         lights.Sort((a, b) =>
             (a.light.transform.position - viewPos).sqrMagnitude.CompareTo((b.light.transform.position - viewPos).sqrMagnitude));
 
+        // the graphics quality level decides how many lamps may cast shadows (Low = none)
+        maxShadowedLights = GraphicsQuality.MaxShadowedLights;
+        maxShadowDistance = GraphicsQuality.ShadowLightDistance;
+
         int shadowed = 0;
         float maxDistSqr = maxShadowDistance * maxShadowDistance;
         foreach (TrackedLight t in lights)

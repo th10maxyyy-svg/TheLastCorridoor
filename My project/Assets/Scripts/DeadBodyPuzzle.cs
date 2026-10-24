@@ -28,10 +28,24 @@ public class DeadBodyPuzzle : MonoBehaviour, IInteractable
     /// <summary>Read by the objective / achievement system (GameProgress): the RIGHT body has been cut open.</summary>
     public bool IsSolved => isCutOpen && isCorrectBody;
     private bool isCutting = false;
+    private string SaveFlag => "BodyCut_" + SaveManager.GetSceneObjectId(transform);
 
     void Start()
     {
         audioSource = GetComponent<AudioSource>();
+
+        if (SaveManager.instance != null && SaveManager.instance.HasFlag(SaveFlag))
+        {
+            isCutOpen = true;
+            Collider myCollider = GetComponent<Collider>();
+            if (myCollider != null) myCollider.enabled = false;
+            if (isCorrectBody)
+            {
+                if (rustyCrank != null) rustyCrank.SetActive(true);
+                if (examRoomKey != null) examRoomKey.SetActive(true);
+            }
+            return;
+        }
         
         // Hide the items initially
         if (isCorrectBody)
@@ -117,6 +131,7 @@ public class DeadBodyPuzzle : MonoBehaviour, IInteractable
 
         isCutting = false;
         isCutOpen = true;
+        if (SaveManager.instance != null) SaveManager.instance.SetFlag(SaveFlag);
 
         // BUG FIX: Disable the dead body's collider so it doesn't block you from clicking the Crank/Key!
         Collider myCollider = GetComponent<Collider>();
